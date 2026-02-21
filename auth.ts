@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server"
 import { verifyPassword, hashPassword } from "@/utils/password"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-    secret: process.env.AUTH_SECRET,
+    secret: process.env.AUTH_SECRET || "super-secret-key-that-is-at-least-32-chars-long",
     providers: [
         Credentials({
             credentials: {
