@@ -156,6 +156,11 @@ export default function MenusClient({ userRole, userId }: Props) {
     }
 
     const handleExport = async () => {
+        if (userRole !== 'admin') {
+            setToast({ show: true, msg: 'คุณไม่มีสิทธิ์ในการ Export ข้อมูล', type: 'error' })
+            return
+        }
+
         try {
             setToast({ show: true, msg: 'กำลังเตรียมไฟล์ Export...', type: 'info' })
 
@@ -281,13 +286,15 @@ export default function MenusClient({ userRole, userId }: Props) {
                             </h1>
                             <p className="text-xs md:text-sm text-slate-500 mt-1">จัดการข้อมูลเมนูอาหารและการคัดเลือก</p>
                         </div>
-                        <button
-                            onClick={handleExport}
-                            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm shadow-green-200 w-full md:w-auto justify-center text-sm md:text-base"
-                        >
-                            <Icon icon="solar:file-download-bold" />
-                            Export Excel
-                        </button>
+                        {userRole === 'admin' && (
+                            <button
+                                onClick={handleExport}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm shadow-green-200 w-full md:w-auto justify-center text-sm md:text-base"
+                            >
+                                <Icon icon="solar:file-download-bold" />
+                                Export Excel
+                            </button>
+                        )}
                     </div>
 
                     {/* Filters */}
