@@ -1,9 +1,10 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Icon } from '@iconify/react'
 import { useRouter } from 'next/navigation'
 import ConfirmModal from '@/app/components/ConfirmModal'
 import Toast from '@/app/components/Toast'
+import useSWR from 'swr'
 
 interface Informant {
     info_id: string
@@ -23,16 +24,27 @@ interface Props {
 
 export default function InformantsClient({ userRole, userId }: Props) {
     const router = useRouter()
-    const [informants, setInformants] = useState<Informant[]>([])
-    const [loading, setLoading] = useState(true)
-    const [total, setTotal] = useState(0)
     const [page, setPage] = useState(1)
-    const [totalPages, setTotalPages] = useState(1)
     const limit = 20
 
     // Filters
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
+
+    // SWR Data Fetching
+    const fetchUrl = useMemo(() => {
+        const params = new URLSearchParams()
+        if (debouncedSearch) params.set('search', debouncedSearch)
+        params.set('page', page.toString())
+        params.set('limit', limit.toString())
+        return `/api/survey/informant?${params.toString()}`
+    }, [debouncedSearch, page, limit])
+
+    const { data: swrData, error, isLoading, mutate } = useSWR(fetchUrl)
+
+    const informants = swrData?.data || []
+    const total = swrData?.total || 0
+    const totalPages = swrData?.totalPages || 1
 
     // UI Feedback
     const [confirmConfig, setConfirmConfig] = useState<{
@@ -55,35 +67,6 @@ export default function InformantsClient({ userRole, userId }: Props) {
         return () => clearTimeout(timer)
     }, [search])
 
-    // Fetch Data
-    const fetchData = async () => {
-        setLoading(true)
-        try {
-            const params = new URLSearchParams()
-            if (debouncedSearch) params.set('search', debouncedSearch)
-            params.set('page', page.toString())
-            params.set('limit', limit.toString())
-
-            const res = await fetch(`/api/survey/informant?${params.toString()}`)
-            const json = await res.json()
-            if (res.ok) {
-                setInformants(json.data)
-                setTotal(json.total)
-                setTotalPages(json.totalPages)
-            } else {
-                console.error(json.error)
-            }
-        } catch (error) {
-            console.error(error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        fetchData()
-    }, [debouncedSearch, page])
-
     // Handlers
     const handleDelete = (id: string, name: string) => {
         setConfirmConfig({
@@ -97,7 +80,7 @@ export default function InformantsClient({ userRole, userId }: Props) {
                     const res = await fetch(`/api/survey/informant?id=${id}`, { method: 'DELETE' })
                     if (res.ok) {
                         setToast({ show: true, msg: 'ลบข้อมูลสำเร็จ', type: 'success' })
-                        fetchData()
+                        mutate() // Refresh SWR data
                     } else {
                         const json = await res.json()
                         setToast({ show: true, msg: json.error || 'ลบข้อมูลไม่สำเร็จ', type: 'error' })
@@ -158,7 +141,7 @@ export default function InformantsClient({ userRole, userId }: Props) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 text-sm text-slate-700">
-                            {loading ? (
+                            {isLoading ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr key={i} className="animate-pulse">
                                         <td className="p-4"><div className="h-4 bg-slate-100 rounded w-3/4"></div></td>
@@ -177,7 +160,7 @@ export default function InformantsClient({ userRole, userId }: Props) {
                                     </td>
                                 </tr>
                             ) : (
-                                informants.map((item) => (
+                                informants.map((item: Informant) => (
                                     <tr
                                         key={item.info_id}
                                         onClick={() => handleEdit(item)}
@@ -251,7 +234,7 @@ export default function InformantsClient({ userRole, userId }: Props) {
                 {/* Pagination */}
                 <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
                     <button
-                        disabled={page === 1 || loading}
+                        disabled={page === 1 || isLoading}
                         onClick={() => setPage(p => Math.max(1, p - 1))}
                         className="p-2 hover:bg-white rounded-lg disabled:opacity-30 transition-all border border-transparent hover:border-slate-200 hover:shadow-sm"
                     >
@@ -259,7 +242,7 @@ export default function InformantsClient({ userRole, userId }: Props) {
                     </button>
                     <span className="text-sm font-medium text-slate-600">หน้า {page} จาก {totalPages}</span>
                     <button
-                        disabled={page === totalPages || loading}
+                        disabled={page === totalPages || isLoading}
                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                         className="p-2 hover:bg-white rounded-lg disabled:opacity-30 transition-all border border-transparent hover:border-slate-200 hover:shadow-sm"
                     >

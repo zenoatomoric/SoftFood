@@ -1,9 +1,10 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Icon } from '@iconify/react'
 import { useRouter } from 'next/navigation'
 import ConfirmModal from '@/app/components/ConfirmModal'
 import Toast from '@/app/components/Toast'
+import useSWR from 'swr'
 
 interface FoodItem {
     menu_id: string
@@ -42,11 +43,7 @@ interface Props {
 
 export default function MenusClient({ userRole, userId }: Props) {
     const router = useRouter()
-    const [menus, setMenus] = useState<FoodItem[]>([])
-    const [loading, setLoading] = useState(true)
-    const [total, setTotal] = useState(0)
     const [page, setPage] = useState(1)
-    const [totalPages, setTotalPages] = useState(1)
 
     // Filters
     const [search, setSearch] = useState('')
@@ -54,6 +51,23 @@ export default function MenusClient({ userRole, userId }: Props) {
     const [canalFilter, setCanalFilter] = useState('')
     const [categoryFilter, setCategoryFilter] = useState('')
     const [statusFilter, setStatusFilter] = useState('')
+
+    // SWR Data Fetching
+    const fetchUrl = useMemo(() => {
+        const params = new URLSearchParams()
+        if (debouncedSearch) params.set('q', debouncedSearch)
+        if (canalFilter) params.set('canal', canalFilter)
+        if (categoryFilter) params.set('category', categoryFilter)
+        if (statusFilter) params.set('status', statusFilter)
+        params.set('page', page.toString())
+        return `/api/food?${params.toString()}`
+    }, [debouncedSearch, canalFilter, categoryFilter, statusFilter, page])
+
+    const { data: swrData, error, isLoading, mutate } = useSWR(fetchUrl)
+
+    const menus = swrData?.data || []
+    const total = swrData?.total || 0
+    const totalPages = swrData?.totalPages || 1
 
     // Dropdown States
     const [openDropdown, setOpenDropdown] = useState<string | null>(null)
@@ -66,38 +80,17 @@ export default function MenusClient({ userRole, userId }: Props) {
     }>({ isOpen: false, title: '', message: '', type: 'info', onConfirm: () => { } })
 
     useEffect(() => {
-        const timer = setTimeout(() => setDebouncedSearch(search), 500)
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search)
+            setPage(1) // Reset to page 1 on search
+        }, 500)
         return () => clearTimeout(timer)
     }, [search])
 
-    const fetchData = async () => {
-        setLoading(true)
-        try {
-            const params = new URLSearchParams()
-            if (debouncedSearch) params.set('q', debouncedSearch)
-            if (canalFilter) params.set('canal', canalFilter)
-            if (categoryFilter) params.set('category', categoryFilter)
-            if (statusFilter) params.set('status', statusFilter)
-            params.set('page', page.toString())
-            // Normal fetch (not full)
-
-            const res = await fetch(`/api/food?${params.toString()}`)
-            const json = await res.json()
-            if (res.ok) {
-                setMenus(json.data)
-                setTotal(json.total)
-                setTotalPages(json.totalPages)
-            }
-        } catch (error) {
-            console.error(error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
+    // Handle filter changes
     useEffect(() => {
-        fetchData()
-    }, [debouncedSearch, canalFilter, categoryFilter, statusFilter, page])
+        setPage(1)
+    }, [canalFilter, categoryFilter, statusFilter])
 
     const CustomDropdown = ({
         label,
@@ -249,7 +242,7 @@ export default function MenusClient({ userRole, userId }: Props) {
                     const res = await fetch(`/api/food?id=${menuId}`, { method: 'DELETE' })
                     if (res.ok) {
                         setToast({ show: true, msg: 'ลบข้อมูลสำเร็จ', type: 'success' })
-                        fetchData()
+                        mutate() // Refresh SWR data
                     } else {
                         const json = await res.json()
                         setToast({ show: true, msg: json.error || 'ลบข้อมูลไม่สำเร็จ', type: 'error' })
@@ -338,7 +331,7 @@ export default function MenusClient({ userRole, userId }: Props) {
                 </div>
 
                 {/* Content List */}
-                {loading ? (
+                {isLoading ? (
                     <div className="p-4 md:p-6 space-y-4">
                         {[...Array(5)].map((_, i) => <div key={i} className="bg-slate-50 rounded-xl h-20 animate-pulse"></div>)}
                     </div>
@@ -361,7 +354,7 @@ export default function MenusClient({ userRole, userId }: Props) {
                         </div>
 
                         {/* Items */}
-                        {menus.map(menu => (
+                        {menus.map((menu: FoodItem) => (
                             <div
                                 key={menu.menu_id}
                                 className="group relative flex items-center gap-3 md:grid md:grid-cols-12 md:gap-4 p-3 md:px-6 md:py-4 border-b border-slate-50 last:border-0 hover:bg-indigo-50/30 transition-colors"
@@ -401,7 +394,7 @@ export default function MenusClient({ userRole, userId }: Props) {
 
                                 {/* 5. Status (Desktop) */}
                                 <div className="hidden md:flex md:col-span-2 flex-wrap gap-1 content-start">
-                                    {menu.selection_status.length > 0 ? menu.selection_status.map(s => (
+                                    {menu.selection_status.length > 0 ? menu.selection_status.map((s: string) => (
                                         <span key={s} className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded-md border border-indigo-100">{s}</span>
                                     )) : <span className="text-xs text-slate-400 italic">รอคัดเลือก</span>}
                                 </div>

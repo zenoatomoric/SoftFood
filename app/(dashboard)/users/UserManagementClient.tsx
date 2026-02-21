@@ -118,20 +118,23 @@ export default function UserManagementClient({
         switch (role.toLowerCase()) {
             case "admin":
                 return (
-                    <span className="px-3 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
-                        แอดมิน
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                        <Icon icon="solar:shield-user-bold" />
+                        แอดมิน (Admin)
                     </span>
                 );
             case "director":
                 return (
-                    <span className="px-3 py-1 rounded-lg text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
-                        กรรมการ
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                        <Icon icon="solar:user-id-bold" />
+                        กรรมการ (Director)
                     </span>
                 );
             default:
                 return (
-                    <span className="px-3 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700 border border-green-200">
-                        ผู้กรอก
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                        <Icon icon="solar:user-rounded-bold" />
+                        ผู้กรอก (User)
                     </span>
                 );
         }
@@ -518,12 +521,14 @@ export default function UserManagementClient({
                 ) : (
                     users.map((user) => (
                         <div key={user.sv_code} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-4">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <h3 className="font-bold text-slate-900 text-lg">{user.collector_name}</h3>
-                                    <p className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg inline-block mt-1">{user.sv_code}</p>
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-slate-900 text-base sm:text-lg truncate">{user.collector_name}</h3>
+                                    <p className="text-[10px] sm:text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg inline-block mt-1">{user.sv_code}</p>
                                 </div>
-                                {getRoleBadge(user.role)}
+                                <div className="shrink-0">
+                                    {getRoleBadge(user.role)}
+                                </div>
                             </div>
 
                             <div className="space-y-2 text-sm text-slate-600">
@@ -700,61 +705,34 @@ function CustomRoleSelect({
     return (
         <div className="relative">
             <input type="hidden" name={name} value={selected} />
-            <button
-                type="button"
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between bg-slate-50 border-none rounded-xl py-3 px-4 font-medium text-slate-900 focus:ring-2 focus:ring-gray-900/10 transition-all"
-            >
-                <div className="flex items-center gap-3">
-                    <div className={`p-1.5 rounded-lg ${selectedOption.color}`}>
-                        <Icon icon={selectedOption.icon} width="20" />
-                    </div>
-                    <span>{selectedOption.label}</span>
-                </div>
-                <Icon
-                    icon="solar:alt-arrow-down-linear"
-                    width="20"
-                    className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                />
-            </button>
 
-            {isOpen && (
-                <>
-                    <div
-                        className="fixed inset-0 z-30 opacity-0"
-                        onClick={() => setIsOpen(false)}
-                    />
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-40 animate-in fade-in zoom-in-95 duration-200">
-                        {ROLE_OPTIONS.map((option) => (
-                            <button
-                                key={option.value}
-                                type="button"
-                                onClick={() => {
-                                    setSelected(option.value);
-                                    setIsOpen(false);
-                                }}
-                                className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors ${selected === option.value ? "bg-slate-50/80" : ""}`}
-                            >
-                                <div className={`p-1.5 rounded-lg ${option.color}`}>
-                                    <Icon icon={option.icon} width="20" />
-                                </div>
-                                <span
-                                    className={`font-medium ${selected === option.value ? "text-slate-900" : "text-slate-600"}`}
-                                >
-                                    {option.label}
-                                </span>
-                                {selected === option.value && (
-                                    <Icon
-                                        icon="solar:check-circle-bold"
-                                        width="20"
-                                        className="ml-auto text-emerald-500"
-                                    />
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                </>
-            )}
+            {/* Desktop Transition: Hidden on Desktop, Grid on Mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {ROLE_OPTIONS.map((option) => (
+                    <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setSelected(option.value)}
+                        className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all group ${selected === option.value ? "bg-slate-900 border-slate-900 shadow-lg shadow-slate-900/10" : "bg-white border-slate-100 hover:border-slate-200"}`}
+                    >
+                        <div className={`p-2 rounded-xl ${selected === option.value ? "bg-white/10 text-white" : option.color}`}>
+                            <Icon icon={option.icon} width="24" />
+                        </div>
+                        <span className={`text-xs font-bold text-center ${selected === option.value ? "text-white" : "text-slate-600"}`}>
+                            {option.label}
+                        </span>
+                        {selected === option.value && (
+                            <div className="absolute top-2 right-2">
+                                <Icon icon="solar:check-circle-bold" className="text-emerald-400 bg-white rounded-full" />
+                            </div>
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            <p className="mt-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">
+                การเลือกสิทธิ์จะมีผลต่อการเข้าถึงปุ่มต่างๆ ในระบบ
+            </p>
         </div>
     );
 }
