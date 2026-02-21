@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Icon } from "@iconify/react";
 import { createUser, deleteUser, updateUser } from "./actions";
 
@@ -20,6 +20,7 @@ export default function UserManagementClient({
     users: User[];
 }) {
     const [users, setUsers] = useState(initialUsers);
+    const [roleFilter, setRoleFilter] = useState("all");
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(false);
@@ -118,21 +119,21 @@ export default function UserManagementClient({
         switch (role.toLowerCase()) {
             case "admin":
                 return (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 whitespace-nowrap">
                         <Icon icon="solar:shield-user-bold" />
                         แอดมิน (Admin)
                     </span>
                 );
             case "director":
                 return (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 whitespace-nowrap">
                         <Icon icon="solar:user-id-bold" />
                         กรรมการ (Director)
                     </span>
                 );
             default:
                 return (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-green-100 text-green-700 border border-green-200 whitespace-nowrap">
                         <Icon icon="solar:user-rounded-bold" />
                         ผู้กรอก (User)
                     </span>
@@ -140,21 +141,35 @@ export default function UserManagementClient({
         }
     };
 
+    const filteredUsers = useMemo(() => {
+        if (roleFilter === "all") return users;
+        return users.filter((u) => u.role.toLowerCase() === roleFilter.toLowerCase());
+    }, [users, roleFilter]);
+
+    const stats = useMemo(() => {
+        return {
+            all: users.length,
+            admin: users.filter((u) => u.role.toLowerCase() === "admin").length,
+            director: users.filter((u) => u.role.toLowerCase() === "director").length,
+            user: users.filter((u) => u.role.toLowerCase() === "user").length,
+        };
+    }, [users]);
+
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="max-w-[1600px] mx-auto space-y-4 sm:space-y-6 lg:space-y-8 animate-in fade-in duration-500">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
+                <div className="text-center sm:text-left">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">
                         จัดการผู้ใช้งาน
                     </h1>
-                    <p className="text-slate-500 font-medium text-sm sm:text-base">
+                    <p className="text-slate-500 font-medium text-xs sm:text-sm lg:text-base">
                         จัดการบัญชีผู้ใช้ทั้งหมดในระบบ ({users.length} บัญชี)
                     </p>
                 </div>
                 <button
                     onClick={() => setShowAddForm(!showAddForm)}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition-all shadow-lg shadow-gray-900/20 w-full sm:w-auto"
+                    className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-gray-900/20 w-full sm:w-auto"
                 >
                     <Icon
                         icon={
@@ -163,6 +178,49 @@ export default function UserManagementClient({
                         width="20"
                     />
                     {showAddForm ? "ยกเลิก" : "เพิ่มผู้ใช้"}
+                </button>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 bg-slate-100/50 p-1.5 rounded-2xl w-full sm:w-fit overflow-x-auto sm:overflow-visible no-scrollbar">
+                <button
+                    onClick={() => setRoleFilter("all")}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                >
+                    ทั้งหมด
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "all" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>
+                        {stats.all}
+                    </span>
+                </button>
+                <button
+                    onClick={() => setRoleFilter("admin")}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "admin" ? "bg-white text-purple-700 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                >
+                    <Icon icon="solar:shield-user-bold" />
+                    แอดมิน
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "admin" ? "bg-purple-600 text-white" : "bg-slate-200 text-slate-500"}`}>
+                        {stats.admin}
+                    </span>
+                </button>
+                <button
+                    onClick={() => setRoleFilter("director")}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "director" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                >
+                    <Icon icon="solar:user-id-bold" />
+                    กรรมการ
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "director" ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-500"}`}>
+                        {stats.director}
+                    </span>
+                </button>
+                <button
+                    onClick={() => setRoleFilter("user")}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "user" ? "bg-white text-green-700 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                >
+                    <Icon icon="solar:user-rounded-bold" />
+                    ผู้กรอก
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "user" ? "bg-green-600 text-white" : "bg-slate-200 text-slate-500"}`}>
+                        {stats.user}
+                    </span>
                 </button>
             </div>
 
@@ -177,10 +235,15 @@ export default function UserManagementClient({
 
             {/* Add User Form */}
             {showAddForm && (
-                <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-100 animate-in slide-in-from-top-4">
-                    <h2 className="text-xl font-black text-slate-900 mb-6">
-                        เพิ่มผู้ใช้ใหม่
-                    </h2>
+                <div className="bg-white p-5 sm:p-8 lg:p-10 rounded-3xl shadow-sm border border-slate-100 animate-in slide-in-from-top-4 overflow-hidden">
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center">
+                            <Icon icon="solar:user-plus-bold" width="20" />
+                        </div>
+                        <h2 className="text-xl lg:text-2xl font-black text-slate-900 uppercase tracking-tight">
+                            เพิ่มผู้ใช้ใหม่
+                        </h2>
+                    </div>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
@@ -271,13 +334,13 @@ export default function UserManagementClient({
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gray-900 text-white py-4 rounded-xl font-bold shadow-lg shadow-gray-900/10 hover:bg-black transition-all flex justify-center items-center gap-2 disabled:opacity-50"
+                            className="w-full bg-gray-900 text-white py-4 lg:py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-gray-900/10 hover:bg-black transition-all hover:scale-[1.01] active:scale-[0.99] flex justify-center items-center gap-3 disabled:opacity-50 mt-4"
                         >
                             {loading ? (
                                 "กำลังบันทึก..."
                             ) : (
                                 <>
-                                    <Icon icon="solar:user-plus-bold" width="20" /> สร้างบัญชีใหม่
+                                    <Icon icon="solar:user-plus-bold" width="22" /> สร้างบัญชีใหม่
                                 </>
                             )}
                         </button>
@@ -507,67 +570,89 @@ export default function UserManagementClient({
                 </div>
             )}
 
-            {/* Mobile Card View */}
-            <div className="block lg:hidden space-y-4">
-                {users.length === 0 ? (
-                    <div className="bg-white rounded-3xl p-12 text-center text-slate-400 border border-slate-100">
+            {/* Mobile/Tablet Card View */}
+            <div className="block lg:hidden">
+                {filteredUsers.length === 0 ? (
+                    <div className="bg-white rounded-3xl p-16 text-center text-slate-400 border border-slate-100">
                         <Icon
                             icon="solar:user-cross-bold-duotone"
-                            width="48"
-                            className="mx-auto mb-2 opacity-50"
+                            width="64"
+                            className="mx-auto mb-4 opacity-30"
                         />
-                        <p className="font-medium">ยังไม่มีผู้ใช้ในระบบ</p>
+                        <p className="font-bold text-lg">ไม่พบผู้ใช้ในหมวดหมู่นี้</p>
                     </div>
                 ) : (
-                    users.map((user) => (
-                        <div key={user.sv_code} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-4">
-                            <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                    <h3 className="font-bold text-slate-900 text-base sm:text-lg truncate">{user.collector_name}</h3>
-                                    <p className="text-[10px] sm:text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg inline-block mt-1">{user.sv_code}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {filteredUsers.map((user) => (
+                            <div
+                                key={user.sv_code}
+                                className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-4"
+                            >
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                        <h3 className="font-bold text-slate-900 text-base sm:text-lg truncate">
+                                            {user.collector_name}
+                                        </h3>
+                                        <p className="text-[10px] sm:text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg inline-block mt-1">
+                                            {user.sv_code}
+                                        </p>
+                                    </div>
+                                    <div className="shrink-0">
+                                        {getRoleBadge(user.role)}
+                                    </div>
                                 </div>
-                                <div className="shrink-0">
-                                    {getRoleBadge(user.role)}
-                                </div>
-                            </div>
 
-                            <div className="space-y-2 text-sm text-slate-600">
-                                <div className="flex items-center gap-2">
-                                    <Icon icon="solar:diploma-bold-duotone" className="text-slate-400" />
-                                    <span>
-                                        {user.faculty && user.major
-                                            ? `${user.faculty} / ${user.major}`
-                                            : user.faculty || user.major || "-"}
-                                    </span>
+                                <div className="space-y-2 text-sm text-slate-600">
+                                    <div className="flex items-center gap-2">
+                                        <Icon
+                                            icon="solar:diploma-bold-duotone"
+                                            className="text-slate-400"
+                                        />
+                                        <span>
+                                            {user.faculty && user.major
+                                                ? `${user.faculty} / ${user.major}`
+                                                : user.faculty || user.major || "-"}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Icon
+                                            icon="solar:phone-bold-duotone"
+                                            className="text-slate-400"
+                                        />
+                                        <span>{user.phone || "-"}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Icon
+                                            icon="solar:calendar-bold-duotone"
+                                            className="text-slate-400"
+                                        />
+                                        <span>
+                                            {new Date(user.created_at).toLocaleDateString(
+                                                "th-TH",
+                                            )}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Icon icon="solar:phone-bold-duotone" className="text-slate-400" />
-                                    <span>{user.phone || "-"}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Icon icon="solar:calendar-bold-duotone" className="text-slate-400" />
-                                    <span>{new Date(user.created_at).toLocaleDateString("th-TH")}</span>
-                                </div>
-                            </div>
 
-                            <div className="flex gap-2 pt-2 border-t border-slate-50">
-                                <button
-                                    onClick={() => setEditingUser(user)}
-                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors font-bold text-sm"
-                                >
-                                    <Icon icon="solar:pen-new-square-bold" width="18" />
-                                    แก้ไข
-                                </button>
-                                <button
-                                    onClick={() => requestDelete(user)}
-                                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors font-bold text-sm"
-                                >
-                                    <Icon icon="solar:trash-bin-trash-bold" width="18" />
-                                    ลบ
-                                </button>
+                                <div className="flex gap-2 pt-2 border-t border-slate-50">
+                                    <button
+                                        onClick={() => setEditingUser(user)}
+                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors font-bold text-sm"
+                                    >
+                                        <Icon icon="solar:pen-new-square-bold" width="18" />
+                                        แก้ไข
+                                    </button>
+                                    <button
+                                        onClick={() => requestDelete(user)}
+                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors font-bold text-sm"
+                                    >
+                                        <Icon icon="solar:trash-bin-trash-bold" width="18" />
+                                        ลบ
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))
+                        ))}
+                    </div>
                 )}
             </div>
 
@@ -586,10 +671,10 @@ export default function UserManagementClient({
                                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
                                     คณะ/สาขา
                                 </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider min-w-[120px]">
                                     เบอร์โทร
                                 </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider min-w-[140px]">
                                     สิทธิ์
                                 </th>
                                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -601,7 +686,7 @@ export default function UserManagementClient({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {users.length === 0 ? (
+                            {filteredUsers.length === 0 ? (
                                 <tr>
                                     <td
                                         colSpan={7}
@@ -612,11 +697,13 @@ export default function UserManagementClient({
                                             width="48"
                                             className="mx-auto mb-2 opacity-50"
                                         />
-                                        <p className="font-medium">ยังไม่มีผู้ใช้ในระบบ</p>
+                                        <p className="font-medium">
+                                            ไม่พบผู้ใช้ในหมวดหมู่นี้
+                                        </p>
                                     </td>
                                 </tr>
                             ) : (
-                                users.map((user) => (
+                                filteredUsers.map((user) => (
                                     <tr
                                         key={user.sv_code}
                                         className="hover:bg-slate-50 transition-colors"
@@ -635,9 +722,13 @@ export default function UserManagementClient({
                                         <td className="px-6 py-4 text-sm text-slate-600">
                                             {user.phone || "-"}
                                         </td>
-                                        <td className="px-6 py-4">{getRoleBadge(user.role)}</td>
+                                        <td className="px-6 py-4">
+                                            {getRoleBadge(user.role)}
+                                        </td>
                                         <td className="px-6 py-4 text-sm text-slate-600">
-                                            {new Date(user.created_at).toLocaleDateString("th-TH")}
+                                            {new Date(user.created_at).toLocaleDateString(
+                                                "th-TH",
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
@@ -645,14 +736,20 @@ export default function UserManagementClient({
                                                     onClick={() => setEditingUser(user)}
                                                     className="inline-flex items-center gap-1 px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-medium text-sm"
                                                 >
-                                                    <Icon icon="solar:pen-new-square-bold" width="18" />
+                                                    <Icon
+                                                        icon="solar:pen-new-square-bold"
+                                                        width="18"
+                                                    />
                                                     แก้ไข
                                                 </button>
                                                 <button
                                                     onClick={() => requestDelete(user)}
                                                     className="inline-flex items-center gap-1 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium text-sm"
                                                 >
-                                                    <Icon icon="solar:trash-bin-trash-bold" width="18" />
+                                                    <Icon
+                                                        icon="solar:trash-bin-trash-bold"
+                                                        width="18"
+                                                    />
                                                     ลบ
                                                 </button>
                                             </div>
@@ -697,10 +794,6 @@ function CustomRoleSelect({
     defaultValue?: string;
 }) {
     const [selected, setSelected] = useState(defaultValue);
-    const [isOpen, setIsOpen] = useState(false);
-
-    const selectedOption =
-        ROLE_OPTIONS.find((opt) => opt.value === selected) || ROLE_OPTIONS[0];
 
     return (
         <div className="relative">
@@ -715,15 +808,22 @@ function CustomRoleSelect({
                         onClick={() => setSelected(option.value)}
                         className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all group ${selected === option.value ? "bg-slate-900 border-slate-900 shadow-lg shadow-slate-900/10" : "bg-white border-slate-100 hover:border-slate-200"}`}
                     >
-                        <div className={`p-2 rounded-xl ${selected === option.value ? "bg-white/10 text-white" : option.color}`}>
+                        <div
+                            className={`p-2 rounded-xl ${selected === option.value ? "bg-white/10 text-white" : option.color}`}
+                        >
                             <Icon icon={option.icon} width="24" />
                         </div>
-                        <span className={`text-xs font-bold text-center ${selected === option.value ? "text-white" : "text-slate-600"}`}>
+                        <span
+                            className={`text-xs font-bold text-center ${selected === option.value ? "text-white" : "text-slate-600"}`}
+                        >
                             {option.label}
                         </span>
                         {selected === option.value && (
                             <div className="absolute top-2 right-2">
-                                <Icon icon="solar:check-circle-bold" className="text-emerald-400 bg-white rounded-full" />
+                                <Icon
+                                    icon="solar:check-circle-bold"
+                                    className="text-emerald-400 bg-white rounded-full"
+                                />
                             </div>
                         )}
                     </button>

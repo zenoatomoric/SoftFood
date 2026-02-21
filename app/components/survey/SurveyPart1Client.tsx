@@ -75,6 +75,109 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
         type: 'success' as 'success' | 'error' | 'info' | 'warning'
     })
 
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+
+    const CustomSelect = ({
+        label,
+        value,
+        onChange,
+        options,
+        disabled,
+        placeholder,
+        id,
+        required,
+        accentColor = "indigo"
+    }: {
+        label: string,
+        value: string,
+        onChange: (val: string) => void,
+        options: { label: string, value: string }[],
+        disabled?: boolean,
+        placeholder?: string,
+        id: string,
+        required?: boolean,
+        accentColor?: "indigo" | "amber" | "slate"
+    }) => {
+        const isOpen = openDropdown === id
+        const selectedOption = options.find(o => o.value === value)
+
+        const colors = {
+            indigo: {
+                bg: "bg-indigo-50/50",
+                border: "border-indigo-100",
+                focusBorder: "focus:border-indigo-500",
+                ring: "focus:ring-indigo-50/50",
+                text: "text-indigo-700",
+                hoverBorder: "hover:border-indigo-200",
+                activeBg: "bg-indigo-50",
+                activeText: "text-indigo-600"
+            },
+            amber: {
+                bg: "bg-amber-50/50",
+                border: "border-amber-100",
+                focusBorder: "focus:border-amber-500",
+                ring: "focus:ring-amber-50/50",
+                text: "text-amber-700",
+                hoverBorder: "hover:border-amber-200",
+                activeBg: "bg-amber-50",
+                activeText: "text-amber-600"
+            },
+            slate: {
+                bg: "bg-slate-50",
+                border: "border-slate-100",
+                focusBorder: "focus:border-indigo-500",
+                ring: "focus:ring-indigo-50/50",
+                text: "text-slate-800",
+                hoverBorder: "hover:border-indigo-200",
+                activeBg: "bg-indigo-50",
+                activeText: "text-indigo-600"
+            }
+        }[accentColor]
+
+        return (
+            <div className="relative">
+                <div
+                    onClick={() => !disabled && setOpenDropdown(isOpen ? null : id)}
+                    className={`group w-full ${colors.bg} border-2 ${isOpen ? colors.focusBorder + ' ring-4 ' + colors.ring : colors.border} rounded-2xl px-5 py-4 ${colors.text} font-bold outline-none transition-all duration-300 flex items-center justify-between cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-100 text-slate-400' : colors.hoverBorder + ' hover:bg-white hover:shadow-sm'}`}
+                >
+                    <span className={value ? colors.text : 'text-slate-400 font-medium'}>
+                        {selectedOption ? selectedOption.label : placeholder}
+                    </span>
+                    <Icon
+                        icon="solar:alt-arrow-down-linear"
+                        className={`text-2xl transition-all duration-300 ${isOpen ? '-rotate-180 ' + colors.activeText : 'text-slate-400'}`}
+                    />
+                </div>
+
+                {isOpen && (
+                    <>
+                        <div className="fixed inset-0 z-[60]" onClick={() => setOpenDropdown(null)}></div>
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-[70] animate-in fade-in zoom-in-95 duration-200">
+                            <div className="max-h-60 overflow-y-auto py-2 px-2 space-y-1">
+                                {options.map(opt => (
+                                    <div
+                                        key={opt.value}
+                                        onClick={() => { onChange(opt.value); setOpenDropdown(null) }}
+                                        className={`px-4 py-3 rounded-xl text-sm font-bold cursor-pointer transition-all flex items-center justify-between
+                                        ${value === opt.value ? colors.activeBg + ' ' + colors.activeText : 'text-slate-600 hover:bg-slate-50'}`}
+                                    >
+                                        <span>{opt.label}</span>
+                                        {value === opt.value && <Icon icon="solar:check-circle-bold" className="text-lg" />}
+                                    </div>
+                                ))}
+                                {options.length === 0 && (
+                                    <div className="px-4 py-8 text-center text-slate-400 text-sm font-medium italic">
+                                        ไม่มีตัวเลือก...
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+        )
+    }
+
     // Capture canal_zone from URL if it's a new survey
     useEffect(() => {
         const canalParam = searchParams.get('canal')
@@ -463,47 +566,33 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                 {/* เขต */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">เขต <span className="text-red-500">*</span></label>
-                                    <div className="relative group">
-                                        <select
-                                            value={addressFields.district}
-                                            onChange={(e) => handleAddressChange('district', e.target.value)}
-                                            disabled={readOnly || districts.length === 0}
-                                            required
-                                            className="w-full bg-slate-50 border-2 border-slate-100 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50/50 rounded-2xl px-5 py-4 text-slate-800 font-bold outline-none transition-all duration-300 appearance-none cursor-pointer hover:bg-white hover:border-indigo-200 hover:shadow-sm disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed peer"
-                                        >
-                                            <option value="" disabled className="text-slate-400">-- เลือกเขต --</option>
-                                            {districts.map((d, idx) => (
-                                                <option key={idx} value={d.name} className="text-slate-800 font-medium">{d.name}</option>
-                                            ))}
-                                        </select>
-                                        {/* ไอคอนลูกศร ที่จะตอบสนองต่อ Select (peer) */}
-                                        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 peer-focus:text-indigo-600 peer-hover:text-indigo-500 transition-all duration-300 peer-focus:-rotate-180 peer-disabled:text-slate-300">
-                                            <Icon icon="solar:alt-arrow-down-bold-duotone" className="text-2xl" />
-                                        </div>
-                                    </div>
+                                    <CustomSelect
+                                        id="district"
+                                        label="เขต"
+                                        placeholder="-- เลือกเขต --"
+                                        value={addressFields.district}
+                                        options={districts.map(d => ({ label: d.name, value: d.name }))}
+                                        onChange={(val) => handleAddressChange('district', val)}
+                                        disabled={readOnly || districts.length === 0}
+                                        required
+                                        accentColor="slate"
+                                    />
                                 </div>
 
                                 {/* แขวง */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">แขวง <span className="text-red-500">*</span></label>
-                                    <div className="relative group">
-                                        <select
-                                            value={addressFields.subDistrict}
-                                            onChange={(e) => handleAddressChange('subDistrict', e.target.value)}
-                                            disabled={readOnly || !addressFields.district}
-                                            required
-                                            className="w-full bg-slate-50 border-2 border-slate-100 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50/50 rounded-2xl px-5 py-4 text-slate-800 font-bold outline-none transition-all duration-300 appearance-none cursor-pointer hover:bg-white hover:border-indigo-200 hover:shadow-sm disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed peer"
-                                        >
-                                            <option value="" disabled className="text-slate-400">-- เลือกแขวง --</option>
-                                            {subDistricts.map((s, idx) => (
-                                                <option key={idx} value={s.name} className="text-slate-800 font-medium">{s.name}</option>
-                                            ))}
-                                        </select>
-                                        {/* ไอคอนลูกศร ที่จะตอบสนองต่อ Select (peer) */}
-                                        <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 peer-focus:text-indigo-600 peer-hover:text-indigo-500 transition-all duration-300 peer-focus:-rotate-180 peer-disabled:text-slate-300">
-                                            <Icon icon="solar:alt-arrow-down-bold-duotone" className="text-2xl" />
-                                        </div>
-                                    </div>
+                                    <CustomSelect
+                                        id="subDistrict"
+                                        label="แขวง"
+                                        placeholder="-- เลือกแขวง --"
+                                        value={addressFields.subDistrict}
+                                        options={subDistricts.map(s => ({ label: s.name, value: s.name }))}
+                                        onChange={(val) => handleAddressChange('subDistrict', val)}
+                                        disabled={readOnly || !addressFields.district}
+                                        required
+                                        accentColor="slate"
+                                    />
                                 </div>
 
                                 {/* รหัสไปรษณีย์ */}
@@ -513,27 +602,40 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                         className="w-full bg-indigo-50/50 border-2 border-indigo-50 rounded-2xl px-5 py-4 text-indigo-600 font-black tracking-widest focus:outline-none cursor-not-allowed placeholder:text-indigo-300" />
                                 </div>
                             </div>
-
-                            {/* รายละเอียดเพิ่มเติม */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">รายละเอียด (บ้านเลขที่, ซอย, ถนน) <span className="text-red-500">*</span></label>
-                                <textarea
-                                    value={addressFields.detail}
-                                    onChange={(e) => handleAddressChange('detail', e.target.value)}
-                                    rows={2}
-                                    disabled={readOnly}
-                                    required
-                                    placeholder="เช่น 123/4 หมู่ 5 ซอยสุขุมวิท 1..."
-                                    className="w-full text-lg font-medium text-slate-800 border-2 border-slate-100 focus:border-indigo-500 rounded-2xl p-4 outline-none bg-slate-50 resize-y placeholder:text-slate-300 transition-colors disabled:text-slate-500 disabled:bg-slate-100"
-                                ></textarea>
-                            </div>
                         </div>
 
+                        {/* รายละเอียดเพิ่มเติม */}
                         <div className="space-y-2">
-                            <label className="text-base font-bold text-slate-500 uppercase">พื้นที่คลอง</label>
-                            <div className="text-lg font-bold text-indigo-700 bg-indigo-50 px-4 py-4 rounded-2xl border border-indigo-100 w-full sm:w-fit flex items-center justify-center sm:justify-start gap-2">
-                                <Icon icon="solar:map-point-bold-duotone" className="text-2xl text-indigo-500" />
-                                {formData.canal_zone || 'ไม่ระบุ'}
+                            <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">รายละเอียด (บ้านเลขที่, ซอย, ถนน) <span className="text-red-500">*</span></label>
+                            <textarea
+                                value={addressFields.detail}
+                                onChange={(e) => handleAddressChange('detail', e.target.value)}
+                                rows={2}
+                                disabled={readOnly}
+                                required
+                                placeholder="เช่น 123/4 หมู่ 5 ซอยสุขุมวิท 1..."
+                                className="w-full text-lg font-medium text-slate-800 border-2 border-slate-100 focus:border-indigo-500 rounded-2xl p-4 outline-none bg-slate-50 resize-y placeholder:text-slate-300 transition-colors disabled:text-slate-500 disabled:bg-slate-100"
+                            ></textarea>
+                        </div>
+
+                        <div className="space-y-4">
+                            <label className="text-base font-bold text-slate-500 uppercase flex items-center gap-2">พื้นที่คลอง <span className="text-red-500">*</span></label>
+                            <div className="max-w-md">
+                                <CustomSelect
+                                    id="canal_zone"
+                                    label="พื้นที่คลอง"
+                                    placeholder="-- เลือกพื้นที่คลอง --"
+                                    value={formData.canal_zone}
+                                    options={[
+                                        { label: 'บางเขน', value: 'บางเขน' },
+                                        { label: 'เปรมประชากร', value: 'เปรมประชากร' },
+                                        { label: 'ลาดพร้าว', value: 'ลาดพร้าว' }
+                                    ]}
+                                    onChange={(val) => setFormData(prev => ({ ...prev, canal_zone: val }))}
+                                    disabled={readOnly}
+                                    required
+                                    accentColor="indigo"
+                                />
                             </div>
                         </div>
 
@@ -724,6 +826,6 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                     </div>
                 )}
             </form>
-        </div>
+        </div >
     )
 }
