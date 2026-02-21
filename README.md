@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Soft Power Food - Data Collection System
 
-## Getting Started
+A comprehensive web application for documenting, managing, and preserving Thai cultural food data along the canal zones (Khlong). Designed with a focus on ease of use, data integrity, and accessibility for elderly users.
 
-First, run the development server:
+## 🚀 Key Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 1. 📋 7-Part Survey System
+A guided data collection flow to capture every detail of cultural food:
+- **Part 1: Informant Info**: Personal details of theปราชญ์ (experts/informants) with PDPA consent management.
+- **Part 2-5: Menu & Ingredients**: Detailed food categorizations, ingredients (with creatable list), and preparation steps.
+- **Part 6: Story & Legacy**: Documenting the heritage and unique stories behind each dish.
+- **Part 7: Photos**: Image gallery with client-side compression for efficient storage.
+
+### 2. 🗃️ Management Dashboards
+- **Food Inventory**: Search, filter (by area, category, status), edit, or delete menu entries.
+- **Informant Management**: Directory of all contributing experts and their associated menus.
+- **User Management**: Role-based access control (Admin, Director, Surveyor).
+
+### 3. 📊 Data Portability
+- **CSV Export**: Export all survey data (including ingredients, steps, and stories) into Excel-compatible reports for analysis.
+
+### 4. 👵 Accessibility & UX
+- **Warm Paper Theme**: A soft cream-based color palette (`#fdfbf7`) designed to reduce glare and eye strain for elderly users.
+- **Outdoor Visibility**: Shifted color scales for high-contrast readability in sunlight.
+- **Image Optimization**: Automatic client-side compression to handle large photo uploads seamlessly.
+
+## 🛠️ Tech Stack
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+- **Database / Auth / Storage**: [Supabase](https://supabase.com/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Icons**: [Solar Icons](https://iconify.design/icon-sets/solar/) via [Iconify](https://iconify.design/)
+- **Language**: TypeScript
+
+## ⚙️ Environment Variables
+Required variables in `.env.local`:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+NEXTAUTH_SECRET=your_auth_secret
+NEXTAUTH_URL=http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Development
+```bash
+# Install dependencies
+npm install
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Run development server
+npm run dev
+```
