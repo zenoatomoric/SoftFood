@@ -46,7 +46,7 @@ export async function GET(request: Request) {
 export async function DELETE(request: Request) {
     try {
         const session = await auth()
-        const role = session?.user?.role
+        const role = (session?.user?.role || '').toLowerCase().trim()
 
         if (role !== 'admin' && role !== 'director') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

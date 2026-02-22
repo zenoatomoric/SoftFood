@@ -1,7 +1,12 @@
 import { Suspense } from 'react'
 import SurveyPart1Client from '@/app/components/survey/SurveyPart1Client'
+import { auth } from '@/auth'
 
-export default function SurveyPart1Page() {
+export default async function SurveyPart1Page() {
+    const session = await auth()
+    const userRole = session?.user?.role || 'user'
+    const userName = session?.user?.name || ''
+
     return (
         <div className="max-w-4xl mx-auto py-8">
             <header className="mb-8">
@@ -10,7 +15,7 @@ export default function SurveyPart1Page() {
             </header>
 
             <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
-                <SurveyPart1Client />
+                <SurveyPart1Client userRole={userRole} userName={userName} />
             </Suspense>
         </div>
     )

@@ -15,6 +15,9 @@ interface Informant {
     age: number
     address_full: string
     created_at: string
+    last_edited_at?: string
+    creator_name?: string
+    editor_name?: string
 }
 
 interface Props {
@@ -30,11 +33,13 @@ export default function InformantsClient({ userRole, userId }: Props) {
     // Filters
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
+    const [mineFilter, setMineFilter] = useState(false)
 
     // SWR Data Fetching
     const fetchUrl = useMemo(() => {
         const params = new URLSearchParams()
         if (debouncedSearch) params.set('search', debouncedSearch)
+        if (mineFilter) params.set('mine', 'true')
         params.set('page', page.toString())
         params.set('limit', limit.toString())
         return `/api/survey/informant?${params.toString()}`
@@ -94,6 +99,7 @@ export default function InformantsClient({ userRole, userId }: Props) {
 
     // Navigation to Detail Page
     const handleEdit = (info: Informant) => {
+        if (userRole !== 'admin' && userRole !== 'director') return
         router.push(`/informants/${info.info_id}`)
     }
 
@@ -111,6 +117,23 @@ export default function InformantsClient({ userRole, userId }: Props) {
                     </h1>
                     <p className="text-slate-500 text-sm mt-1">จัดการข้อมูลผู้ให้ข้อมูลและปราชญ์ชาวบ้าน</p>
                 </div>
+
+                {(userRole === 'admin' || userRole === 'director') && (
+                    <div className="flex bg-slate-100 p-1 rounded-xl">
+                        <button
+                            onClick={() => setMineFilter(false)}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${!mineFilter ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            <Icon icon="solar:globus-bold" /> ทั้งหมด
+                        </button>
+                        <button
+                            onClick={() => setMineFilter(true)}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${mineFilter ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            <Icon icon="solar:user-circle-bold" /> ของฉัน
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Content */}
@@ -133,29 +156,40 @@ export default function InformantsClient({ userRole, userId }: Props) {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-50 text-slate-600 text-xs uppercase font-bold tracking-wider">
-                                <th className="p-4 border-b border-slate-100">รหัส / ชื่อ-นามสกุล</th>
-                                <th className="p-4 border-b border-slate-100 hidden md:table-cell">ข้อมูลติดต่อ</th>
-                                <th className="p-4 border-b border-slate-100 hidden lg:table-cell">ที่อยู่</th>
-                                <th className="p-4 border-b border-slate-100 text-right">จัดการ</th>
+                            <tr className="bg-slate-50 text-slate-600 text-[10px] md:text-xs uppercase font-black tracking-widest border-b border-slate-100">
+                                <th className="p-4 whitespace-nowrap">ID / รหัส</th>
+                                <th className="p-4">ชื่อ-นามสกุล</th>
+                                <th className="p-4 hidden lg:table-cell">พื้นที่ / เขต</th>
+                                <th className="p-4 hidden md:table-cell">เบอร์โทรศัพท์</th>
+                                <th className="p-4 hidden md:table-cell">ผู้เก็บข้อมูล</th>
+                                <th className="p-4 hidden xl:table-cell">ผู้แก้ไขล่าสุด</th>
+                                <th className="p-4 hidden sm:table-cell">วันที่บันทึก</th>
+                                <th className="p-4 text-right">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 text-sm text-slate-700">
                             {isLoading ? (
-                                Array.from({ length: 5 }).map((_, i) => (
+                                Array.from({ length: 8 }).map((_, i) => (
                                     <tr key={i} className="animate-pulse">
-                                        <td className="p-4"><div className="h-4 bg-slate-100 rounded w-3/4"></div></td>
-                                        <td className="p-4 hidden md:table-cell"><div className="h-4 bg-slate-100 rounded w-1/2"></div></td>
-                                        <td className="p-4 hidden lg:table-cell"><div className="h-4 bg-slate-100 rounded w-2/3"></div></td>
-                                        <td className="p-4 text-right"><div className="h-8 w-20 bg-slate-100 rounded ml-auto"></div></td>
+                                        <td className="p-4"><div className="h-4 bg-slate-100 rounded w-16"></div></td>
+                                        <td className="p-4"><div className="h-4 bg-slate-100 rounded w-32"></div></td>
+                                        <td className="p-4 hidden lg:table-cell"><div className="h-4 bg-slate-100 rounded w-24"></div></td>
+                                        <td className="p-4 hidden md:table-cell"><div className="h-4 bg-slate-100 rounded w-28"></div></td>
+                                        <td className="p-4 hidden md:table-cell"><div className="h-4 bg-slate-100 rounded w-24"></div></td>
+                                        <td className="p-4 hidden xl:table-cell"><div className="h-4 bg-slate-100 rounded w-24"></div></td>
+                                        <td className="p-4 hidden sm:table-cell"><div className="h-4 bg-slate-100 rounded w-20"></div></td>
+                                        <td className="p-4 text-right"><div className="h-8 w-16 bg-slate-100 rounded ml-auto"></div></td>
                                     </tr>
                                 ))
                             ) : informants.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="p-8 text-center text-slate-400">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Icon icon="solar:database-off-linear" className="text-4xl opacity-50" />
-                                            <span>ไม่พบข้อมูล</span>
+                                    <td colSpan={8} className="p-12 text-center text-slate-400">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center">
+                                                <Icon icon="solar:database-off-bold-duotone" className="text-4xl opacity-20" />
+                                            </div>
+                                            <span className="font-bold">ไม่พบข้อมูลผู้ให้ข้อมูล</span>
+                                            <p className="text-xs max-w-xs">ลองเปลี่ยนคำค้นหา หรือกรองข้อมูลใหม่ดูอีกครั้งครับ</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -164,63 +198,113 @@ export default function InformantsClient({ userRole, userId }: Props) {
                                     <tr
                                         key={item.info_id}
                                         onClick={() => handleEdit(item)}
-                                        className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                                        className={`hover:bg-indigo-50/30 transition-all duration-200 group border-l-4 border-l-transparent ${userRole === 'admin' || userRole === 'director' ? 'cursor-pointer hover:border-l-indigo-500' : 'cursor-default'}`}
                                     >
-                                        {/* Name & ID */}
-                                        <td className="p-4 align-top">
-                                            <div className="font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">{item.full_name}</div>
-                                            <div className="text-xs text-slate-400 font-mono mt-0.5 bg-slate-100 px-1.5 py-0.5 rounded w-fit">
+                                        {/* ID Column */}
+                                        <td className="p-4">
+                                            <div className="text-[11px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100 w-fit tabular-nums">
                                                 {item.friendly_id || 'NO-ID'}
                                             </div>
-                                            <div className="md:hidden text-xs text-slate-500 mt-1 flex flex-col gap-0.5">
-                                                <span>{item.phone || '-'}</span>
-                                                <span className="truncate max-w-[150px]">{item.canal_zone}</span>
-                                            </div>
                                         </td>
 
-                                        {/* Contact */}
-                                        <td className="p-4 align-top hidden md:table-cell">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-1.5 text-slate-600">
-                                                    <Icon icon="solar:phone-linear" />
-                                                    <span>{item.phone || '-'}</span>
-                                                </div>
-                                                <div className="text-xs text-slate-400">อายุ: {item.age || '-'} ปี</div>
+                                        {/* Name Column */}
+                                        <td className="p-4">
+                                            <div className="font-bold text-slate-800 group-hover:text-indigo-900 transition-colors truncate max-w-[150px] md:max-w-[200px]">
+                                                {item.full_name}
                                             </div>
-                                        </td>
-
-                                        {/* Address */}
-                                        <td className="p-4 align-top hidden lg:table-cell max-w-xs">
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-1.5 font-bold text-indigo-600">
-                                                    <Icon icon="solar:map-point-bold" />
-                                                    <span>{item.canal_zone || '-'}</span>
+                                            {/* Mobile-only info summary */}
+                                            <div className="flex flex-col gap-0.5 mt-1 md:hidden">
+                                                <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                                                    <Icon icon="solar:phone-bold" className="text-slate-300" />
+                                                    {item.phone || '-'}
                                                 </div>
-                                                <div className="text-xs text-slate-500 line-clamp-2" title={item.address_full}>
-                                                    {item.address_full || '-'}
+                                                <div className="flex items-center gap-1.5 text-[10px] text-indigo-500 font-bold">
+                                                    <Icon icon="solar:user-bold" className="text-indigo-300" />
+                                                    {item.creator_name || 'ไม่ระบุ'}
                                                 </div>
                                             </div>
                                         </td>
 
-                                        {/* Actions */}
-                                        <td className="p-4 align-top text-right" onClick={(e) => e.stopPropagation()}>
-                                            <div className="flex justify-end gap-2">
-                                                <button
-                                                    onClick={() => handleEdit(item)}
-                                                    className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                                                    title="ดูรายละเอียด / แก้ไข"
-                                                >
-                                                    <Icon icon="solar:pen-new-square-bold" className="text-xl" />
-                                                </button>
+                                        {/* Area Column */}
+                                        <td className="p-4 hidden lg:table-cell">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                                                <span className="font-medium text-slate-600">คลอง{item.canal_zone || '-'}</span>
+                                            </div>
+                                        </td>
 
+                                        {/* Phone Column */}
+                                        <td className="p-4 hidden md:table-cell">
+                                            <div className="flex items-center gap-1.5 text-slate-600 font-medium whitespace-nowrap">
+                                                <Icon icon="solar:phone-linear" className="text-slate-400" />
+                                                {item.phone || '-'}
+                                            </div>
+                                        </td>
+
+                                        {/* Creator Column */}
+                                        <td className="p-4 hidden md:table-cell">
+                                            <div className="flex items-center gap-2 group/creator relative">
+                                                <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100 shrink-0">
+                                                    <Icon icon="solar:user-bold" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="text-xs font-bold text-slate-800 truncate" title={item.creator_name}>
+                                                        {item.creator_name || 'ไม่ระบุ'}
+                                                    </div>
+                                                    <div className="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">Collector</div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        {/* Editor Column */}
+                                        <td className="p-4 hidden xl:table-cell">
+                                            {item.editor_name ? (
+                                                <div className="flex items-center gap-2 group/editor relative">
+                                                    <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100 shrink-0">
+                                                        <Icon icon="solar:pen-bold" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-bold text-slate-800 truncate" title={item.editor_name}>
+                                                            {item.editor_name}
+                                                        </div>
+                                                        <div className="text-[9px] font-black text-amber-500 uppercase tracking-tighter">Editor</div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-slate-300 italic">ไม่มีข้อมูลการแก้ไข</span>
+                                            )}
+                                        </td>
+
+                                        {/* Creation Date Column */}
+                                        <td className="p-4 hidden sm:table-cell">
+                                            <div className="flex flex-col leading-tight">
+                                                <div className="text-xs font-bold text-slate-600 whitespace-nowrap">
+                                                    {new Date(item.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })}
+                                                </div>
+                                                <div className="text-[10px] text-slate-400 font-medium">เมื่อวันที่บันทึก</div>
+                                            </div>
+                                        </td>
+
+                                        {/* Actions Column */}
+                                        <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex justify-end gap-1">
                                                 {(userRole === 'admin' || userRole === 'director') && (
-                                                    <button
-                                                        onClick={() => handleDelete(item.info_id, item.full_name)}
-                                                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="ลบข้อมูล"
-                                                    >
-                                                        <Icon icon="solar:trash-bin-trash-bold" className="text-xl" />
-                                                    </button>
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleEdit(item)}
+                                                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all shadow-none hover:shadow-sm border border-transparent hover:border-indigo-100"
+                                                            title="แก้ไขข้อมูล"
+                                                        >
+                                                            <Icon icon="solar:pen-new-square-bold" className="text-xl" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(item.info_id, item.full_name)}
+                                                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-white rounded-lg transition-all shadow-none hover:shadow-sm border border-transparent hover:border-red-100"
+                                                            title="ลบข้อมูล"
+                                                        >
+                                                            <Icon icon="solar:trash-bin-trash-bold" className="text-xl" />
+                                                        </button>
+                                                    </>
                                                 )}
                                             </div>
                                         </td>

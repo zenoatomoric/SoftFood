@@ -1,50 +1,114 @@
-# Soft Power Food - Data Collection System
+# 🍛 Soft Power Food - Digital Heritage System
 
-A comprehensive web application for documenting, managing, and preserving Thai cultural food data along the canal zones (Khlong). Designed with a focus on ease of use, data integrity, and accessibility for elderly users.
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database-green?style=flat-square&logo=supabase)](https://supabase.com/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0-blue?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 
-## 🚀 Key Features
+ระบบบริหารจัดการและจัดเก็บข้อมูลมรดกภูมิปัญญาทางวัฒนธรรมด้านอาหาร (Soft Power Food) ในพื้นที่แนวคูคลอง มุ่งเน้นการเก็บข้อมูลอย่างเป็นระบบ ใช้งานง่าย และรองรับกลุ่มผู้ใช้งานที่หลากหลาย รวมถึงผู้สูงอายุ (Digital Experts/Informants)
 
-### 1. 📋 7-Part Survey System
-A guided data collection flow to capture every detail of cultural food:
-- **Part 1: Informant Info**: Personal details of theปราชญ์ (experts/informants) with PDPA consent management.
-- **Part 2-5: Menu & Ingredients**: Detailed food categorizations, ingredients (with creatable list), and preparation steps.
-- **Part 6: Story & Legacy**: Documenting the heritage and unique stories behind each dish.
-- **Part 7: Photos**: Image gallery with client-side compression for efficient storage.
+---
 
-### 2. 🗃️ Management Dashboards
-- **Food Inventory**: Search, filter (by area, category, status), edit, or delete menu entries.
-- **Informant Management**: Directory of all contributing experts and their associated menus.
-- **User Management**: Role-based access control (Admin, Director, Surveyor).
+## 🌟 จุดเด่นของระบบ (Core Features)
 
-### 3. 📊 Data Portability
-- **CSV Export**: Export all survey data (including ingredients, steps, and stories) into Excel-compatible reports for analysis.
+### 1. � ระบบแบบสำรวจ 7 ขั้นตอน (Comprehensive 7-Part Survey)
+ระบบการเก็บข้อมูลที่ละเอียดและครอบคลุมมิติต่างๆ ของอาหาร:
+- **ส่วนที่ 1: ข้อมูลผู้ให้ข้อมูล (Informant Info)**
+  - บันทึกข้อมูลส่วนบุคคลและพิกัดที่ตั้ง (GPS/Map Picker)
+  - ระบบจัดการเอกสารยินยอม PDPA (Consent Management) พร้อมการอัปโหลดไฟล์
+- **ส่วนที่ 2-5: ข้อมูลเมนูและวัตถุดิบ (Recipe & Ingredients)**
+  - การจัดหมวดหมู่อาหาร (คาว, หวาน, เครื่องดื่ม ฯลฯ)
+  - ระบบเพิ่มรายการวัตถุดิบและขั้นตอนการทำแบบ Dynamic List
+- **ส่วนที่ 6: เรื่องราวและมรดก (History & Heritage)**
+  - บันทึกประวัติความเป็นมา ความเชื่อ และสถานะการอนุรักษ์
+- **ส่วนที่ 7: อัลบั้มภาพ (Photo Gallery)**
+  - รองรับการอัปโหลดภาพประกอบหลายภาพ พร้อมระบบบีบอัดภาพอัตโนมัติที่ฝั่ง Client เพื่อประหยัดพื้นที่จัดเก็บ
 
-### 4. 👵 Accessibility & UX
-- **Warm Paper Theme**: A soft cream-based color palette (`#fdfbf7`) designed to reduce glare and eye strain for elderly users.
-- **Outdoor Visibility**: Shifted color scales for high-contrast readability in sunlight.
-- **Image Optimization**: Automatic client-side compression to handle large photo uploads seamlessly.
+### 2. � ระบบบริหารจัดการ (Admin Dashboard)
+- **จัดการข้อมูลอาหาร (Food Inventory)**: ค้นหา, กรองข้อมูล (ตามพื้นที่คลอง, หมวดหมู่, สถานะ), แก้ไข และลบข้อมูล
+- **จัดการผู้ให้ข้อมูล (Informant Management)**: รวบรวมรายชื่อปราชญ์ชาวบ้านและข้อมูลการติดต่อ
+- **จัดการผู้ใช้งาน (User Management)**: ระบบจัดการสิทธิ์การเข้าถึง (RBAC) สำหรับ Admin, Director และ User
 
-## 🛠️ Tech Stack
-- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
-- **Database / Auth / Storage**: [Supabase](https://supabase.com/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Icons**: [Solar Icons](https://iconify.design/icon-sets/solar/) via [Iconify](https://iconify.design/)
-- **Language**: TypeScript
+### 3. � ความปลอดภัยและการจำกัดสิทธิ์ (Security & Roles)
+- **Role-Based Access Control**:
+  - **Admin**: จัดการได้ทุกส่วน รวมถึงการจัดการผู้ใช้งานและการ Export ข้อมูล
+  - **Director**: ตรวจสอบและคัดเลือกข้อมูลเมนูอาหาร
+  - **User**: ลงพื้นที่เก็บข้อมูลและนำเข้าข้อมูลใหม่
+- **Data Protection**: ระบบจำกัดสิทธิ์การ Export ข้อมูลเฉพาะ Admin เท่านั้น (Double-Layer Protection)
 
-## ⚙️ Environment Variables
-Required variables in `.env.local`:
+### 4. 🎨 การออกแบบเพื่อผู้ใช้ (Human-Centered Design)
+- **Warm Paper Theme**: ใช้โทนสีครีมอุ่น (`#fdfbf7`) เพื่อลดการสะท้อนของแสงและถนอมสายตา สำหรับกลุ่มปราชญ์ชาวบ้านและผู้สูงอายุ
+- **Outdoor Ready**: ปรับปรุง UI ให้มี High Contrast เพื่อให้อ่านข้อมูลได้ชัดเจนแม้ขณะลงพื้นที่กลางแจ้ง
+- **Mobile First**: รองรับการใช้งานผ่านมือถือและแท็บเล็ตอย่างสมบูรณ์แบบ (Dynamic Grid, Radio Cards)
+
+---
+
+## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
+
+### Frontend
+- **Framework**: Next.js 15 (App Router)
+- **State Management**: React Hooks & SWR (Data Fetching & Caching)
+- **Styling**: Tailwind CSS 4.0 (Modern, Utility-First CSS)
+- **Map Component**: Leaflet & React Leaflet (สำหรับระบบปักหมุดแผนที่)
+- **Icons**: Iconify (Solar Icons Set)
+
+### Backend & Infrastructure
+- **BaaS**: Supabase (Database & Storage)
+- **Authentication**: NextAuth.js (v5 Beta)
+- **Server Actions**: สำหรับการจัดการ Logic ในส่วนของผู้ใช้งาน
+
+---
+
+## 📂 โครงสร้างโฟลเดอร์ (Folder Structure)
+
+```text
+├── app/
+│   ├── (auth)/             # ระบบ Login / Authentication
+│   ├── (dashboard)/        # ระบบหลังบ้าน (Inventory, Users, Analytics)
+│   ├── api/                # API Routes (Food, Informant, Auth)
+│   ├── components/         # Reusable Components (Sidebar, UI elements)
+│   └── survey/             # ระบบแบบสำรวจ (Survey Parts 1-7)
+├── public/                 # Static Assets (Images, Logos)
+├── utils/                  # Utility Functions (Supabase Client, Image Compression)
+└── types/                  # Type Definitions
+```
+
+---
+
+## ⚙️ การติดตั้งและใช้งาน (Installation)
+
+### 1. Clone Project
+```bash
+git clone https://github.com/your-repo/soft-power-food.git
+cd soft-power-food
+```
+
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+### 3. Setup Environment Variables
+คัดลอกไฟล์ `.env.example` เป็น `.env.local` และกำหนดค่าดังนี้:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-NEXTAUTH_SECRET=your_auth_secret
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXTAUTH_SECRET=your_nextauth_secret
 NEXTAUTH_URL=http://localhost:3000
 ```
 
-## 🛠️ Development
+### 4. Run Development Server
 ```bash
-# Install dependencies
-npm install
-
-# Run development server
 npm run dev
 ```
+เปิดบราวเซอร์ไปที่ [http://localhost:3000](http://localhost:3000)
+
+---
+
+## 📈 แผนการพัฒนาต่อ (Future Roadmap)
+- [ ] ระบบวิเคราะห์ข้อมูลชั้นสูง (Advanced Analytics)
+- [ ] การเชื่อมต่อกับฐานข้อมูลมรดกทางวัฒนธรรมระดับชาติ
+- [ ] ระบบสนับสนุนการทำงานแบบ Offline ในพื้นที่สัญญาณน้อย (PWA Support)
+
+---
+**Soft Power Food Project** - สร้างสรรค์เพื่อการอนุรักษ์และส่งต่อคุณค่าทางวัฒนธรรมไทย 🇹🇭

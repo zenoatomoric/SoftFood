@@ -16,17 +16,34 @@ interface PageProps {
 async function getInformant(id: string) {
     try {
         const supabase = await createClient()
+        // resilient join logic mirroring the API
         const { data, error } = await supabase
             .from('informants')
-            .select('*')
+            .select(`
+                *,
+                creator:users!ref_sv_code(collector_name),
+                editor:users!last_edited_by(collector_name)
+            `)
             .eq('info_id', id)
             .single()
 
         if (error) {
-            console.error('Error fetching informant:', error)
-            return null
+            console.warn('Complex join failed, trying simple select:', error.message)
+            const { data: simpleData, error: simpleError } = await supabase
+                .from('informants')
+                .select('*')
+                .eq('info_id', id)
+                .single()
+            if (simpleError) return null
+            return simpleData
         }
-        return data
+
+        // Flatten joined data
+        return {
+            ...data,
+            creator_name: data.creator?.collector_name,
+            editor_name: data.editor?.collector_name
+        }
     } catch (err) {
         console.error('Error fetching informant:', err)
         return null
@@ -48,7 +65,10 @@ export default async function InformantDetailPage({ params }: PageProps) {
     }
 
     // Determine read-only status based on role
-    const role = session.user.role || 'user'
+    const role = (session?.user?.role || 'user').toLowerCase().trim()
+    const userId = session?.user?.sv_code || ''
+
+    const userName = (session.user as any).collector_name || session.user.name || ''
     const canEdit = role === 'admin' || role === 'director'
     const isReadOnly = !canEdit
 
@@ -66,6 +86,8 @@ export default async function InformantDetailPage({ params }: PageProps) {
                         initialData={informant}
                         isEditMode={true}
                         readOnly={isReadOnly}
+                        userRole={role}
+                        userName={userName}
                     />
 
                     <InformantMenus

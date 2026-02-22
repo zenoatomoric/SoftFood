@@ -1,23 +1,33 @@
+// src/app/api/master-ingredient/route.ts
 import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
 
-// GET /api/master-ingredient?q=กะทิ  → ค้นหาวัตถุดิบจากคลังกลาง
+// GET /api/master-ingredient?q=กะทิ&category=วัตถุดิบ  → ค้นหาวัตถุดิบจากคลังกลางพร้อมกรองหมวดหมู่
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url)
         const q = searchParams.get('q')?.trim()
+        const category = searchParams.get('category')?.trim() // รับค่า category เข้ามาเพิ่ม
 
         if (!q || q.length < 1) {
             return NextResponse.json({ data: [] })
         }
 
         const supabase = await createClient()
-        const { data, error } = await supabase
+
+        // เริ่มต้นการสร้าง Query
+        let query = supabase
             .from('master_ingredients')
-            .select('ing_id, ing_name')
+            .select('ing_id, ing_name, ingredient_category')
             .ilike('ing_name', `%${q}%`)
-            .order('ing_name')
-            .limit(15)
+
+        // ถ้ามีการระบุหมวดหมู่มา ให้กรอง (Filter) ด้วย
+        if (category) {
+            query = query.eq('ingredient_category', category)
+        }
+
+        // จัดเรียงและจำกัดจำนวนการแสดงผล
+        const { data, error } = await query.order('ing_name').limit(15)
 
         if (error) return NextResponse.json({ error: error.message }, { status: 500 })
         return NextResponse.json({ data: data || [] })
@@ -31,7 +41,7 @@ export async function POST(request: Request) {
     try {
         const supabase = await createClient()
         const body = await request.json()
-        const { ing_name } = body
+        const { ing_name, ingredient_category } = body
 
         if (!ing_name?.trim()) {
             return NextResponse.json({ error: 'Missing ing_name' }, { status: 400 })
@@ -53,8 +63,12 @@ export async function POST(request: Request) {
         // Insert new
         const { data, error } = await supabase
             .from('master_ingredients')
-            .insert({ ing_name: trimmed, is_verified: false })
-            .select('ing_id, ing_name')
+            .insert({
+                ing_name: trimmed,
+                ingredient_category: ingredient_category || 'วัตถุดิบ', // ถ้าไม่ได้ส่งมาให้เป็นวัตถุดิบไว้ก่อน
+                is_verified: false
+            })
+            .select('ing_id, ing_name, ingredient_category')
             .single()
 
         if (error) {

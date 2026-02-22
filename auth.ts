@@ -76,7 +76,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     id: user.sv_code,
                     name: user.collector_name,
                     email: user.sv_code, // ใช้ sv_code แทน email
-                    role: user.role || 'user'
+                    role: (user.role || 'user').toLowerCase().trim()
                 }
             }
         })

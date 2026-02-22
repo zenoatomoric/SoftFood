@@ -31,7 +31,7 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
       name: 'แบบสอบถาม',
       icon: 'solar:clipboard-list-bold-duotone',
       href: '/survey',
-      roles: ['user', 'admin', 'director'] // User และ Admin เท่านั้น (Director ไม่เห็น)
+      roles: ['user', 'admin', 'director'] // ทุกสิทธิ์เข้าใช้งานเว้นแต่จะระบุเพิ่ม
     },
     {
       name: 'รายการอาหาร',
@@ -49,7 +49,7 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
       name: 'ข้อมูลผู้ให้ข้อมูล',
       icon: 'solar:users-group-rounded-bold-duotone',
       href: '/informants',
-      roles: ['admin', 'user']
+      roles: ['admin', 'user', 'director']
     },
   ]
 
@@ -80,7 +80,7 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
 
         {/* Menu Links */}
         <nav className="flex-1 px-4 space-y-2 py-4 overflow-y-auto custom-scrollbar">
-          {menus.filter(m => m.roles.includes(role)).map((item) => {
+          {menus.filter(m => m.roles.some(r => r.toLowerCase() === role?.toLowerCase())).map((item) => {
             const isActive = pathname === item.href
             return (
               <Link

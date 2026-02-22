@@ -16,7 +16,7 @@ export default async function DashboardHomePage() {
     const userRole = session.user.role
 
     // User role ให้ไปหน้า survey
-    if (userRole === 'user') {
+    if (userRole?.toLowerCase() === 'user') {
         redirect('/survey')
     }
 
@@ -31,22 +31,22 @@ export default async function DashboardHomePage() {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 mb-2">ภาพรวมโครงการ</h1>
-                    <p className="text-slate-500 font-medium">สรุปข้อมูลการลงพื้นที่เก็บข้อมูลอาหารพื้นถิ่น (เป้าหมาย 400 รายการ)</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-slate-900 mb-2">ภาพรวมโครงการ</h1>
+                    <p className="text-sm md:text-base text-slate-500 font-medium">สรุปข้อมูลการลงพื้นที่เก็บข้อมูลอาหารพื้นถิ่น (เป้าหมาย 400 รายการ)</p>
                 </div>
                 <Link
                     href="/survey"
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-200 active:scale-95"
+                    className="flex items-center justify-center w-full md:w-auto gap-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-8 py-5 md:px-6 md:py-3 rounded-3xl md:rounded-xl font-black text-xl md:text-base transition-all shadow-xl shadow-indigo-400/30 active:scale-95 border-2 border-white/10"
                 >
-                    <Icon icon="solar:document-add-bold-duotone" className="text-2xl" />
+                    <Icon icon="solar:document-add-bold-duotone" className="text-3xl md:text-2xl" />
                     ทำแบบสอบถาม
                 </Link>
             </header>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <StatCard
                     title="เมนูทั้งหมด"
                     value={totalMenus || 0}
@@ -77,8 +77,8 @@ export default async function DashboardHomePage() {
                 />
             </div>
 
-            {/* สามารถเพิ่มส่วนกราฟ หรือ ตารางสรุปย่อตรงนี้ได้ */}
-            <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm h-64 flex items-center justify-center text-slate-400 font-medium">
+            {/* พื้นที่สำหรับกราฟ */}
+            <div className="bg-white rounded-3xl md:rounded-[2.5rem] p-8 border border-slate-100 shadow-sm h-64 flex items-center justify-center text-slate-400 font-medium text-center text-sm md:text-base">
                 พื้นที่สำหรับแสดงกราฟสรุป (Charts) ในงวดที่ 2
             </div>
         </div>

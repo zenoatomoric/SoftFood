@@ -125,7 +125,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
     try {
         const session = await auth()
-        const userRole = session?.user?.role
+        const userRole = (session?.user?.role || '').toLowerCase().trim()
 
         if (userRole !== 'director' && userRole !== 'admin') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -156,7 +156,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
     try {
         const session = await auth()
-        const userRole = session?.user?.role
+        const userRole = (session?.user?.role || '').toLowerCase().trim()
         const svCode = session?.user?.sv_code
 
         if (!session?.user) {

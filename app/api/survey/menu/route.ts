@@ -14,6 +14,29 @@ export async function POST(request: Request) {
             local_name,
             other_name,
             category,
+            story,
+            nutrition,
+            social_value,
+            popularity,
+            rituals,
+            seasonality,
+            ingredient_sources,
+            health_benefits,
+            consumption_freq,
+            complexity,
+            taste_appeal,
+            secret_tips,
+            heritage_status,
+            awards_references,
+            selection_status,
+            other_popularity,
+            other_rituals,
+            other_seasonality,
+            other_ingredient_sources,
+            other_health_benefits,
+            other_consumption_freq,
+            other_complexity,
+            other_taste_appeal
         } = body
 
         if (!ref_info_id || !menu_name) {
@@ -27,6 +50,29 @@ export async function POST(request: Request) {
             local_name,
             other_name,
             category,
+            story,
+            nutrition,
+            social_value,
+            popularity,
+            rituals,
+            seasonality,
+            ingredient_sources,
+            health_benefits,
+            consumption_freq,
+            complexity,
+            taste_appeal,
+            secret_tips,
+            heritage_status,
+            awards_references,
+            selection_status: selection_status || [],
+            other_popularity,
+            other_rituals,
+            other_seasonality,
+            other_ingredient_sources,
+            other_health_benefits,
+            other_consumption_freq,
+            other_complexity,
+            other_taste_appeal
         }
 
         const { data, error } = await supabase
@@ -50,15 +96,34 @@ export async function PATCH(request: Request) {
     try {
         const supabase = await createClient()
         const body = await request.json()
-        const { menu_id, ...updateFields } = body
+        const { menu_id } = body
 
         if (!menu_id) {
             return NextResponse.json({ error: 'Missing menu_id' }, { status: 400 })
         }
 
+        // List all allowed fields to update
+        const allowedFields = [
+            'menu_name', 'local_name', 'other_name', 'category', 'story',
+            'nutrition', 'social_value', 'popularity', 'rituals', 'seasonality',
+            'ingredient_sources', 'health_benefits', 'consumption_freq',
+            'complexity', 'taste_appeal', 'secret_tips', 'heritage_status',
+            'awards_references', 'selection_status',
+            'other_popularity', 'other_rituals', 'other_seasonality',
+            'other_ingredient_sources', 'other_health_benefits',
+            'other_consumption_freq', 'other_complexity', 'other_taste_appeal'
+        ]
+
+        const updateData: Record<string, any> = {}
+        allowedFields.forEach(field => {
+            if (field in body) {
+                updateData[field] = body[field]
+            }
+        })
+
         const { data, error } = await supabase
             .from('menus')
-            .update(updateFields)
+            .update(updateData)
             .eq('menu_id', menu_id)
             .select()
             .single()
@@ -70,6 +135,7 @@ export async function PATCH(request: Request) {
 
         return NextResponse.json({ success: true, data }, { status: 200 })
     } catch (error) {
+        console.error('Server error:', error)
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 }

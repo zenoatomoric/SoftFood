@@ -47,9 +47,9 @@ export default async function DashboardHomePage() {
         </div>
         <Link
           href="/survey"
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-200 active:scale-95"
+          className="flex items-center justify-center w-full md:w-auto gap-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-8 py-5 md:px-6 md:py-3 rounded-3xl md:rounded-xl font-black text-xl md:text-base transition-all shadow-xl shadow-indigo-400/30 active:scale-95 border-2 border-white/10"
         >
-          <Icon icon="solar:document-add-bold-duotone" className="text-2xl" />
+          <Icon icon="solar:document-add-bold-duotone" className="text-3xl md:text-2xl" />
           ทำแบบสอบถาม
         </Link>
       </header>

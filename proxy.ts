@@ -18,14 +18,15 @@ export async function proxy(request: NextRequest) {
         }
     }
 
-    // ป้องกันหน้า survey (user และ admin เท่านั้น - director ไม่สามารถเข้าถึง)
+    // ป้องกันหน้า survey (admin และ director เท่านั้น - director สามารถเข้าถึงได้แล้ว)
     if (pathname.startsWith('/survey')) {
         if (!session) {
             return NextResponse.redirect(new URL('/login', request.url))
         }
 
-        const userRole = session.user?.role
-        if (userRole === 'director') {
+        const userRole = session.user?.role?.toLowerCase()
+        // อนุญาตให้ 'admin', 'user', 'director' เข้าถึง
+        if (userRole !== 'admin' && userRole !== 'user' && userRole !== 'director') {
             return NextResponse.redirect(new URL('/home', request.url))
         }
     }
