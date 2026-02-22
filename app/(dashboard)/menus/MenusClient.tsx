@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import ConfirmModal from '@/app/components/ConfirmModal'
 import Toast from '@/app/components/Toast'
 import useSWR from 'swr'
+import * as XLSX from 'xlsx'
 
 interface FoodItem {
     menu_id: string
@@ -171,22 +172,15 @@ export default function MenusClient({ userRole, userId }: Props) {
             if (categoryFilter) params.set('category', categoryFilter)
             if (statusFilter) params.set('status', statusFilter)
             params.set('limit', '9999')
-            params.set('full', 'true') // Request full data relationships
+            params.set('full', 'true')
 
             const res = await fetch(`/api/food?${params.toString()}`)
             const json = await res.json()
 
             if (!res.ok || !json.data) throw new Error('Failed to fetch data')
 
-            // Prepare CSV Columns (Exclude Informant, Community, Collector, Status)
-            const headers = [
-                'ID', 'ชื่อเมนู', 'ชื่อท้องถิ่น', 'ประเภท', 'โซนคลอง',
-                'ความนิยม', 'ฤดูกาล', 'ความสัมพันธ์/ประเพณี', 'รสชาติ', 'ความยาก', 'ความถี่', 'แหล่งวัตถุดิบ', 'ประโยชน์',
-                'เรื่องราว', 'สถานะการสืบทอด',
-                'วัตถุดิบ', 'วิธีทำ', 'เคล็ดลับ', 'รูปภาพ'
-            ]
-
-            const rows = json.data.map((item: FoodItem) => {
+            // Prepare Data for XLSX
+            const exportData = json.data.map((item: FoodItem) => {
                 const ingredients = item.menu_ingredients?.map((i: any) => `${i.name} (${i.quantity} ${i.unit}) - ${i.note || ''}`).join('\n') || ''
                 const steps = item.menu_steps?.sort((a: any, b: any) => a.step_order - b.step_order).map((s: any) => `${s.step_order}. ${s.instruction}`).join('\n') || ''
                 const photos = item.menu_photos?.map((p: any) => p.photo_url).join('\n') || ''
@@ -194,39 +188,36 @@ export default function MenusClient({ userRole, userId }: Props) {
                 const sources = Array.isArray(item.ingredient_sources) ? item.ingredient_sources.join(', ') : item.ingredient_sources || ''
                 const benefits = Array.isArray(item.health_benefits) ? item.health_benefits.join(', ') : item.health_benefits || ''
 
-                return [
-                    item.menu_id,
-                    `"${item.menu_name.replace(/"/g, '""')}"`,
-                    `"${(item as any).local_name?.replace(/"/g, '""') || ''}"`,
-                    item.category,
-                    item.canal_zone, // Keep Canal Zone as it implies location
-                    `"${item.popularity?.replace(/"/g, '""') || ''}"`,
-                    `"${item.seasonality?.replace(/"/g, '""') || ''}"`,
-                    `"${rituals.replace(/"/g, '""')}"`,
-                    `"${item.taste_appeal?.replace(/"/g, '""') || ''}"`,
-                    `"${item.complexity?.replace(/"/g, '""') || ''}"`,
-                    `"${item.consumption_freq?.replace(/"/g, '""') || ''}"`,
-                    `"${sources.replace(/"/g, '""')}"`,
-                    `"${benefits.replace(/"/g, '""')}"`,
-                    `"${item.story?.replace(/"/g, '""') || ''}"`,
-                    `"${item.heritage_status?.replace(/"/g, '""') || ''}"`,
-                    `"${ingredients.replace(/"/g, '""')}"`,
-                    `"${steps.replace(/"/g, '""')}"`,
-                    `"${item.secret_tips?.replace(/"/g, '""') || ''}"`,
-                    `"${photos.replace(/"/g, '""')}"`
-                ].join(',')
+                return {
+                    'ID': item.menu_id,
+                    'ชื่อเมนู': item.menu_name,
+                    'ชื่อท้องถิ่น': (item as any).local_name || '',
+                    'ประเภท': item.category,
+                    'โซนคลอง': item.canal_zone,
+                    'ความนิยม': item.popularity || '',
+                    'ฤดูกาล': item.seasonality || '',
+                    'ความสัมพันธ์/ประเพณี': rituals,
+                    'รสชาติ': item.taste_appeal || '',
+                    'ความยาก': item.complexity || '',
+                    'ความถี่': item.consumption_freq || '',
+                    'แหล่งวัตถุดิบ': sources,
+                    'ประโยชน์': benefits,
+                    'เรื่องราว': item.story || '',
+                    'สถานะการสืบทอด': item.heritage_status || '',
+                    'วัตถุดิบ': ingredients,
+                    'วิธีทำ': steps,
+                    'เคล็ดลับ': item.secret_tips || '',
+                    'รูปภาพ': photos
+                }
             })
 
-            const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n')
+            // Create Workbook and Worksheet
+            const worksheet = XLSX.utils.json_to_sheet(exportData)
+            const workbook = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Menus')
 
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-            const url = URL.createObjectURL(blob)
-            const link = document.createElement('a')
-            link.href = url
-            link.setAttribute('download', `menus_export_${new Date().toISOString().slice(0, 10)}.csv`)
-            document.body.appendChild(link)
-            link.click()
-            document.body.removeChild(link)
+            // Download
+            XLSX.writeFile(workbook, `menus_export_${new Date().toISOString().slice(0, 10)}.xlsx`)
 
             setToast({ show: true, msg: 'Export ไฟล์สำเร็จ', type: 'success' })
         } catch (err) {

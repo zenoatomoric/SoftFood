@@ -78,8 +78,8 @@ export default async function DashboardHomePage() {
             </div>
 
             {/* พื้นที่สำหรับกราฟ */}
-            <div className="bg-white rounded-3xl md:rounded-[2.5rem] p-8 border border-slate-100 shadow-sm h-64 flex items-center justify-center text-slate-400 font-medium text-center text-sm md:text-base">
-                พื้นที่สำหรับแสดงกราฟสรุป (Charts) ในงวดที่ 2
+            <div className="bg-white rounded-3xl md:rounded-[2.5rem] p-8 border border-slate-100 shadow-sm h-64 flex items-center justify-center text-slate-400 font-medium text-center text-sm md:text-base italic">
+                coming soon...
             </div>
         </div>
     )

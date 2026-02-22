@@ -88,7 +88,7 @@ export default async function DashboardHomePage() {
 
       {/* สามารถเพิ่มส่วนกราฟ หรือ ตารางสรุปย่อตรงนี้ได้ */}
       <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm h-64 flex items-center justify-center text-slate-400 font-medium">
-        พื้นที่สำหรับแสดงกราฟสรุป (Charts) ในงวดที่ 2
+        coming soon...
       </div>
     </div>
   );
