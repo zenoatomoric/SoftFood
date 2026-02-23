@@ -122,12 +122,17 @@ export default function InformantMenus({ infoId, canEdit }: Props) {
                     {menus.map(menu => (
                         <div key={menu.menu_id} className="p-4 hover:bg-slate-50 transition-colors flex items-center gap-4 group">
                             {/* Thumbnail */}
-                            <div className="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-100">
+                            <div className="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-100 relative group-hover:shadow-md transition-shadow">
                                 {menu.thumbnail ? (
-                                    <img src={menu.thumbnail} alt="" className="w-full h-full object-cover" />
+                                    <img
+                                        src={menu.thumbnail}
+                                        alt={menu.menu_name}
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                        loading="lazy"
+                                    />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                        <Icon icon="solar:gallery-wide-linear" />
+                                        <Icon icon="solar:gallery-wide-linear" className="text-xl opacity-50" />
                                     </div>
                                 )}
                             </div>

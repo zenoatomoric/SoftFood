@@ -40,7 +40,7 @@ export async function GET(request: Request) {
                 master_ingredients ( ing_name )
             ),
             menu_steps (*),
-            menu_photos (*)
+            menu_photos:menu_photos (*)
         ` : `
             menu_id, 
             menu_name, 
@@ -48,9 +48,10 @@ export async function GET(request: Request) {
             selection_status, 
             created_at, 
             ref_sv_code,
+            ref_info_id,
             informants!inner (full_name, canal_zone),
             users (collector_name),
-            menu_photos (photo_url)
+            menu_photos:menu_photos (photo_url)
         `, { count: 'exact' })
 
         // RBAC Filtering:
@@ -118,9 +119,13 @@ export async function GET(request: Request) {
             informant_name: item.informants?.full_name || 'ไม่ระบุ',
             canal_zone: item.informants?.canal_zone || 'ไม่ระบุ',
             surveyor_name: item.users?.collector_name || item.ref_sv_code,
-            thumbnail: item.menu_photos?.[0]?.photo_url || null,
+            thumbnail: (item.menu_photos?.[0]?.photo_url) ? (
+                item.menu_photos[0].photo_url.startsWith('http')
+                    ? item.menu_photos[0].photo_url
+                    : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${item.menu_photos[0].photo_url}`
+            ) : null,
             ref_sv_code: item.ref_sv_code,
-            ref_info_id: item.ref_info_id // Need to select this in query too?
+            ref_info_id: item.ref_info_id
         }))
 
         return NextResponse.json({

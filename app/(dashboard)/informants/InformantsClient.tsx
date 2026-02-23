@@ -18,6 +18,7 @@ interface Informant {
     last_edited_at?: string
     creator_name?: string
     editor_name?: string
+    consent_document_url?: string | null;
 }
 
 interface Props {
@@ -299,6 +300,18 @@ export default function InformantsClient({ userRole, userId }: Props) {
                                             <div className="flex justify-end gap-1">
                                                 {(userRole === 'admin' || userRole === 'director') && (
                                                     <>
+                                                        {item.consent_document_url && (
+                                                            <a
+                                                                href={item.consent_document_url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all shadow-none hover:shadow-sm border border-transparent hover:border-indigo-100"
+                                                                aria-label="ดูเอกสาร PDPA"
+                                                                title="ดูเอกสาร PDPA"
+                                                            >
+                                                                <Icon icon="solar:document-text-bold" className="text-xl" />
+                                                            </a>
+                                                        )}
                                                         <button
                                                             onClick={() => handleEdit(item)}
                                                             className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all shadow-none hover:shadow-sm border border-transparent hover:border-indigo-100"

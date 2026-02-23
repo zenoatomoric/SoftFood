@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Icon } from '@iconify/react'
 import MenuDetailClient from './MenuDetailClient'
-
 import { auth } from '@/auth'
 
 export default async function MenuPage({ params }: { params: Promise<{ id: string }> }) {
@@ -25,7 +24,7 @@ export default async function MenuPage({ params }: { params: Promise<{ id: strin
                 master_ingredients ( ing_name )
             ),
             menu_steps (*),
-            menu_photos (*)
+            menu_photos:menu_photos (*)
         `)
         .eq('menu_id', id)
         .single()
@@ -35,11 +34,24 @@ export default async function MenuPage({ params }: { params: Promise<{ id: strin
         notFound()
     }
 
+    const role = (session?.user as any)?.role || 'user'
+    const svCode = (session?.user as any)?.sv_code || ''
+
+    // Standardize photo URLs to absolute links if needed
+    if (menu.menu_photos) {
+        menu.menu_photos = menu.menu_photos.map((p: any) => ({
+            ...p,
+            photo_url: p.photo_url?.startsWith('http')
+                ? p.photo_url
+                : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${p.photo_url}`
+        }))
+    }
+
     return (
         <MenuDetailClient
             menu={menu}
-            userRole={(session?.user as any)?.role || 'user'}
-            userId={(session?.user as any)?.sv_code || ''}
+            userRole={role}
+            userId={svCode}
         />
     )
 }

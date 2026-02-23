@@ -118,11 +118,16 @@ export async function GET(request: Request) {
                 return NextResponse.json({ error: error.message }, { status: 500 })
             }
 
-            // Flatten data
+            // Flatten data & standardise URL
             const formatted = {
                 ...data,
                 creator_name: data.creator?.collector_name,
-                editor_name: data.editor?.collector_name
+                editor_name: data.editor?.collector_name,
+                consent_document_url: data.consent_document_url ? (
+                    data.consent_document_url.startsWith('http')
+                        ? data.consent_document_url
+                        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${data.consent_document_url}`
+                ) : null
             }
             delete formatted.creator
             delete formatted.editor

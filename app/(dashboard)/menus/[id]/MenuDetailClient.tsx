@@ -142,12 +142,18 @@ export default function MenuDetailClient({ menu, userRole, userId }: Props) {
 
             {/* Title Card */}
             <div className="bg-white rounded-2xl p-4 md:p-8 shadow-sm border border-slate-100 mb-8 flex flex-col md:flex-row gap-6 md:gap-8 items-start">
-                <div className="w-full md:w-1/3 aspect-square rounded-2xl bg-slate-100 overflow-hidden shadow-inner flex-shrink-0">
-                    {menu.menu_photos?.[0]?.photo_url ? (
-                        <img src={menu.menu_photos[0].photo_url} alt={menu.menu_name} className="w-full h-full object-cover" />
+                <div className="w-full md:w-1/3 aspect-square rounded-2xl bg-slate-100 overflow-hidden shadow-inner flex-shrink-0 relative group">
+                    {/* Main Image Thumbnail */}
+                    {menu.menu_photos && menu.menu_photos.length > 0 && menu.menu_photos[0].photo_url ? (
+                        <img
+                            src={menu.menu_photos[0].photo_url}
+                            alt={menu.menu_name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2">
                             <Icon icon="solar:gallery-wide-linear" className="text-5xl" />
+                            <span className="text-xs font-bold uppercase tracking-widest opacity-50">No Image</span>
                         </div>
                     )}
                 </div>
@@ -267,16 +273,28 @@ export default function MenuDetailClient({ menu, userRole, userId }: Props) {
                 )}
             </Section>
 
-            {/* Photos */}
-            {menu.menu_photos?.length > 0 && (
+            {/* Photos Section */}
+            {menu.menu_photos && menu.menu_photos.length > 0 && (
                 <Section title="รูปภาพประกอบ" icon="solar:camera-bold-duotone">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {menu.menu_photos.map((photo: any, i: number) => (
-                            <div key={i} className="aspect-square rounded-xl overflow-hidden bg-slate-100 relative group">
-                                <img src={photo.photo_url} alt={photo.caption || `รูปที่ ${i + 1}`} className="w-full h-full object-cover" />
-                                <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {photo.caption || '-'}
-                                </div>
+                            <div key={i} className="aspect-square rounded-2xl overflow-hidden bg-slate-100 relative group border border-slate-100 shadow-sm transition-all hover:shadow-md">
+                                {photo.photo_url ? (
+                                    <img
+                                        src={photo.photo_url}
+                                        alt={photo.caption || `รูปที่ ${i + 1}`}
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                        <Icon icon="solar:gallery-wide-linear" className="text-3xl" />
+                                    </div>
+                                )}
+                                {photo.caption && (
+                                    <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm p-3 text-white text-[10px] md:text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
+                                        {photo.caption}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

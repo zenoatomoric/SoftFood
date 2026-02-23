@@ -372,11 +372,18 @@ export default function MenusClient({ userRole, userId }: Props) {
                             >
                                 {/* 1. Thumbnail */}
                                 <div className="shrink-0 md:col-span-1 text-center md:text-left">
-                                    <div className="w-14 h-14 md:w-12 md:h-12 rounded-lg bg-slate-100 overflow-hidden inline-block shadow-sm">
+                                    <div className="w-14 h-14 md:w-12 md:h-12 rounded-lg bg-slate-100 overflow-hidden inline-block shadow-sm relative group-hover:shadow-md transition-shadow">
                                         {menu.thumbnail ? (
-                                            <img src={menu.thumbnail} alt="" className="w-full h-full object-cover" />
+                                            <img
+                                                src={menu.thumbnail}
+                                                alt={menu.menu_name}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                loading="lazy"
+                                            />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-300"><Icon icon="solar:gallery-wide-linear" /></div>
+                                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                                <Icon icon="solar:gallery-wide-linear" className="text-xl opacity-50" />
+                                            </div>
                                         )}
                                     </div>
                                 </div>
