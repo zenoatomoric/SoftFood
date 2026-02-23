@@ -793,7 +793,11 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                 <label className="text-sm md:text-base font-medium text-slate-900 uppercase">เพศ</label>
                                 <div className="flex flex-wrap gap-3 md:gap-4 mt-1 md:mt-2">
                                     {['ชาย', 'หญิง', 'อื่นๆ'].map((g) => (
-                                        <label key={g} className={`flex items-center gap-2 cursor-pointer transition-all ${formData.gender === g ? 'text-indigo-600 font-bold' : 'text-slate-900 font-medium'} ${readOnly ? 'pointer-events-none opacity-80' : ''}`}>
+                                        <label
+                                            key={g}
+                                            onClick={() => !readOnly && setFormData(prev => ({ ...prev, gender: g }))}
+                                            className={`flex items-center gap-2 cursor-pointer transition-all ${formData.gender === g ? 'text-indigo-600 font-bold' : 'text-slate-900 font-medium'} ${readOnly ? 'pointer-events-none opacity-80' : ''}`}
+                                        >
                                             <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center border-2 flex-shrink-0 ${formData.gender === g ? 'border-indigo-600 bg-indigo-50' : 'border-slate-300 bg-slate-50'}`}>
                                                 {formData.gender === g && <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-indigo-600 rounded-full shadow-sm" />}
                                             </div>
