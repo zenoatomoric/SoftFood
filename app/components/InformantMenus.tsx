@@ -136,6 +136,8 @@ export default function InformantMenus({ infoId, canEdit }: Props) {
                             <div className="flex-1 min-w-0">
                                 <h3
                                     onClick={() => router.push(`/menus/${menu.menu_id}`)}
+                                    role="button"
+                                    aria-label={`ดูรายละเอียดเมนู ${menu.menu_name}`}
                                     className="font-bold text-slate-800 text-base truncate cursor-pointer hover:text-indigo-600 transition-colors"
                                 >
                                     {menu.menu_name}
@@ -155,6 +157,7 @@ export default function InformantMenus({ infoId, canEdit }: Props) {
                                 <button
                                     onClick={() => router.push(`/menus/${menu.menu_id}`)}
                                     className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                    aria-label="ดูรายละเอียด"
                                     title="ดูรายละเอียด"
                                 >
                                     <Icon icon="solar:eye-bold" className="text-xl" />
@@ -164,6 +167,7 @@ export default function InformantMenus({ infoId, canEdit }: Props) {
                                         <button
                                             onClick={() => router.push(`/survey/part2?menu_id=${menu.menu_id}`)}
                                             className="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors"
+                                            aria-label="แก้ไข"
                                             title="แก้ไข"
                                         >
                                             <Icon icon="solar:pen-new-square-bold" className="text-xl" />
@@ -171,6 +175,7 @@ export default function InformantMenus({ infoId, canEdit }: Props) {
                                         <button
                                             onClick={() => handleDelete(menu.menu_id, menu.menu_name)}
                                             className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                                            aria-label="ลบ"
                                             title="ลบ"
                                         >
                                             <Icon icon="solar:trash-bin-trash-bold" className="text-xl" />
@@ -190,6 +195,7 @@ export default function InformantMenus({ infoId, canEdit }: Props) {
                         disabled={page === 1}
                         onClick={() => setPage(p => Math.max(1, p - 1))}
                         className="p-2 rounded-lg hover:bg-slate-100 disabled:opacity-30"
+                        aria-label="หน้าก่อนหน้า"
                     >
                         <Icon icon="solar:alt-arrow-left-linear" />
                     </button>
@@ -198,6 +204,7 @@ export default function InformantMenus({ infoId, canEdit }: Props) {
                         disabled={page === totalPages}
                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                         className="p-2 rounded-lg hover:bg-slate-100 disabled:opacity-30"
+                        aria-label="หน้าถัดไป"
                     >
                         <Icon icon="solar:alt-arrow-right-linear" />
                     </button>

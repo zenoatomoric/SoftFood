@@ -43,9 +43,14 @@ export default function InformantsClient({ userRole, userId }: Props) {
         params.set('page', page.toString())
         params.set('limit', limit.toString())
         return `/api/survey/informant?${params.toString()}`
-    }, [debouncedSearch, page, limit])
+    }, [debouncedSearch, mineFilter, page, limit])
 
     const { data: swrData, error, isLoading, mutate } = useSWR(fetchUrl)
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setPage(1)
+    }, [debouncedSearch, mineFilter])
 
     const informants = swrData?.data || []
     const total = swrData?.total || 0
@@ -118,22 +123,24 @@ export default function InformantsClient({ userRole, userId }: Props) {
                     <p className="text-slate-500 text-sm mt-1">จัดการข้อมูลผู้ให้ข้อมูลและปราชญ์ชาวบ้าน</p>
                 </div>
 
-                {(userRole === 'admin' || userRole === 'director') && (
-                    <div className="flex bg-slate-100 p-1 rounded-xl">
-                        <button
-                            onClick={() => setMineFilter(false)}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${!mineFilter ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                            <Icon icon="solar:globus-bold" /> ทั้งหมด
-                        </button>
-                        <button
-                            onClick={() => setMineFilter(true)}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${mineFilter ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                        >
-                            <Icon icon="solar:user-circle-bold" /> ของฉัน
-                        </button>
-                    </div>
-                )}
+                <div className="flex bg-slate-100 p-1 rounded-xl" role="radiogroup" aria-label="กรองข้อมูล">
+                    <button
+                        onClick={() => setMineFilter(false)}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${!mineFilter ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        aria-checked={!mineFilter}
+                        role="radio"
+                    >
+                        <Icon icon="solar:globus-bold" /> ทั้งหมด
+                    </button>
+                    <button
+                        onClick={() => setMineFilter(true)}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${mineFilter ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        aria-checked={mineFilter}
+                        role="radio"
+                    >
+                        <Icon icon="solar:user-circle-bold" /> ของฉัน
+                    </button>
+                </div>
             </div>
 
             {/* Content */}
@@ -142,7 +149,9 @@ export default function InformantsClient({ userRole, userId }: Props) {
                 <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-50/50">
                     <div className="relative w-full sm:w-96">
                         <Icon icon="solar:magnifer-linear" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
+                        <label htmlFor="informant_search" className="sr-only">ค้นหาชื่อ, รหัส, เบอร์โทร</label>
                         <input
+                            id="informant_search"
                             type="text"
                             placeholder="ค้นหาชื่อ, รหัส, เบอร์โทร..."
                             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-all text-sm"
@@ -293,6 +302,7 @@ export default function InformantsClient({ userRole, userId }: Props) {
                                                         <button
                                                             onClick={() => handleEdit(item)}
                                                             className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-all shadow-none hover:shadow-sm border border-transparent hover:border-indigo-100"
+                                                            aria-label="แก้ไขข้อมูล"
                                                             title="แก้ไขข้อมูล"
                                                         >
                                                             <Icon icon="solar:pen-new-square-bold" className="text-xl" />
@@ -300,6 +310,7 @@ export default function InformantsClient({ userRole, userId }: Props) {
                                                         <button
                                                             onClick={() => handleDelete(item.info_id, item.full_name)}
                                                             className="p-2 text-slate-400 hover:text-red-500 hover:bg-white rounded-lg transition-all shadow-none hover:shadow-sm border border-transparent hover:border-red-100"
+                                                            aria-label="ลบข้อมูล"
                                                             title="ลบข้อมูล"
                                                         >
                                                             <Icon icon="solar:trash-bin-trash-bold" className="text-xl" />
@@ -321,6 +332,7 @@ export default function InformantsClient({ userRole, userId }: Props) {
                         disabled={page === 1 || isLoading}
                         onClick={() => setPage(p => Math.max(1, p - 1))}
                         className="p-2 hover:bg-white rounded-lg disabled:opacity-30 transition-all border border-transparent hover:border-slate-200 hover:shadow-sm"
+                        aria-label="หน้าก่อนหน้า"
                     >
                         <Icon icon="solar:alt-arrow-left-linear" className="text-xl" />
                     </button>
@@ -329,6 +341,7 @@ export default function InformantsClient({ userRole, userId }: Props) {
                         disabled={page === totalPages || isLoading}
                         onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                         className="p-2 hover:bg-white rounded-lg disabled:opacity-30 transition-all border border-transparent hover:border-slate-200 hover:shadow-sm"
+                        aria-label="หน้าถัดไป"
                     >
                         <Icon icon="solar:alt-arrow-right-linear" className="text-xl" />
                     </button>

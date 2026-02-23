@@ -50,6 +50,7 @@ export default async function DashboardHomePage() {
                 <StatCard
                     title="เมนูทั้งหมด"
                     value={totalMenus || 0}
+                    unit="รายการ"
                     icon="solar:database-bold-duotone"
                     color="text-indigo-600"
                     bg="bg-indigo-50"
@@ -57,6 +58,7 @@ export default async function DashboardHomePage() {
                 <StatCard
                     title="คลองบางเขน"
                     value={bkkCount || 0}
+                    unit="รายการ"
                     icon="solar:map-point-bold-duotone"
                     color="text-red-500"
                     bg="bg-red-50"
@@ -64,6 +66,7 @@ export default async function DashboardHomePage() {
                 <StatCard
                     title="คลองเปรมฯ"
                     value={premCount || 0}
+                    unit="รายการ"
                     icon="solar:map-point-bold-duotone"
                     color="text-emerald-500"
                     bg="bg-emerald-50"
@@ -71,6 +74,7 @@ export default async function DashboardHomePage() {
                 <StatCard
                     title="คลองลาดพร้าว"
                     value={latCount || 0}
+                    unit="รายการ"
                     icon="solar:map-point-bold-duotone"
                     color="text-sky-500"
                     bg="bg-sky-50"

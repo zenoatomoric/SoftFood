@@ -147,8 +147,24 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
 
         return (
             <div className="relative">
+                {/* Visually hidden but focusable input to link with the label's htmlFor */}
+                <input
+                    id={id}
+                    type="text"
+                    value={value}
+                    readOnly
+                    required={required}
+                    className="sr-only"
+                    onFocus={() => !disabled && setOpenDropdown(id)}
+                    aria-hidden="true"
+                />
                 <div
                     onClick={() => !disabled && setOpenDropdown(isOpen ? null : id)}
+                    role="combobox"
+                    aria-expanded={isOpen}
+                    aria-haspopup="listbox"
+                    aria-label={label}
+                    aria-controls={`${id}-listbox`}
                     className={`group w-full ${colors.bg} border-2 ${isOpen ? colors.focusBorder + ' ring-4 ' + colors.ring : colors.border} rounded-xl md:rounded-2xl px-4 py-3.5 md:px-5 md:py-4 ${colors.text} font-medium outline-none transition-all duration-300 flex items-center justify-between cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed bg-slate-100 text-slate-400' : colors.hoverBorder + ' hover:bg-white hover:shadow-sm'}`}
                 >
                     <span className={`text-sm md:text-base ${value ? colors.text : 'text-slate-400 font-medium'}`}>
@@ -163,11 +179,13 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                 {isOpen && (
                     <>
                         <div className="fixed inset-0 z-[60]" onClick={() => setOpenDropdown(null)}></div>
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl md:rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-[70] animate-in fade-in zoom-in-95 duration-200">
+                        <div id={`${id}-listbox`} role="listbox" className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl md:rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-[70] animate-in fade-in zoom-in-95 duration-200">
                             <div className="max-h-60 overflow-y-auto py-2 px-2 space-y-1">
                                 {options.map(opt => (
                                     <div
                                         key={opt.value}
+                                        role="option"
+                                        aria-selected={value === opt.value}
                                         onClick={() => { onChange(opt.value); setOpenDropdown(null) }}
                                         className={`px-4 py-3 rounded-lg md:rounded-xl text-xs md:text-sm font-medium cursor-pointer transition-all flex items-center justify-between
                                         ${value === opt.value ? colors.activeBg + ' ' + colors.activeText : 'text-slate-900 hover:bg-slate-50'}`}
@@ -278,6 +296,14 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
+
+        // Restrict phone number to 10 digits and numbers only
+        if (name === 'phone') {
+            const numericValue = value.replace(/[^0-9]/g, '').slice(0, 10)
+            setFormData(prev => ({ ...prev, [name]: numericValue }))
+            return
+        }
+
         setFormData(prev => ({ ...prev, [name]: value }))
     }
 
@@ -700,8 +726,11 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                         </div>
 
                         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                            <input type="text" placeholder="ระบุรหัส (เช่น INFO-001)..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl px-4 py-3.5 md:py-4 text-sm md:text-base font-medium focus:ring-2 focus:ring-amber-200 focus:border-amber-400 outline-none transition-all w-full" />
+                            <div className="flex-1 relative">
+                                <label htmlFor="informant_search" className="sr-only">ค้นหาด้วยรหัส (เช่น INFO-001)</label>
+                                <input id="informant_search" type="text" placeholder="ระบุรหัส (เช่น INFO-001)..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl px-4 py-3.5 md:py-4 text-sm md:text-base font-medium focus:ring-2 focus:ring-amber-200 focus:border-amber-400 outline-none transition-all" />
+                            </div>
                             <div className="flex gap-2 w-full sm:w-auto">
                                 <button type="submit" disabled={loading} className="flex-1 sm:flex-none bg-slate-900 text-white px-6 md:px-8 py-3.5 md:py-4 rounded-xl md:rounded-2xl font-bold text-sm md:text-base hover:bg-slate-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                                     {loading ? <Icon icon="solar:refresh-bold" className="animate-spin text-lg md:text-xl" /> : 'ค้นหา'}
@@ -785,42 +814,54 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                     <div className="space-y-6 md:space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                             <div className="space-y-1.5 md:space-y-2">
-                                <label className="text-sm md:text-base font-medium text-slate-900 uppercase flex items-center gap-1.5 md:gap-2">ชื่อ-นามสกุล <span className="text-red-500">*</span></label>
-                                <input name="full_name" value={formData.full_name} onChange={handleInputChange} type="text" required disabled={readOnly}
+                                <label htmlFor="full_name" className="text-sm md:text-base font-medium text-slate-900 uppercase flex items-center gap-1.5 md:gap-2">ชื่อ-นามสกุล <span className="text-red-500">*</span></label>
+                                <input id="full_name" name="full_name" value={formData.full_name} onChange={handleInputChange} type="text" required disabled={readOnly} autoComplete="name"
                                     className="w-full text-base md:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors disabled:text-slate-500" placeholder="ระบุชื่อ-นามสกุล" />
                             </div>
-                            <div className="space-y-1.5 md:space-y-2">
-                                <label className="text-sm md:text-base font-medium text-slate-900 uppercase">เพศ</label>
+                            <div className="space-y-1.5 md:space-y-2" role="radiogroup" aria-labelledby="gender-label">
+                                <label id="gender-label" className="text-sm md:text-base font-medium text-slate-900 uppercase">เพศ</label>
                                 <div className="flex flex-wrap gap-3 md:gap-4 mt-1 md:mt-2">
-                                    {['ชาย', 'หญิง', 'อื่นๆ'].map((g) => (
-                                        <label
-                                            key={g}
-                                            onClick={() => !readOnly && setFormData(prev => ({ ...prev, gender: g }))}
-                                            className={`flex items-center gap-2 cursor-pointer transition-all ${formData.gender === g ? 'text-indigo-600 font-bold' : 'text-slate-900 font-medium'} ${readOnly ? 'pointer-events-none opacity-80' : ''}`}
-                                        >
-                                            <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center border-2 flex-shrink-0 ${formData.gender === g ? 'border-indigo-600 bg-indigo-50' : 'border-slate-300 bg-slate-50'}`}>
-                                                {formData.gender === g && <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-indigo-600 rounded-full shadow-sm" />}
-                                            </div>
-                                            <span className="text-sm md:text-base">{g}</span>
-                                        </label>
-                                    ))}
+                                    {['ชาย', 'หญิง', 'อื่นๆ'].map((g) => {
+                                        const id = `gender-${g}`
+                                        return (
+                                            <label
+                                                key={g}
+                                                htmlFor={id}
+                                                className={`flex items-center gap-2 cursor-pointer transition-all ${formData.gender === g ? 'text-indigo-600 font-bold' : 'text-slate-900 font-medium'} ${readOnly ? 'pointer-events-none opacity-80' : ''}`}
+                                            >
+                                                <input
+                                                    id={id}
+                                                    type="radio"
+                                                    name="gender"
+                                                    value={g}
+                                                    checked={formData.gender === g}
+                                                    onChange={() => !readOnly && setFormData(prev => ({ ...prev, gender: g }))}
+                                                    className="sr-only"
+                                                />
+                                                <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center border-2 flex-shrink-0 ${formData.gender === g ? 'border-indigo-600 bg-indigo-50' : 'border-slate-300 bg-slate-50'}`}>
+                                                    {formData.gender === g && <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-indigo-600 rounded-full shadow-sm" />}
+                                                </div>
+                                                <span className="text-sm md:text-base">{g}</span>
+                                            </label>
+                                        )
+                                    })}
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4 md:gap-6">
                                 <div className="space-y-1.5 md:space-y-2">
-                                    <label className="text-sm md:text-base font-medium text-slate-900 uppercase">อายุ (ปี)</label>
-                                    <input name="age" value={formData.age} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="ระบุอายุ"
+                                    <label htmlFor="age" className="text-sm md:text-base font-medium text-slate-900 uppercase">อายุ (ปี)</label>
+                                    <input id="age" name="age" value={formData.age} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="ระบุอายุ"
                                         className="w-full text-base md:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors disabled:text-slate-500" />
                                 </div>
                                 <div className="space-y-1.5 md:space-y-2">
-                                    <label className="text-sm md:text-base font-medium text-slate-900 uppercase">อาชีพ</label>
-                                    <input name="occupation" value={formData.occupation} onChange={handleInputChange} type="text" disabled={readOnly} placeholder="ระบุอาชีพ"
+                                    <label htmlFor="occupation" className="text-sm md:text-base font-medium text-slate-900 uppercase">อาชีพ</label>
+                                    <input id="occupation" name="occupation" value={formData.occupation} onChange={handleInputChange} type="text" disabled={readOnly} placeholder="ระบุอาชีพ"
                                         className="w-full text-base md:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors disabled:text-slate-500" />
                                 </div>
                             </div>
                             <div className="space-y-1.5 md:space-y-2">
-                                <label className="text-sm md:text-base font-medium text-slate-900 uppercase">รายได้เฉลี่ย (บาท/เดือน)</label>
-                                <input name="income" value={formData.income} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="ระบุรายได้"
+                                <label htmlFor="income" className="text-sm md:text-base font-medium text-slate-900 uppercase">รายได้เฉลี่ย (บาท/เดือน)</label>
+                                <input id="income" name="income" value={formData.income} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="ระบุรายได้"
                                     className="w-full text-base md:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors disabled:text-slate-500" />
                             </div>
                         </div>
@@ -833,14 +874,14 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                 {/* จังหวัด */}
                                 <div className="space-y-1.5 md:space-y-2">
-                                    <label className="text-[11px] md:text-sm font-black text-slate-400 uppercase tracking-widest ml-1">จังหวัด</label>
-                                    <input value={addressFields.province} readOnly
+                                    <label htmlFor="province" className="text-[11px] md:text-sm font-black text-slate-400 uppercase tracking-widest ml-1">จังหวัด</label>
+                                    <input id="province" value={addressFields.province} readOnly
                                         className="w-full bg-slate-100/80 border-2 border-slate-100 rounded-xl md:rounded-2xl px-4 py-3.5 md:px-5 md:py-4 text-sm md:text-base text-slate-500 font-bold focus:outline-none cursor-not-allowed" />
                                 </div>
 
                                 {/* เขต */}
                                 <div className="space-y-1.5 md:space-y-2">
-                                    <label className="text-[11px] md:text-sm font-black text-slate-400 uppercase tracking-widest ml-1">เขต <span className="text-red-500">*</span></label>
+                                    <label htmlFor="district" className="text-[11px] md:text-sm font-black text-slate-400 uppercase tracking-widest ml-1">เขต <span className="text-red-500">*</span></label>
                                     <CustomSelect
                                         id="district"
                                         label="เขต"
@@ -856,7 +897,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
 
                                 {/* แขวง */}
                                 <div className="space-y-1.5 md:space-y-2">
-                                    <label className="text-[11px] md:text-sm font-black text-slate-400 uppercase tracking-widest ml-1">แขวง <span className="text-red-500">*</span></label>
+                                    <label htmlFor="subDistrict" className="text-[11px] md:text-sm font-black text-slate-400 uppercase tracking-widest ml-1">แขวง <span className="text-red-500">*</span></label>
                                     <CustomSelect
                                         id="subDistrict"
                                         label="แขวง"
@@ -872,16 +913,17 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
 
                                 {/* รหัสไปรษณีย์ */}
                                 <div className="space-y-1.5 md:space-y-2">
-                                    <label className="text-[11px] md:text-sm font-black text-slate-400 uppercase tracking-widest ml-1">รหัสไปรษณีย์</label>
-                                    <input value={addressFields.zipcode} readOnly placeholder="อัตโนมัติ..."
+                                    <label htmlFor="zipcode" className="text-[11px] md:text-sm font-black text-slate-400 uppercase tracking-widest ml-1">รหัสไปรษณีย์</label>
+                                    <input id="zipcode" value={addressFields.zipcode} readOnly placeholder="อัตโนมัติ..."
                                         className="w-full bg-indigo-50/50 border-2 border-indigo-50 rounded-xl md:rounded-2xl px-4 py-3.5 md:px-5 md:py-4 text-sm md:text-base text-indigo-600 font-black tracking-widest focus:outline-none cursor-not-allowed placeholder:text-indigo-300" />
                                 </div>
                             </div>
 
                             {/* รายละเอียดเพิ่มเติม */}
                             <div className="space-y-1.5 md:space-y-2">
-                                <label className="text-[11px] md:text-sm font-black text-slate-400 uppercase tracking-widest ml-1">รายละเอียด (บ้านเลขที่, ซอย, ถนน) <span className="text-red-500">*</span></label>
+                                <label htmlFor="address_detail" className="text-[11px] md:text-sm font-black text-slate-400 uppercase tracking-widest ml-1">รายละเอียด (บ้านเลขที่, ซอย, ถนน) <span className="text-red-500">*</span></label>
                                 <textarea
+                                    id="address_detail"
                                     value={addressFields.detail}
                                     onChange={(e) => handleAddressChange('detail', e.target.value)}
                                     rows={2}
@@ -894,7 +936,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                         </div>
 
                         <div className="space-y-3 md:space-y-4 border-t border-slate-100 pt-6">
-                            <label className="text-sm md:text-base font-bold text-slate-500 uppercase flex items-center gap-2">พื้นที่คลองที่อาศัย <span className="text-red-500">*</span></label>
+                            <label htmlFor="canal_zone" className="text-sm md:text-base font-bold text-slate-500 uppercase flex items-center gap-2">พื้นที่คลองที่อาศัย <span className="text-red-500">*</span></label>
                             <div className="max-w-md">
                                 <CustomSelect
                                     id="canal_zone"
@@ -919,21 +961,24 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                             <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:max-w-xl">
                                 <div className="space-y-1 md:space-y-2">
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                                        <input name="residency_years" value={formData.residency_years} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="0" min="0"
+                                        <label htmlFor="residency_years" className="sr-only">ปีที่อาศัย</label>
+                                        <input id="residency_years" name="residency_years" value={formData.residency_years} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="0" min="0"
                                             className="w-full text-base md:text-xl font-medium text-slate-900 border-b-2 border-slate-200 focus:border-indigo-500 py-1.5 md:py-2 outline-none bg-transparent text-center transition-colors disabled:text-slate-500" />
                                         <span className="text-xs md:text-base font-bold text-slate-400 text-center">ปี</span>
                                     </div>
                                 </div>
                                 <div className="space-y-1 md:space-y-2">
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                                        <input name="residency_months" value={formData.residency_months} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="0" min="0" max="11"
+                                        <label htmlFor="residency_months" className="sr-only">เดือนที่อาศัย</label>
+                                        <input id="residency_months" name="residency_months" value={formData.residency_months} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="0" min="0" max="11"
                                             className="w-full text-base md:text-xl font-medium text-slate-900 border-b-2 border-slate-200 focus:border-indigo-500 py-1.5 md:py-2 outline-none bg-transparent text-center transition-colors disabled:text-slate-500" />
                                         <span className="text-xs md:text-base font-bold text-slate-400 text-center">เดือน</span>
                                     </div>
                                 </div>
                                 <div className="space-y-1 md:space-y-2">
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                                        <input name="residency_days" value={formData.residency_days} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="0" min="0" max="31"
+                                        <label htmlFor="residency_days" className="sr-only">วันที่อาศัย</label>
+                                        <input id="residency_days" name="residency_days" value={formData.residency_days} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="0" min="0" max="31"
                                             className="w-full text-base md:text-xl font-medium text-slate-900 border-b-2 border-slate-200 focus:border-indigo-500 py-1.5 md:py-2 outline-none bg-transparent text-center transition-colors disabled:text-slate-500" />
                                         <span className="text-xs md:text-base font-bold text-slate-400 text-center">วัน</span>
                                     </div>
@@ -943,13 +988,13 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pt-6 border-t border-slate-100">
                             <div className="space-y-1.5 md:space-y-2">
-                                <label className="text-sm md:text-base font-medium text-slate-900 uppercase flex items-center gap-2">เบอร์โทรศัพท์ <span className="text-red-500">*</span></label>
-                                <input name="phone" value={formData.phone} onChange={handleInputChange} type="tel" disabled={readOnly} required placeholder="เช่น 08x-xxx-xxxx"
+                                <label htmlFor="phone" className="text-sm md:text-base font-medium text-slate-900 uppercase flex items-center gap-2">เบอร์โทรศัพท์ <span className="text-red-500">*</span></label>
+                                <input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} type="tel" disabled={readOnly} required placeholder="เช่น 08x-xxx-xxxx" autoComplete="tel"
                                     className="w-full text-base md:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors disabled:text-slate-500" />
                             </div>
                             <div className="space-y-1.5 md:space-y-2">
-                                <label className="text-sm md:text-base font-medium text-slate-900 uppercase flex items-center gap-2">ช่องทางติดต่ออื่นๆ (โซเชียล)</label>
-                                <input name="social_media" value={formData.social_media} onChange={handleInputChange} type="text" disabled={readOnly} placeholder="เช่น Facebook, Line ID..."
+                                <label htmlFor="social_media" className="text-sm md:text-base font-medium text-slate-900 uppercase flex items-center gap-2">ช่องทางติดต่ออื่นๆ (โซเชียล)</label>
+                                <input id="social_media" name="social_media" value={formData.social_media} onChange={handleInputChange} type="text" disabled={readOnly} placeholder="เช่น Facebook, Line ID..."
                                     className="w-full text-base md:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors disabled:text-slate-500" />
                             </div>
                         </div>
@@ -1092,8 +1137,9 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                         </div>
                     ) : (
                         !readOnly ? (
-                            <label className={`flex flex-col items-center justify-center gap-3 md:gap-4 py-12 md:py-24 border-2 border-dashed rounded-2xl md:rounded-3xl cursor-pointer transition-all
-                                    ${uploadingConsent ? 'border-slate-200 bg-slate-50 opacity-50 pointer-events-none' : 'border-amber-300 bg-amber-50/50 hover:bg-amber-100/50 hover:border-amber-400'}`}>
+                            <label htmlFor="consent_upload" className={`flex flex-col items-center justify-center gap-3 md:gap-4 py-12 md:py-24 border-2 border-dashed rounded-2xl md:rounded-3xl cursor-pointer transition-all
+                                    ${uploadingConsent ? 'border-slate-200 bg-slate-50 opacity-50 pointer-events-none' : 'border-amber-300 bg-amber-50/50 hover:bg-amber-100/50 hover:border-amber-400'}`}
+                            >
                                 <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-white shadow-sm flex items-center justify-center">
                                     <Icon icon={uploadingConsent ? 'solar:refresh-bold' : 'solar:camera-add-bold-duotone'} className={`text-2xl md:text-3xl text-amber-500 ${uploadingConsent ? 'animate-spin' : ''}`} />
                                 </div>
@@ -1101,7 +1147,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                     <p className="text-base md:text-lg font-bold text-slate-700">{uploadingConsent ? 'กำลังเตรียมไฟล์...' : 'แตะเพื่อถ่ายรูป / แนบไฟล์ใบยินยอม'}</p>
                                     <p className="text-[11px] md:text-sm font-medium text-slate-400 mt-2 md:mt-3">รองรับไฟล์รูปภาพ (JPG, PNG) หรือ PDF</p>
                                 </div>
-                                <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" capture="environment" className="hidden" onChange={handleFileChange} />
+                                <input id="consent_upload" type="file" className="hidden" accept="image/*,.pdf" onChange={handleFileChange} disabled={uploadingConsent} />
                             </label>
                         ) : (
                             <div className="py-12 md:py-16 bg-slate-50 border border-dashed border-slate-200 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center text-slate-400">
@@ -1150,11 +1196,11 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                     <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
                                         <Icon icon="solar:clipboard-list-bold-duotone" className="text-xl" />
                                     </div>
-                                    <div>
-                                        <h2 className="text-base md:text-lg font-bold text-slate-800 leading-tight">
+                                    <div className="min-w-0">
+                                        <h2 className="text-base md:text-lg font-bold text-slate-800 leading-tight truncate">
                                             {userRole === 'admin' ? 'รายชื่อทั้งหมด' : 'รายชื่อผู้ให้ข้อมูลของฉัน'}
                                         </h2>
-                                        <p className="text-[10px] md:text-xs text-slate-500 font-medium mt-0.5">
+                                        <p className="text-[10px] md:text-xs text-slate-500 font-medium mt-0.5 truncate">
                                             {userRole === 'admin' ? 'ข้อมูลทั้งหมดในระบบ' : 'แตะเพื่อเลือกรายชื่อเดิมและเพิ่มเมนู'}
                                         </p>
                                     </div>
@@ -1171,7 +1217,9 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                             <div className="p-4 bg-slate-50/50 border-b border-slate-100">
                                 <div className="relative">
                                     <Icon icon="solar:magnifer-linear" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
+                                    <label htmlFor="drawer_search" className="sr-only">ค้นหาชื่อ หรือ รหัส</label>
                                     <input
+                                        id="drawer_search"
                                         type="text"
                                         placeholder="ค้นหาชื่อ หรือ รหัส (INFO-XXX)..."
                                         value={myInformantsSearch}

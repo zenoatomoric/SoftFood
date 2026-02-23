@@ -140,75 +140,6 @@ export default function FoodListClient({ userRole, userId }: Props) {
         }
     }
 
-    const handleExport = async () => {
-        if (userRole !== 'admin' && userRole !== 'director') {
-            setToast({ show: true, msg: 'คุณไม่มีสิทธิ์ในการ Export ข้อมูล', type: 'error' })
-            return
-        }
-
-        try {
-            setToast({ show: true, msg: 'กำลังเตรียมไฟล์ Export...', type: 'info' })
-
-            // Fetch ALL matching data with FULL details
-            const params = new URLSearchParams()
-            if (debouncedSearch) params.set('q', debouncedSearch)
-            if (canalFilter) params.set('canal', canalFilter)
-            if (categoryFilter) params.set('category', categoryFilter)
-            if (statusFilter) params.set('status', statusFilter)
-            params.set('limit', '9999')
-            params.set('full', 'true')
-
-            const res = await fetch(`/api/food?${params.toString()}`)
-            const json = await res.json()
-
-            if (!res.ok || !json.data) throw new Error('Failed to fetch data')
-
-            // Prepare Data for XLSX
-            const exportData = json.data.map((item: any) => {
-                const ingredients = item.menu_ingredients?.map((i: any) => `${i.name} (${i.quantity} ${i.unit}) - ${i.note || ''}`).join('\n') || ''
-                const steps = item.menu_steps?.sort((a: any, b: any) => a.step_order - b.step_order).map((s: any) => `${s.step_order}. ${s.instruction}`).join('\n') || ''
-                const photos = item.menu_photos?.map((p: any) => p.photo_url).join('\n') || ''
-                const rituals = Array.isArray(item.rituals) ? item.rituals.join(', ') : item.rituals || ''
-                const sources = Array.isArray(item.ingredient_sources) ? item.ingredient_sources.join(', ') : item.ingredient_sources || ''
-                const benefits = Array.isArray(item.health_benefits) ? item.health_benefits.join(', ') : item.health_benefits || ''
-
-                return {
-                    'ID': item.menu_id,
-                    'ชื่อเมนู': item.menu_name,
-                    'ชื่อท้องถิ่น': item.local_name || '',
-                    'ประเภท': item.category,
-                    'โซนคลอง': item.canal_zone,
-                    'ความนิยม': item.popularity || '',
-                    'ฤดูกาล': item.seasonality || '',
-                    'ความสัมพันธ์/ประเพณี': rituals,
-                    'รสชาติ': item.taste_appeal || '',
-                    'ความยาก': item.complexity || '',
-                    'ความถี่': item.consumption_freq || '',
-                    'แหล่งวัตถุดิบ': sources,
-                    'ประโยชน์': benefits,
-                    'เรื่องราว': item.story || '',
-                    'สถานะการสืบทอด': item.heritage_status || '',
-                    'วัตถุดิบ': ingredients,
-                    'วิธีทำ': steps,
-                    'เคล็ดลับ': item.secret_tips || '',
-                    'รูปภาพ': photos
-                }
-            })
-
-            // Create Workbook and Worksheet
-            const worksheet = XLSX.utils.json_to_sheet(exportData)
-            const workbook = XLSX.utils.book_new()
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Menus')
-
-            // Download
-            XLSX.writeFile(workbook, `food_list_export_${new Date().toISOString().slice(0, 10)}.xlsx`)
-
-            setToast({ show: true, msg: 'Export ไฟล์สำเร็จ', type: 'success' })
-        } catch (err) {
-            console.error(err)
-            setToast({ show: true, msg: 'Export ล้มเหลว', type: 'error' })
-        }
-    }
 
     const CustomDropdown = ({
         label,
@@ -289,15 +220,6 @@ export default function FoodListClient({ userRole, userId }: Props) {
                         </h1>
                         <p className="text-xs md:text-sm text-slate-500 mt-1">จัดการข้อมูลเมนูอาหารและการคัดเลือก</p>
                     </div>
-                    {(userRole === 'admin' || userRole === 'director') && (
-                        <button
-                            onClick={handleExport}
-                            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm shadow-green-200 w-full md:w-auto justify-center text-sm md:text-base outline-none active:scale-95 transition-all"
-                        >
-                            <Icon icon="solar:file-download-bold" />
-                            Export Excel
-                        </button>
-                    )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">

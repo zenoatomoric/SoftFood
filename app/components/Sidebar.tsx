@@ -97,11 +97,12 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
                   }
                   ${isCollapsed ? 'justify-center' : ''}
                 `}
+                aria-label={item.name}
                 title={isCollapsed ? item.name : ''}
               >
                 <Icon icon={item.icon} width="24" height="24" className="flex-shrink-0" />
 
-                <span className={`whitespace-nowrap transition-all duration-200 ${isCollapsed ? 'w-0 overflow-hidden opacity-0 hidden' : 'w-auto opacity-100'}`}>
+                <span className={`whitespace-nowrap truncate transition-all duration-200 ${isCollapsed ? 'w-0 overflow-hidden opacity-0 hidden' : 'w-auto opacity-100'}`}>
                   {item.name}
                 </span>
 

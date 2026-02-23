@@ -90,15 +90,19 @@ export async function GET(request: Request) {
         const end = start + limit - 1
 
         const session = await auth()
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const supabase = await createClient()
 
-        // 1. Get user profile/role
-        const svCode = session?.user?.email
-        const { data: userData } = await supabase.from('users').select('role').eq('sv_code', svCode || '').single()
-        const role = (userData?.role || 'user').toLowerCase().trim()
+        // 1. Get user identity from session
+        const svCode = session.user.sv_code
+        const role = (session.user.role || 'user').toLowerCase().trim()
+        const isAdmin = role === 'admin' || role === 'director'
 
         if (id) {
-            // Try with both joins (creator and editor)
+            // Fetch single informant detail
             const { data, error } = await supabase
                 .from('informants')
                 .select(`
@@ -110,127 +114,55 @@ export async function GET(request: Request) {
                 .single()
 
             if (error) {
-                console.error('Error fetching informant with complex join:', error.message)
-
-                // Try with just creator join (should work if original FK exists)
-                const { data: midData, error: midError } = await supabase
-                    .from('informants')
-                    .select(`
-                        *,
-                        creator:users!ref_sv_code(collector_name)
-                    `)
-                    .eq('info_id', id)
-                    .single()
-
-                if (midError) {
-                    console.error('Error fetching informant with simple join:', midError.message)
-                    const { data: fbData, error: fbError } = await supabase
-                        .from('informants')
-                        .select('*')
-                        .eq('info_id', id)
-                        .single()
-
-                    if (fbError) return NextResponse.json({ error: fbError.message }, { status: 500 })
-                    return NextResponse.json({ data: fbData }, { status: 200 })
-                }
-
-                return NextResponse.json({
-                    data: {
-                        ...midData,
-                        creator_name: midData.creator?.collector_name,
-                        editor_name: null // Fallback if last_edited_by join fails
-                    }
-                }, { status: 200 })
+                console.error('Error fetching informant detail:', error.message)
+                return NextResponse.json({ error: error.message }, { status: 500 })
             }
 
-            // Flatten the joined data
-            const flattenedData = {
+            // Flatten data
+            const formatted = {
                 ...data,
                 creator_name: data.creator?.collector_name,
                 editor_name: data.editor?.collector_name
             }
-            delete flattenedData.creator
-            delete flattenedData.editor
+            delete formatted.creator
+            delete formatted.editor
 
-            return NextResponse.json({ data: flattenedData }, { status: 200 })
+            return NextResponse.json({ data: formatted }, { status: 200 })
         }
 
-        // List query with multiple fallback levels
-        let joinData: any[] = []
-        let joinCount: number = 0
-
-        try {
-            // Level 1: Full join (creator + editor)
-            const { data, error, count } = await supabase.from('informants').select(`
-                *,
-                creator:users!ref_sv_code(collector_name),
-                editor:users!last_edited_by(collector_name)
-            `, { count: 'exact' })
-                .order('created_at', { ascending: false })
-                .range(start, end)
-                .filter('ref_sv_code', role === 'user' || mine ? 'eq' : 'neq', role === 'user' || mine ? (svCode || 'NONE') : 'UNDEFINED_PLACEHOLDER')
-            // Note: complex filtering is better done via the query object, but for the join fallback logic:
-
-            if (error) throw error
-            joinData = data
-            joinCount = count || 0
-        } catch (err) {
-            console.warn('Level 1 Join failed, trying Level 2 (Creator only):', (err as any).message)
-            try {
-                // Level 2: Creator join only
-                const { data, error, count } = await supabase.from('informants').select(`
-                    *,
-                    creator:users!ref_sv_code(collector_name)
-                `, { count: 'exact' })
-                    .order('created_at', { ascending: false })
-                    .range(start, end)
-
-                if (error) throw error
-                joinData = data
-                joinCount = count || 0
-            } catch (err2) {
-                console.error('Level 2 Join failed, falling back to basic select:', (err2 as any).message)
-                // Level 3: Basic select
-                const { data, error, count } = await supabase.from('informants').select('*', { count: 'exact' })
-                    .order('created_at', { ascending: false })
-                    .range(start, end)
-
-                if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-                joinData = data
-                joinCount = count || 0
-            }
-        }
-
-        // Re-apply RBAC/Search filtering if needed on the final data (or ideally in the query)
-        // Since we are using PostgREST, it's better to build the query object. 
-        // Let's refactor to keep it clean.
-
-        // Actually, the current approach is a bit messy. Let's stick to the query builder pattern.
-
-        // RE-REFACTORING to be clean AND resilient:
+        // 2. Build List Query
         const buildQuery = (selectStr: string) => {
             let q = supabase.from('informants').select(selectStr, { count: 'exact' })
-            if (role === 'user' || mine) q = q.eq('ref_sv_code', svCode || 'NONE')
-            if (search) q = q.or(`friendly_id.ilike.%${search}%,full_name.ilike.%${search}%`)
+
+            // RBAC Filtering:
+            // - If user is NOT admin/director, they can ONLY see their own records (ref_sv_code = svCode)
+            // - If user IS admin/director and 'mine' is true, they see only their own records
+            // - Otherwise (admin/director and 'mine' is false), they see EVERYTHING
+            if (!isAdmin || mine) {
+                q = q.eq('ref_sv_code', svCode || 'NONE')
+            }
+
+            // Search filtering
+            if (search) {
+                q = q.or(`friendly_id.ilike.%${search}%,full_name.ilike.%${search}%,phone.ilike.%${search}%`)
+            }
+
             return q.order('created_at', { ascending: false }).range(start, end)
         }
 
-        let finalData: any[] = []
-        let finalCount: number = 0
-
-        // Attempt 1: Full Join
+        // Try primary join query
         const q1 = await buildQuery(`
             *,
             creator:users!ref_sv_code(collector_name),
             editor:users!last_edited_by(collector_name)
         `)
 
-        if (!q1.error) {
-            finalData = q1.data
-            finalCount = q1.count || 0
-        } else {
-            console.warn('Full join failed:', q1.error.message)
-            // Attempt 2: Creator Join
+        let finalData = q1.data
+        let finalCount = q1.count || 0
+
+        if (q1.error) {
+            console.warn('Full join query failed, trying creator-only join:', q1.error.message)
+            // Fallback 1: Creator only
             const q2 = await buildQuery(`
                 *,
                 creator:users!ref_sv_code(collector_name)
@@ -239,8 +171,8 @@ export async function GET(request: Request) {
                 finalData = q2.data
                 finalCount = q2.count || 0
             } else {
-                console.error('Creator join failed:', q2.error.message)
-                // Attempt 3: Basic Select
+                console.error('Creator join query failed, falling back to basic select:', q2.error.message)
+                // Fallback 2: Basic select
                 const q3 = await buildQuery('*')
                 if (q3.error) return NextResponse.json({ error: q3.error.message }, { status: 500 })
                 finalData = q3.data
@@ -248,11 +180,11 @@ export async function GET(request: Request) {
             }
         }
 
-        // Flatten joined data for the list
-        const flattenedList = finalData.map((item: any) => ({
+        // 3. Transform & Return
+        const flattenedList = (finalData || []).map((item: any) => ({
             ...item,
             creator_name: item.creator?.collector_name,
-            editor_name: item.editor?.collector_name
+            editor_name: item.editor?.collector_name || null
         }))
 
         return NextResponse.json({

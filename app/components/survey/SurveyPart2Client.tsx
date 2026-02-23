@@ -224,8 +224,9 @@ export default function SurveyPart2Client() {
                         {/* Menu Name */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-8">
                             <div className="space-y-2">
-                                <label className="text-base font-bold text-slate-500 uppercase">ชื่อเมนูอาหาร (ทางการ)</label>
+                                <label htmlFor="menu_name" className="text-base font-bold text-slate-500 uppercase">ชื่อเมนูอาหาร (ทางการ)</label>
                                 <input
+                                    id="menu_name"
                                     name="menu_name"
                                     value={formData.menu_name}
                                     onChange={handleInputChange}
@@ -235,8 +236,9 @@ export default function SurveyPart2Client() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-base font-bold text-slate-500 uppercase">ชื่อเรียกในท้องถิ่น</label>
+                                <label htmlFor="local_name" className="text-base font-bold text-slate-500 uppercase">ชื่อเรียกในท้องถิ่น</label>
                                 <input
+                                    id="local_name"
                                     name="local_name"
                                     value={formData.local_name}
                                     onChange={handleInputChange}
@@ -247,32 +249,37 @@ export default function SurveyPart2Client() {
                         </div>
 
                         {/* Category */}
-                        <div className="space-y-4">
-                            <label className="text-base font-bold text-slate-500 uppercase">ประเภทอาหาร <span className="text-red-500">*</span></label>
+                        <div className="space-y-4" role="radiogroup" aria-labelledby="category-label">
+                            <label id="category-label" className="text-base font-bold text-slate-500 uppercase">ประเภทอาหาร <span className="text-red-500">*</span></label>
                             <div className="flex flex-wrap gap-4 sm:gap-4 mt-2">
-                                {CATEGORIES.map(cat => (
-                                    <label key={cat} className={`flex items-center gap-2 px-4 py-4 sm:p-0 rounded-xl sm:rounded-none border-2 sm:border-0 cursor-pointer transition-all flex-1 sm:flex-none justify-center sm:justify-start ${formData.category === cat ? 'border-orange-500 bg-orange-50 sm:bg-transparent text-orange-600 font-bold' : 'border-slate-100 text-slate-600 font-medium'}`}>
-                                        <input
-                                            type="radio" name="category" value={cat}
-                                            checked={formData.category === cat} onChange={handleInputChange}
-                                            className="hidden"
-                                        />
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 hidden sm:flex ${formData.category === cat ? 'border-orange-600 bg-orange-50' : 'border-slate-300 bg-slate-50'}`}>
-                                            {formData.category === cat && <div className="w-3 h-3 bg-orange-600 rounded-full shadow-sm" />}
-                                        </div>
-                                        <span className="text-base text-center w-full sm:w-auto">{cat}</span>
-                                    </label>
-                                ))}
+                                {CATEGORIES.map(cat => {
+                                    const id = `cat-${cat}`
+                                    return (
+                                        <label key={cat} htmlFor={id} className={`flex items-center gap-2 px-4 py-4 sm:p-0 rounded-xl sm:rounded-none border-2 sm:border-0 cursor-pointer transition-all flex-1 sm:flex-none justify-center sm:justify-start ${formData.category === cat ? 'border-orange-500 bg-orange-50 sm:bg-transparent text-orange-600 font-bold' : 'border-slate-100 text-slate-600 font-medium'}`}>
+                                            <input
+                                                id={id}
+                                                type="radio" name="category" value={cat}
+                                                checked={formData.category === cat} onChange={handleInputChange}
+                                                className="sr-only"
+                                            />
+                                            <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 hidden sm:flex ${formData.category === cat ? 'border-orange-600 bg-orange-50' : 'border-slate-300 bg-slate-50'}`}>
+                                                {formData.category === cat && <div className="w-3 h-3 bg-orange-600 rounded-full shadow-sm" />}
+                                            </div>
+                                            <span className="text-base text-center w-full sm:w-auto">{cat}</span>
+                                        </label>
+                                    )
+                                })}
                             </div>
                         </div>
 
                         {/* Story */}
                         <div className="space-y-2">
-                            <label className="text-base font-bold text-slate-500 uppercase flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                            <label htmlFor="story" className="text-base font-bold text-slate-500 uppercase flex flex-col sm:flex-row sm:items-end justify-between gap-2">
                                 เรื่องราวความเป็นมา (Story)
                                 <span className="text-xs font-medium text-slate-400 normal-case bg-slate-50 px-2 py-1 rounded-md w-fit">Voice-to-Text เร็วๆ นี้</span>
                             </label>
                             <textarea
+                                id="story"
                                 name="story"
                                 value={formData.story}
                                 onChange={handleInputChange}
@@ -287,37 +294,44 @@ export default function SurveyPart2Client() {
                             <div className="space-y-4">
                                 <label className="text-base font-bold text-slate-500 uppercase">คุณค่าทางโภชนาการ</label>
                                 <div className="space-y-4 bg-slate-50 p-4 rounded-2xl sm:bg-transparent sm:p-0">
-                                    {NUTRITION_OPTS.map(opt => (
-                                        <label key={opt} className="flex items-center gap-4 cursor-pointer group w-full py-1 sm:py-0">
-                                            <div className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-colors flex-shrink-0 ${formData.nutrition.includes(opt) ? 'bg-orange-500 border-orange-500 shadow-sm' : 'border-slate-300 bg-white group-hover:border-orange-300'}`}>
-                                                {formData.nutrition.includes(opt) && <Icon icon="solar:check-bold" className="text-white text-sm" />}
-                                            </div>
-                                            <input type="checkbox" className="hidden" onChange={() => handleCheckboxChange('nutrition', opt)} checked={formData.nutrition.includes(opt)} />
-                                            <span className={`text-base font-medium transition-colors ${formData.nutrition.includes(opt) ? 'text-slate-800' : 'text-slate-600'}`}>{opt}</span>
-                                        </label>
-                                    ))}
+                                    {NUTRITION_OPTS.map(opt => {
+                                        const id = `nutri-${opt}`
+                                        return (
+                                            <label key={opt} htmlFor={id} className="flex items-center gap-4 cursor-pointer group w-full py-1 sm:py-0">
+                                                <div className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-colors flex-shrink-0 ${formData.nutrition.includes(opt) ? 'bg-orange-500 border-orange-500 shadow-sm' : 'border-slate-300 bg-white group-hover:border-orange-300'}`}>
+                                                    {formData.nutrition.includes(opt) && <Icon icon="solar:check-bold" className="text-white text-sm" />}
+                                                </div>
+                                                <input id={id} type="checkbox" className="sr-only" onChange={() => handleCheckboxChange('nutrition', opt)} checked={formData.nutrition.includes(opt)} />
+                                                <span className={`text-base font-medium transition-colors ${formData.nutrition.includes(opt) ? 'text-slate-800' : 'text-slate-600'}`}>{opt}</span>
+                                            </label>
+                                        )
+                                    })}
                                 </div>
                             </div>
                             <div className="space-y-4">
                                 <label className="text-base font-bold text-slate-500 uppercase">คุณค่าทางสังคม/ความเชื่อ</label>
                                 <div className="space-y-4 bg-slate-50 p-4 rounded-2xl sm:bg-transparent sm:p-0">
-                                    {SOCIAL_VAL_OPTS.map(opt => (
-                                        <label key={opt} className="flex items-center gap-4 cursor-pointer group w-full py-1 sm:py-0">
-                                            <div className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-colors flex-shrink-0 ${formData.social_value.includes(opt) ? 'bg-orange-500 border-orange-500 shadow-sm' : 'border-slate-300 bg-white group-hover:border-orange-300'}`}>
-                                                {formData.social_value.includes(opt) && <Icon icon="solar:check-bold" className="text-white text-sm" />}
-                                            </div>
-                                            <input type="checkbox" className="hidden" onChange={() => handleCheckboxChange('social_value', opt)} checked={formData.social_value.includes(opt)} />
-                                            <span className={`text-base font-medium transition-colors ${formData.social_value.includes(opt) ? 'text-slate-800' : 'text-slate-600'}`}>{opt}</span>
-                                        </label>
-                                    ))}
+                                    {SOCIAL_VAL_OPTS.map(opt => {
+                                        const id = `social-${opt}`
+                                        return (
+                                            <label key={opt} htmlFor={id} className="flex items-center gap-4 cursor-pointer group w-full py-1 sm:py-0">
+                                                <div className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-colors flex-shrink-0 ${formData.social_value.includes(opt) ? 'bg-orange-500 border-orange-500 shadow-sm' : 'border-slate-300 bg-white group-hover:border-orange-300'}`}>
+                                                    {formData.social_value.includes(opt) && <Icon icon="solar:check-bold" className="text-white text-sm" />}
+                                                </div>
+                                                <input id={id} type="checkbox" className="sr-only" onChange={() => handleCheckboxChange('social_value', opt)} checked={formData.social_value.includes(opt)} />
+                                                <span className={`text-base font-medium transition-colors ${formData.social_value.includes(opt) ? 'text-slate-800' : 'text-slate-600'}`}>{opt}</span>
+                                            </label>
+                                        )
+                                    })}
                                 </div>
                             </div>
                         </div>
 
                         {/* Heritage Status */}
                         <div className="space-y-2">
-                            <label className="text-base font-bold text-slate-500 uppercase">สถานะการขึ้นทะเบียนมรดกภูมิปัญญา</label>
+                            <label htmlFor="heritage_status" className="text-base font-bold text-slate-500 uppercase">สถานะการขึ้นทะเบียนมรดกภูมิปัญญา</label>
                             <input
+                                id="heritage_status"
                                 name="heritage_status"
                                 value={formData.heritage_status}
                                 onChange={handleInputChange}

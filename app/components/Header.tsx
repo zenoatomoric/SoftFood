@@ -40,6 +40,7 @@ export default function Header({ userName, userRole, onMenuClick, isCollapsed }:
                     <button
                         onClick={onMenuClick}
                         className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+                        aria-label={isCollapsed ? "ขยายเมนู" : "ย่อเมนู"}
                     >
                         <Icon
                             icon={isCollapsed ? "solar:hamburger-menu-linear" : "solar:hamburger-menu-linear"}

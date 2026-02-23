@@ -9,6 +9,15 @@ export async function GET(request: Request) {
         const supabase = await createClient()
         const { searchParams } = new URL(request.url)
 
+        const session = await auth()
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const svCode = session.user.sv_code
+        const role = (session.user.role || 'user').toLowerCase().trim()
+        const isAdmin = role === 'admin' || role === 'director'
+
         const q = searchParams.get('q') || ''
         const canal = searchParams.get('canal')
         const category = searchParams.get('category')
@@ -17,11 +26,11 @@ export async function GET(request: Request) {
         const limitStr = searchParams.get('limit')
         const limit = limitStr ? parseInt(limitStr) : 20
         const full = searchParams.get('full') === 'true'
+        const mine = searchParams.get('mine') === 'true'
         const start = (page - 1) * limit
         const end = start + limit - 1
 
         // Base Query
-        // Note: selecting nested fields requires relationships to be set up in Supabase/Postgres
         let query = supabase.from('menus').select(full ? `
             *,
             informants!inner (*),
@@ -44,7 +53,12 @@ export async function GET(request: Request) {
             menu_photos (photo_url)
         `, { count: 'exact' })
 
-        // Apply Filters
+        // RBAC Filtering:
+        // - Non-admins ONLY see their own records
+        // - Admins see everything UNLESS 'mine' is true
+        if (!isAdmin || mine) {
+            query = query.eq('ref_sv_code', svCode || 'NONE')
+        }
         if (q) {
             // Simple search on Menu Name and SV Code
             // Note: OR logic across joined tables is complex in Supabase JS SDK. 

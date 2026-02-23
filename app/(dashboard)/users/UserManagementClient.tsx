@@ -115,6 +115,12 @@ export default function UserManagementClient({
         setUserToDelete(null);
     }
 
+    // Helper for phone restriction
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+        e.target.value = val;
+    };
+
     const getRoleBadge = (role: string) => {
         switch (role.toLowerCase()) {
             case "admin":
@@ -182,10 +188,12 @@ export default function UserManagementClient({
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 bg-slate-100/50 p-1.5 rounded-2xl w-full sm:w-fit overflow-x-auto sm:overflow-visible no-scrollbar">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 bg-slate-100/50 p-1.5 rounded-2xl w-full sm:w-fit overflow-x-auto sm:overflow-visible no-scrollbar" role="radiogroup" aria-label="กรองตามสิทธิ์การใช้งาน">
                 <button
                     onClick={() => setRoleFilter("all")}
                     className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                    role="radio"
+                    aria-checked={roleFilter === "all"}
                 >
                     ทั้งหมด
                     <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "all" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>
@@ -195,6 +203,8 @@ export default function UserManagementClient({
                 <button
                     onClick={() => setRoleFilter("admin")}
                     className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "admin" ? "bg-white text-purple-700 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                    role="radio"
+                    aria-checked={roleFilter === "admin"}
                 >
                     <Icon icon="solar:shield-user-bold" />
                     แอดมิน
@@ -205,6 +215,8 @@ export default function UserManagementClient({
                 <button
                     onClick={() => setRoleFilter("director")}
                     className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "director" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                    role="radio"
+                    aria-checked={roleFilter === "director"}
                 >
                     <Icon icon="solar:user-id-bold" />
                     กรรมการ
@@ -215,6 +227,8 @@ export default function UserManagementClient({
                 <button
                     onClick={() => setRoleFilter("user")}
                     className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "user" ? "bg-white text-green-700 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                    role="radio"
+                    aria-checked={roleFilter === "user"}
                 >
                     <Icon icon="solar:user-rounded-bold" />
                     ผู้กรอก
@@ -247,10 +261,11 @@ export default function UserManagementClient({
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                <label htmlFor="sv_code" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                     SV Code (Username) *
                                 </label>
                                 <input
+                                    id="sv_code"
                                     name="sv_code"
                                     type="text"
                                     required
@@ -260,10 +275,11 @@ export default function UserManagementClient({
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                <label htmlFor="password" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                     รหัสผ่านเริ่มต้น *
                                 </label>
                                 <input
+                                    id="password"
                                     name="password"
                                     type="text"
                                     required
@@ -274,10 +290,11 @@ export default function UserManagementClient({
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                            <label htmlFor="collector_name" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                 ชื่อ-นามสกุล *
                             </label>
                             <input
+                                id="collector_name"
                                 name="collector_name"
                                 type="text"
                                 required
@@ -288,10 +305,11 @@ export default function UserManagementClient({
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                <label htmlFor="faculty" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                     คณะ
                                 </label>
                                 <input
+                                    id="faculty"
                                     name="faculty"
                                     type="text"
                                     placeholder="คณะ"
@@ -300,10 +318,11 @@ export default function UserManagementClient({
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                <label htmlFor="major" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                     สาขา
                                 </label>
                                 <input
+                                    id="major"
                                     name="major"
                                     type="text"
                                     placeholder="สาขา"
@@ -312,23 +331,25 @@ export default function UserManagementClient({
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                <label htmlFor="phone" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                     เบอร์โทร
                                 </label>
                                 <input
+                                    id="phone"
                                     name="phone"
                                     type="text"
                                     placeholder="เบอร์โทรศัพท์"
+                                    onChange={handlePhoneChange}
                                     className="w-full bg-slate-50 border-none rounded-xl py-3 px-4 font-medium text-slate-900 focus:ring-2 focus:ring-gray-900/10"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                            <label htmlFor="role" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                 สิทธิ์การใช้งาน (Role) *
                             </label>
-                            <CustomRoleSelect name="role" />
+                            <CustomRoleSelect id="role" name="role" />
                         </div>
 
                         <button
@@ -378,19 +399,20 @@ export default function UserManagementClient({
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                        <div className="text-xs font-bold text-slate-400 uppercase ml-1">
                                             SV Code
-                                        </label>
+                                        </div>
                                         <div className="w-full bg-slate-100 border-none rounded-xl py-3 px-4 font-bold text-slate-500 cursor-not-allowed">
                                             {editingUser.sv_code}
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                        <label htmlFor="edit-password" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                             เปลี่ยนรหัสผ่าน (ถ้าต้องการ)
                                         </label>
                                         <input
+                                            id="edit-password"
                                             name="password"
                                             type="text"
                                             placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน"
@@ -400,10 +422,11 @@ export default function UserManagementClient({
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                    <label htmlFor="edit-collector_name" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                         ชื่อ-นามสกุล *
                                     </label>
                                     <input
+                                        id="edit-collector_name"
                                         name="collector_name"
                                         type="text"
                                         required
@@ -415,10 +438,11 @@ export default function UserManagementClient({
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                        <label htmlFor="edit-faculty" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                             คณะ
                                         </label>
                                         <input
+                                            id="edit-faculty"
                                             name="faculty"
                                             type="text"
                                             defaultValue={editingUser.faculty}
@@ -428,10 +452,11 @@ export default function UserManagementClient({
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                        <label htmlFor="edit-major" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                             สาขา
                                         </label>
                                         <input
+                                            id="edit-major"
                                             name="major"
                                             type="text"
                                             defaultValue={editingUser.major}
@@ -441,13 +466,15 @@ export default function UserManagementClient({
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                        <label htmlFor="edit-phone" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                             เบอร์โทร
                                         </label>
                                         <input
+                                            id="edit-phone"
                                             name="phone"
                                             type="text"
                                             defaultValue={editingUser.phone}
+                                            onChange={handlePhoneChange}
                                             placeholder="เบอร์โทรศัพท์"
                                             className="w-full bg-slate-50 border-none rounded-xl py-3 px-4 font-medium text-slate-900 focus:ring-2 focus:ring-gray-900/10"
                                         />
@@ -455,10 +482,11 @@ export default function UserManagementClient({
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                    <label htmlFor="edit-role" className="text-xs font-bold text-slate-400 uppercase ml-1">
                                         สิทธิ์การใช้งาน (Role) *
                                     </label>
                                     <CustomRoleSelect
+                                        id="edit-role"
                                         name="role"
                                         defaultValue={editingUser.role}
                                     />
@@ -787,9 +815,11 @@ const ROLE_OPTIONS = [
 ];
 
 function CustomRoleSelect({
+    id,
     name,
     defaultValue = "user",
 }: {
+    id?: string;
     name: string;
     defaultValue?: string;
 }) {
@@ -797,7 +827,15 @@ function CustomRoleSelect({
 
     return (
         <div className="relative">
-            <input type="hidden" name={name} value={selected} />
+            <input
+                id={id}
+                type="text"
+                name={name}
+                value={selected}
+                readOnly
+                className="sr-only"
+                aria-hidden="true"
+            />
 
             {/* Desktop Transition: Hidden on Desktop, Grid on Mobile */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

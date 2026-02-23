@@ -32,40 +32,76 @@ const SECTION_TITLES = [
 ]
 
 // ═══ Stable helper components ═══
-const RadioSet = ({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) => (
+const RadioSet = ({ idPrefix, options, value, onChange }: { idPrefix: string; options: string[]; value: string; onChange: (v: string) => void }) => (
     <div className="flex flex-wrap gap-4 sm:gap-4">
-        {options.map(opt => (
-            <label key={opt} onClick={() => onChange(opt)}
-                className={`px-4 sm:px-4 py-4 rounded-xl text-sm sm:text-base font-medium cursor-pointer transition-all border flex-1 sm:flex-none text-center
-                ${value === opt ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20' : 'bg-slate-50 text-slate-900 border-slate-200 hover:border-indigo-300'}`}>
-                {opt}
-            </label>
-        ))}
+        {options.map(opt => {
+            const id = `${idPrefix}-${opt}`
+            return (
+                <label
+                    key={opt}
+                    htmlFor={id}
+                    className={`px-4 sm:px-4 py-4 rounded-xl text-sm sm:text-base font-medium cursor-pointer transition-all border flex-1 sm:flex-none text-center
+                    ${value === opt ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20' : 'bg-slate-50 text-slate-900 border-slate-200 hover:border-indigo-300'}`}
+                >
+                    <input
+                        id={id}
+                        type="radio"
+                        name={idPrefix}
+                        value={opt}
+                        checked={value === opt}
+                        onChange={() => onChange(opt)}
+                        className="sr-only"
+                    />
+                    {opt}
+                </label>
+            )
+        })}
     </div>
 )
 
-const CheckboxSet = ({ options, values, onToggle }: { options: string[]; values: string[]; onToggle: (v: string) => void }) => (
+const CheckboxSet = ({ idPrefix, options, values, onToggle }: { idPrefix: string; options: string[]; values: string[]; onToggle: (v: string) => void }) => (
     <div className="flex flex-wrap gap-4 sm:gap-4">
-        {options.map(opt => (
-            <label key={opt} onClick={() => onToggle(opt)}
-                className={`px-4 sm:px-4 py-4 rounded-xl text-sm sm:text-base font-medium cursor-pointer transition-all border items-center justify-center sm:justify-start gap-4 flex-1 sm:flex-none flex
-                ${values.includes(opt) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20' : 'bg-slate-50 text-slate-900 border-slate-200 hover:border-indigo-300'}`}>
-                <Icon icon={values.includes(opt) ? 'solar:check-circle-bold' : 'solar:add-circle-linear'} className="text-xl flex-shrink-0" />
-                <span className="truncate">{opt}</span>
-            </label>
-        ))}
+        {options.map(opt => {
+            const id = `${idPrefix}-${opt}`
+            return (
+                <label
+                    key={opt}
+                    htmlFor={id}
+                    className={`px-4 sm:px-4 py-4 rounded-xl text-sm sm:text-base font-medium cursor-pointer transition-all border items-center justify-center sm:justify-start gap-4 flex-1 sm:flex-none flex
+                    ${values.includes(opt) ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20' : 'bg-slate-50 text-slate-900 border-slate-200 hover:border-indigo-300'}`}
+                >
+                    <input
+                        id={id}
+                        type="checkbox"
+                        checked={values.includes(opt)}
+                        onChange={() => onToggle(opt)}
+                        className="sr-only"
+                    />
+                    <Icon icon={values.includes(opt) ? 'solar:check-circle-bold' : 'solar:add-circle-linear'} className="text-xl flex-shrink-0" />
+                    <span className="truncate">{opt}</span>
+                </label>
+            )
+        })}
     </div>
 )
 
-const Label = ({ text, required }: { text: string; required?: boolean }) => (
-    <label className="text-base font-medium text-slate-900 uppercase flex items-center gap-2 mb-2">
+const Label = ({ text, required, htmlFor }: { text: string; required?: boolean; htmlFor?: string }) => (
+    <label htmlFor={htmlFor} className="text-base font-medium text-slate-900 uppercase flex items-center gap-2 mb-2">
         {text} {required && <span className="text-red-500">*</span>}
     </label>
 )
 
-const TextInput = ({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) => (
-    <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full text-base sm:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors" />
+const TextInput = ({ id, name, value, onChange, placeholder, autoComplete }: { id?: string; name?: string; value: string; onChange: (v: string) => void; placeholder?: string; autoComplete?: string }) => (
+    <input
+        id={id}
+        name={name}
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        className="w-full text-base sm:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors"
+    />
 )
 
 const SectionCard = ({ idx, sectionRefs, children }: { idx: number, sectionRefs: React.MutableRefObject<(HTMLElement | null)[]>, children: React.ReactNode }) => (
@@ -432,12 +468,24 @@ export default function SurveyFormClient() {
             <div className="space-y-8 sm:space-y-8 lg:space-y-8">
                 <SectionCard idx={0} sectionRefs={sectionRefs}>
                     <div className="space-y-6 sm:space-y-8">
-                        <div className="space-y-1"><Label text="ชื่อเมนูอาหาร (ชื่อทางการ)" required /><TextInput value={menuData.menu_name} onChange={v => setMenuData(p => ({ ...p, menu_name: v }))} placeholder="เช่น แกงเขียวหวาน" /></div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                            <div className="space-y-1"><Label text="ชื่อเรียกในท้องถิ่น" /><TextInput value={menuData.local_name} onChange={v => setMenuData(p => ({ ...p, local_name: v }))} placeholder="ชื่อที่ชาวบ้านเรียก" /></div>
-                            <div className="space-y-1"><Label text="ชื่อภาษาอื่น" /><TextInput value={menuData.other_name} onChange={v => setMenuData(p => ({ ...p, other_name: v }))} placeholder="ชื่อภาษาอังกฤษ/อื่นๆ" /></div>
+                        <div className="space-y-1">
+                            <Label text="ชื่อเมนูอาหาร (ชื่อทางการ)" required htmlFor="menu_name" />
+                            <TextInput id="menu_name" name="menu_name" value={menuData.menu_name} onChange={v => setMenuData(p => ({ ...p, menu_name: v }))} placeholder="เช่น แกงเขียวหวาน" />
                         </div>
-                        <div className="space-y-3"><Label text="ประเภทอาหาร" required /><RadioSet options={CATEGORIES} value={menuData.category} onChange={v => setMenuData(p => ({ ...p, category: v }))} /></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                            <div className="space-y-1">
+                                <Label text="ชื่อเรียกในท้องถิ่น" htmlFor="local_name" />
+                                <TextInput id="local_name" name="local_name" value={menuData.local_name} onChange={v => setMenuData(p => ({ ...p, local_name: v }))} placeholder="ชื่อที่ชาวบ้านเรียก" />
+                            </div>
+                            <div className="space-y-1">
+                                <Label text="ชื่อภาษาอื่น" htmlFor="other_name" />
+                                <TextInput id="other_name" name="other_name" value={menuData.other_name} onChange={v => setMenuData(p => ({ ...p, other_name: v }))} placeholder="ชื่อภาษาอังกฤษ/อื่นๆ" />
+                            </div>
+                        </div>
+                        <div className="space-y-3">
+                            <Label text="ประเภทอาหาร" required />
+                            <RadioSet idPrefix="category" options={CATEGORIES} value={menuData.category} onChange={v => setMenuData(p => ({ ...p, category: v }))} />
+                        </div>
                     </div>
                 </SectionCard>
 
@@ -446,52 +494,84 @@ export default function SurveyFormClient() {
                         <div className="space-y-10">
                             <div className="space-y-3">
                                 <Label text="ระดับความนิยม / การเป็นที่รู้จัก (เลือกได้หลายข้อ)" />
-                                <CheckboxSet options={POPULARITY_OPTIONS} values={surveyData.popularity} onToggle={v => toggleCheckbox(surveyData.popularity, setSurveyData, 'popularity', v)} />
-                                {surveyData.popularity.includes('อื่นๆ') && <div className="mt-3"><TextInput value={surveyData.other_popularity} onChange={v => setSurveyData(p => ({ ...p, other_popularity: v }))} placeholder="ระบุระดับความนิยมอื่นๆ..." /></div>}
+                                <CheckboxSet idPrefix="popularity" options={POPULARITY_OPTIONS} values={surveyData.popularity} onToggle={v => toggleCheckbox(surveyData.popularity, setSurveyData, 'popularity', v)} />
+                                {surveyData.popularity.includes('อื่นๆ') && (
+                                    <div className="mt-3">
+                                        <TextInput id="other_popularity" name="other_popularity" value={surveyData.other_popularity} onChange={v => setSurveyData(p => ({ ...p, other_popularity: v }))} placeholder="ระบุระดับความนิยมอื่นๆ..." />
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-3">
                                 <Label text="ความเชื่อและประเพณี / โอกาสในการกิน (เลือกได้หลายข้อ)" />
-                                <CheckboxSet options={RITUAL_OPTIONS} values={surveyData.rituals} onToggle={v => toggleCheckbox(surveyData.rituals, setSurveyData, 'rituals', v)} />
-                                {surveyData.rituals.includes('อื่นๆ') && <div className="mt-3"><TextInput value={surveyData.other_rituals} onChange={v => setSurveyData(p => ({ ...p, other_rituals: v }))} placeholder="ระบุโอกาสอื่นๆ..." /></div>}
+                                <CheckboxSet idPrefix="rituals" options={RITUAL_OPTIONS} values={surveyData.rituals} onToggle={v => toggleCheckbox(surveyData.rituals, setSurveyData, 'rituals', v)} />
+                                {surveyData.rituals.includes('อื่นๆ') && (
+                                    <div className="mt-3">
+                                        <TextInput id="other_rituals" name="other_rituals" value={surveyData.other_rituals} onChange={v => setSurveyData(p => ({ ...p, other_rituals: v }))} placeholder="ระบุโอกาสอื่นๆ..." />
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-3">
                                 <Label text="ฤดูกาล / ช่วงเวลาที่หารับประทานได้ (เลือกได้หลายข้อ)" />
-                                <CheckboxSet options={SEASON_OPTIONS} values={surveyData.seasonality} onToggle={v => toggleCheckbox(surveyData.seasonality, setSurveyData, 'seasonality', v)} />
-                                {surveyData.seasonality.includes('อื่นๆ') && <div className="mt-3"><TextInput value={surveyData.other_seasonality} onChange={v => setSurveyData(p => ({ ...p, other_seasonality: v }))} placeholder="ระบุฤดูกาลอื่นๆ..." /></div>}
+                                <CheckboxSet idPrefix="seasonality" options={SEASON_OPTIONS} values={surveyData.seasonality} onToggle={v => toggleCheckbox(surveyData.seasonality, setSurveyData, 'seasonality', v)} />
+                                {surveyData.seasonality.includes('อื่นๆ') && (
+                                    <div className="mt-3">
+                                        <TextInput id="other_seasonality" name="other_seasonality" value={surveyData.other_seasonality} onChange={v => setSurveyData(p => ({ ...p, other_seasonality: v }))} placeholder="ระบุฤดูกาลอื่นๆ..." />
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-3">
                                 <Label text="แหล่งที่มาของวัตถุดิบ (เลือกได้หลายข้อ)" />
-                                <CheckboxSet options={SOURCE_OPTIONS} values={surveyData.ingredient_sources} onToggle={v => toggleCheckbox(surveyData.ingredient_sources, setSurveyData, 'ingredient_sources', v)} />
-                                {surveyData.ingredient_sources.includes('อื่นๆ') && <div className="mt-3"><TextInput value={surveyData.other_ingredient_sources} onChange={v => setSurveyData(p => ({ ...p, other_ingredient_sources: v }))} placeholder="ระบุแหล่งที่มาอื่นๆ..." /></div>}
+                                <CheckboxSet idPrefix="ingredient_sources" options={SOURCE_OPTIONS} values={surveyData.ingredient_sources} onToggle={v => toggleCheckbox(surveyData.ingredient_sources, setSurveyData, 'ingredient_sources', v)} />
+                                {surveyData.ingredient_sources.includes('อื่นๆ') && (
+                                    <div className="mt-3">
+                                        <TextInput id="other_ingredient_sources" name="other_ingredient_sources" value={surveyData.other_ingredient_sources} onChange={v => setSurveyData(p => ({ ...p, other_ingredient_sources: v }))} placeholder="ระบุแหล่งที่มาอื่นๆ..." />
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-3">
                                 <Label text="สุขภาพและสรรพคุณ (เลือกได้หลายข้อ)" />
-                                <CheckboxSet options={HEALTH_OPTIONS} values={surveyData.health_benefits} onToggle={v => toggleCheckbox(surveyData.health_benefits, setSurveyData, 'health_benefits', v)} />
-                                {surveyData.health_benefits.includes('อื่นๆ') && <div className="mt-3"><TextInput value={surveyData.other_health_benefits} onChange={v => setSurveyData(p => ({ ...p, other_health_benefits: v }))} placeholder="ระบุสรรพคุณอื่นๆ..." /></div>}
+                                <CheckboxSet idPrefix="health_benefits" options={HEALTH_OPTIONS} values={surveyData.health_benefits} onToggle={v => toggleCheckbox(surveyData.health_benefits, setSurveyData, 'health_benefits', v)} />
+                                {surveyData.health_benefits.includes('อื่นๆ') && (
+                                    <div className="mt-3">
+                                        <TextInput id="other_health_benefits" name="other_health_benefits" value={surveyData.other_health_benefits} onChange={v => setSurveyData(p => ({ ...p, other_health_benefits: v }))} placeholder="ระบุสรรพคุณอื่นๆ..." />
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-3">
                                 <Label text="ความถี่ในการรับประทาน (เลือกได้หลายข้อ)" />
-                                <CheckboxSet options={FREQ_OPTIONS} values={surveyData.consumption_freq} onToggle={v => toggleCheckbox(surveyData.consumption_freq, setSurveyData, 'consumption_freq', v)} />
-                                {surveyData.consumption_freq.includes('อื่นๆ') && <div className="mt-3"><TextInput value={surveyData.other_consumption_freq} onChange={v => setSurveyData(p => ({ ...p, other_consumption_freq: v }))} placeholder="ระบุความถี่อื่นๆ..." /></div>}
+                                <CheckboxSet idPrefix="consumption_freq" options={FREQ_OPTIONS} values={surveyData.consumption_freq} onToggle={v => toggleCheckbox(surveyData.consumption_freq, setSurveyData, 'consumption_freq', v)} />
+                                {surveyData.consumption_freq.includes('อื่นๆ') && (
+                                    <div className="mt-3">
+                                        <TextInput id="other_consumption_freq" name="other_consumption_freq" value={surveyData.other_consumption_freq} onChange={v => setSurveyData(p => ({ ...p, other_consumption_freq: v }))} placeholder="ระบุความถี่อื่นๆ..." />
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-3">
                                 <Label text="ความยากง่ายในการทำ (เลือกได้หลายข้อ)" />
-                                <CheckboxSet options={COMPLEXITY_OPTIONS} values={surveyData.complexity} onToggle={v => toggleCheckbox(surveyData.complexity, setSurveyData, 'complexity', v)} />
-                                {surveyData.complexity.includes('อื่นๆ') && <div className="mt-3"><TextInput value={surveyData.other_complexity} onChange={v => setSurveyData(p => ({ ...p, other_complexity: v }))} placeholder="ระบุความยากง่ายอื่นๆ..." /></div>}
+                                <CheckboxSet idPrefix="complexity" options={COMPLEXITY_OPTIONS} values={surveyData.complexity} onToggle={v => toggleCheckbox(surveyData.complexity, setSurveyData, 'complexity', v)} />
+                                {surveyData.complexity.includes('อื่นๆ') && (
+                                    <div className="mt-3">
+                                        <TextInput id="other_complexity" name="other_complexity" value={surveyData.other_complexity} onChange={v => setSurveyData(p => ({ ...p, other_complexity: v }))} placeholder="ระบุความยากง่ายอื่นๆ..." />
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-3">
                                 <Label text="รสชาติ / ความเหมาะสม (เลือกได้หลายข้อ)" />
-                                <CheckboxSet options={TASTE_OPTIONS} values={surveyData.taste_appeal} onToggle={v => toggleCheckbox(surveyData.taste_appeal, setSurveyData, 'taste_appeal', v)} />
-                                {surveyData.taste_appeal.includes('อื่นๆ') && <div className="mt-3"><TextInput value={surveyData.other_taste_appeal} onChange={v => setSurveyData(p => ({ ...p, other_taste_appeal: v }))} placeholder="ระบุรสชาติอื่นๆ..." /></div>}
+                                <CheckboxSet idPrefix="taste_appeal" options={TASTE_OPTIONS} values={surveyData.taste_appeal} onToggle={v => toggleCheckbox(surveyData.taste_appeal, setSurveyData, 'taste_appeal', v)} />
+                                {surveyData.taste_appeal.includes('อื่นๆ') && (
+                                    <div className="mt-3">
+                                        <TextInput id="other_taste_appeal" name="other_taste_appeal" value={surveyData.other_taste_appeal} onChange={v => setSurveyData(p => ({ ...p, other_taste_appeal: v }))} placeholder="ระบุรสชาติอื่นๆ..." />
+                                    </div>
+                                )}
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-slate-50">
                                 <div className="space-y-2">
-                                    <Label text="คุณค่าทางโภชนาการ" />
-                                    <textarea value={surveyData.nutrition} onChange={e => setSurveyData(p => ({ ...p, nutrition: e.target.value }))} rows={3} placeholder="ระบุคุณค่าทางโภชนาการ..." className="w-full text-base font-medium text-slate-800 border-2 border-slate-100 focus:border-indigo-500 rounded-2xl p-4 outline-none bg-slate-50 resize-y" />
+                                    <Label text="คุณค่าทางโภชนาการ" htmlFor="nutrition" />
+                                    <textarea id="nutrition" name="nutrition" value={surveyData.nutrition} onChange={e => setSurveyData(p => ({ ...p, nutrition: e.target.value }))} rows={3} placeholder="ระบุคุณค่าทางโภชนาการ..." className="w-full text-base font-medium text-slate-800 border-2 border-slate-100 focus:border-indigo-500 rounded-2xl p-4 outline-none bg-slate-50 resize-y" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label text="คุณค่าทางสังคมและวัฒนธรรม" />
-                                    <textarea value={surveyData.social_value} onChange={e => setSurveyData(p => ({ ...p, social_value: e.target.value }))} rows={3} placeholder="ระบุคุณค่าทางสังคมและวัฒนธรรม..." className="w-full text-base font-medium text-slate-800 border-2 border-slate-100 focus:border-indigo-500 rounded-2xl p-4 outline-none bg-slate-50 resize-y" />
+                                    <Label text="คุณค่าทางสังคมและวัฒนธรรม" htmlFor="social_value" />
+                                    <textarea id="social_value" name="social_value" value={surveyData.social_value} onChange={e => setSurveyData(p => ({ ...p, social_value: e.target.value }))} rows={3} placeholder="ระบุคุณค่าทางสังคมและวัฒนธรรม..." className="w-full text-base font-medium text-slate-800 border-2 border-slate-100 focus:border-indigo-500 rounded-2xl p-4 outline-none bg-slate-50 resize-y" />
                                 </div>
                             </div>
                         </div>
@@ -500,8 +580,14 @@ export default function SurveyFormClient() {
 
                 <SectionCard idx={2} sectionRefs={sectionRefs}>
                     <div className="space-y-8">
-                        <div className="space-y-2"><Label text="เรื่องเล่า / ตำนาน / ประวัติความเป็นมา" /><textarea value={storyData.story} onChange={e => setStoryData(p => ({ ...p, story: e.target.value }))} rows={5} placeholder="บันทึกเรื่องราว..." className="w-full text-base sm:text-lg font-medium text-slate-800 border-2 border-slate-100 focus:border-indigo-500 rounded-2xl p-4 sm:p-4 outline-none bg-slate-50 resize-y" /></div>
-                        <div className="space-y-3"><Label text="สถานะการสืบทอด" /><RadioSet options={HERITAGE_OPTIONS} value={storyData.heritage_status} onChange={v => setStoryData(p => ({ ...p, heritage_status: v }))} /></div>
+                        <div className="space-y-2">
+                            <Label text="เรื่องเล่า / ตำนาน / ประวัติความเป็นมา" htmlFor="story" />
+                            <textarea id="story" name="story" value={storyData.story} onChange={e => setStoryData(p => ({ ...p, story: e.target.value }))} rows={5} placeholder="บันทึกเรื่องราว..." className="w-full text-base sm:text-lg font-medium text-slate-800 border-2 border-slate-100 focus:border-indigo-500 rounded-2xl p-4 sm:p-4 outline-none bg-slate-50 resize-y" />
+                        </div>
+                        <div className="space-y-3">
+                            <Label text="สถานะการสืบทอด" />
+                            <RadioSet idPrefix="heritage_status" options={HERITAGE_OPTIONS} value={storyData.heritage_status} onChange={v => setStoryData(p => ({ ...p, heritage_status: v }))} />
+                        </div>
                     </div>
                 </SectionCard>
 
@@ -526,8 +612,14 @@ export default function SurveyFormClient() {
                                                 />
                                             </div>
                                             <div className="flex flex-wrap sm:flex-nowrap gap-3 items-center w-full md:w-auto">
-                                                <input type="text" placeholder="ปริมาณ" value={ing.quantity} onChange={e => updateIngredient(actualIdx, 'quantity', e.target.value)} className="w-20 sm:w-24 bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-500 font-medium text-slate-700" />
-                                                <input type="text" placeholder="หน่วย" value={ing.unit} onChange={e => updateIngredient(actualIdx, 'unit', e.target.value)} className="w-20 sm:w-24 bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-500 font-medium text-slate-700" />
+                                                <div className="space-y-1">
+                                                    <label htmlFor={`ing-qty-${actualIdx}`} className="sr-only">ปริมาณ</label>
+                                                    <input id={`ing-qty-${actualIdx}`} type="text" placeholder="ปริมาณ" value={ing.quantity} onChange={e => updateIngredient(actualIdx, 'quantity', e.target.value)} className="w-20 sm:w-24 bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-500 font-medium text-slate-700" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label htmlFor={`ing-unit-${actualIdx}`} className="sr-only">หน่วย</label>
+                                                    <input id={`ing-unit-${actualIdx}`} type="text" placeholder="หน่วย" value={ing.unit} onChange={e => updateIngredient(actualIdx, 'unit', e.target.value)} className="w-20 sm:w-24 bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-500 font-medium text-slate-700" />
+                                                </div>
 
                                                 <label className="flex items-center gap-2 cursor-pointer ml-2">
                                                     <input type="checkbox" checked={ing.is_main_ingredient} onChange={e => updateIngredient(actualIdx, 'is_main_ingredient', e.target.checked)} className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
@@ -568,8 +660,14 @@ export default function SurveyFormClient() {
                                                 />
                                             </div>
                                             <div className="flex flex-wrap sm:flex-nowrap gap-3 items-center w-full md:w-auto">
-                                                <input type="text" placeholder="ปริมาณ" value={ing.quantity} onChange={e => updateIngredient(actualIdx, 'quantity', e.target.value)} className="w-20 sm:w-24 bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-amber-500 font-medium text-slate-700" />
-                                                <input type="text" placeholder="หน่วย" value={ing.unit} onChange={e => updateIngredient(actualIdx, 'unit', e.target.value)} className="w-20 sm:w-24 bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-amber-500 font-medium text-slate-700" />
+                                                <div className="space-y-1">
+                                                    <label htmlFor={`seasoning-qty-${actualIdx}`} className="sr-only">ปริมาณ</label>
+                                                    <input id={`seasoning-qty-${actualIdx}`} type="text" placeholder="ปริมาณ" value={ing.quantity} onChange={e => updateIngredient(actualIdx, 'quantity', e.target.value)} className="w-20 sm:w-24 bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-amber-500 font-medium text-slate-700" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label htmlFor={`seasoning-unit-${actualIdx}`} className="sr-only">หน่วย</label>
+                                                    <input id={`seasoning-unit-${actualIdx}`} type="text" placeholder="หน่วย" value={ing.unit} onChange={e => updateIngredient(actualIdx, 'unit', e.target.value)} className="w-20 sm:w-24 bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-amber-500 font-medium text-slate-700" />
+                                                </div>
 
                                                 {ingredients.filter(i => i.ingredient_type === 'เครื่องปรุง/สมุนไพร').length > 1 && (
                                                     <button type="button" onClick={() => removeIngredient(actualIdx)} className="text-red-400 p-2 hover:bg-red-50 rounded-lg transition-colors ml-auto sm:ml-2">
@@ -592,8 +690,8 @@ export default function SurveyFormClient() {
                                 <div className="space-y-4">
                                     {prepSteps.map((s, idx) => (
                                         <div key={`prep-${idx}`} className="flex gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 items-start">
-                                            <span className="w-8 h-8 bg-slate-800 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">{s.step_order}</span>
-                                            <textarea value={s.instruction} onChange={e => updateStep('เตรียม', idx, e.target.value)} className="flex-1 bg-transparent outline-none py-1" rows={2} />
+                                            <label htmlFor={`prep-step-${idx}`} className="w-8 h-8 bg-slate-800 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">{s.step_order}</label>
+                                            <textarea id={`prep-step-${idx}`} value={s.instruction} onChange={e => updateStep('เตรียม', idx, e.target.value)} className="flex-1 bg-transparent outline-none py-1" rows={2} />
                                             {prepSteps.length > 1 && (
                                                 <button type="button" onClick={() => removeStep('เตรียม', idx)} className="text-red-400 p-1 hover:bg-red-50 rounded-lg transition-colors"><Icon icon="solar:trash-bin-minimalistic-bold" /></button>
                                             )}
@@ -608,8 +706,8 @@ export default function SurveyFormClient() {
                                 <div className="space-y-4">
                                     {cookSteps.map((s, idx) => (
                                         <div key={`cook-${idx}`} className="flex gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 items-start">
-                                            <span className="w-8 h-8 bg-slate-800 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">{s.step_order}</span>
-                                            <textarea value={s.instruction} onChange={e => updateStep('ปรุง', idx, e.target.value)} className="flex-1 bg-transparent outline-none py-1" rows={2} />
+                                            <label htmlFor={`cook-step-${idx}`} className="w-8 h-8 bg-slate-800 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">{s.step_order}</label>
+                                            <textarea id={`cook-step-${idx}`} value={s.instruction} onChange={e => updateStep('ปรุง', idx, e.target.value)} className="flex-1 bg-transparent outline-none py-1" rows={2} />
                                             {cookSteps.length > 1 && (
                                                 <button type="button" onClick={() => removeStep('ปรุง', idx)} className="text-red-400 p-1 hover:bg-red-50 rounded-lg transition-colors"><Icon icon="solar:trash-bin-minimalistic-bold" /></button>
                                             )}
@@ -670,7 +768,8 @@ export default function SurveyFormClient() {
                 </SectionCard>
 
                 <SectionCard idx={5} sectionRefs={sectionRefs}>
-                    <textarea value={awardsRef} onChange={e => setAwardsRef(e.target.value)} placeholder="รางวัล/อ้างอิง..." className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none" rows={3} />
+                    <Label text="รางวัล / การรับรอง / เอกสารอ้างอิง" htmlFor="awards_references" />
+                    <textarea id="awards_references" name="awards_references" value={awardsRef} onChange={e => setAwardsRef(e.target.value)} placeholder="รางวัล/อ้างอิง..." className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none" rows={3} />
                 </SectionCard>
             </div>
 

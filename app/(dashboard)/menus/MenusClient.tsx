@@ -113,7 +113,12 @@ export default function MenusClient({ userRole, userId }: Props) {
         return (
             <div className="relative">
                 <div
+                    id={id}
                     onClick={() => setOpenDropdown(isOpen ? null : id)}
+                    role="combobox"
+                    aria-expanded={isOpen}
+                    aria-haspopup="listbox"
+                    aria-controls={`${id}-listbox`}
                     className={`w-full pl-10 pr-10 py-2 md:py-2.5 text-sm md:text-base rounded-xl border outline-none text-slate-600 bg-white cursor-pointer hover:bg-slate-50 transition-all flex items-center justify-between
                     ${isOpen ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-200'}`}
                 >
@@ -127,9 +132,11 @@ export default function MenusClient({ userRole, userId }: Props) {
                 {isOpen && (
                     <>
                         <div className="fixed inset-0 z-10" onClick={() => setOpenDropdown(null)}></div>
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-200">
+                        <div id={`${id}-listbox`} role="listbox" className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-200">
                             <div className="max-h-60 overflow-y-auto py-1">
                                 <div
+                                    role="option"
+                                    aria-selected={value === ''}
                                     onClick={() => { onChange(''); setOpenDropdown(null) }}
                                     className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-indigo-50 transition-colors flex items-center justify-between
                                     ${value === '' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600'}`}
@@ -140,6 +147,8 @@ export default function MenusClient({ userRole, userId }: Props) {
                                 {options.map(opt => (
                                     <div
                                         key={opt.value}
+                                        role="option"
+                                        aria-selected={value === opt.value}
                                         onClick={() => { onChange(opt.value); setOpenDropdown(null) }}
                                         className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-indigo-50 transition-colors flex items-center justify-between
                                         ${value === opt.value ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600'}`}
@@ -189,7 +198,6 @@ export default function MenusClient({ userRole, userId }: Props) {
                 const benefits = Array.isArray(item.health_benefits) ? item.health_benefits.join(', ') : item.health_benefits || ''
 
                 return {
-                    'ID': item.menu_id,
                     'ชื่อเมนู': item.menu_name,
                     'ชื่อท้องถิ่น': (item as any).local_name || '',
                     'ประเภท': item.category,
@@ -207,7 +215,6 @@ export default function MenusClient({ userRole, userId }: Props) {
                     'วัตถุดิบ': ingredients,
                     'วิธีทำ': steps,
                     'เคล็ดลับ': item.secret_tips || '',
-                    'รูปภาพ': photos
                 }
             })
 
@@ -277,22 +284,28 @@ export default function MenusClient({ userRole, userId }: Props) {
                             </h1>
                             <p className="text-xs md:text-sm text-slate-500 mt-1">จัดการข้อมูลเมนูอาหารและการคัดเลือก</p>
                         </div>
-                        {userRole === 'admin' && (
-                            <button
-                                onClick={handleExport}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm shadow-green-200 w-full md:w-auto justify-center text-sm md:text-base"
-                            >
-                                <Icon icon="solar:file-download-bold" />
-                                Export Excel
-                            </button>
-                        )}
+
+                        <div className="flex flex-col md:flex-row gap-2">
+
+                            {userRole === 'admin' && (
+                                <button
+                                    onClick={handleExport}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm shadow-green-200 w-full md:w-auto justify-center text-sm md:text-base"
+                                >
+                                    <Icon icon="solar:file-download-bold" />
+                                    Export Excel
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {/* Filters */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">
                         <div className="relative col-span-1 md:col-span-2">
                             <Icon icon="solar:magnifer-linear" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <label htmlFor="menu_search" className="sr-only">ค้นหาชื่อเมนู</label>
                             <input
+                                id="menu_search"
                                 type="text"
                                 placeholder="ค้นหาชื่อเมนู..."
                                 value={search}
@@ -433,9 +446,13 @@ export default function MenusClient({ userRole, userId }: Props) {
                 {/* Pagination */}
                 {totalPages > 1 && (
                     <div className="flex justify-center gap-2 p-6 border-t border-slate-100 bg-slate-50/50">
-                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-4 py-2 rounded-xl bg-white border border-slate-200 disabled:opacity-50 hover:bg-slate-50 font-bold text-sm">ก่อนหน้า</button>
+                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2.5 rounded-xl bg-white border border-slate-200 disabled:opacity-50 hover:bg-slate-50 flex items-center justify-center" aria-label="หน้าก่อนหน้า">
+                            <Icon icon="solar:alt-arrow-left-linear" className="text-xl" />
+                        </button>
                         <span className="px-4 py-2 font-bold text-slate-600 text-sm">หน้า {page} / {totalPages}</span>
-                        <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-4 py-2 rounded-xl bg-white border border-slate-200 disabled:opacity-50 hover:bg-slate-50 font-bold text-sm">ถัดไป</button>
+                        <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2.5 rounded-xl bg-white border border-slate-200 disabled:opacity-50 hover:bg-slate-50 flex items-center justify-center" aria-label="หน้าถัดไป">
+                            <Icon icon="solar:alt-arrow-right-linear" className="text-xl" />
+                        </button>
                     </div>
                 )}
             </div>
