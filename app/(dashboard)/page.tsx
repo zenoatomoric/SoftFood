@@ -16,19 +16,44 @@ export default async function DashboardHomePage() {
 
     const userRole = session?.user?.role
 
-    // ใช้ Admin Client เพื่อให้ทุกโรลเห็นสถิติรวมของโครงการ (Bypass RLS)
-    const supabase = createAdminClient()
+    let totalMenus = 0
+    let totalInfo = 0
+    let canalStats: { name: string; menuCount: number; infoCount: number }[] = []
 
-    // ดึงข้อมูลจำนวนสถิติต่างๆ (Server Side Fetching)
-    const { count: totalMenus, error: menuErr } = await supabase.from('menus').select('*', { count: 'exact', head: true })
-    const { count: totalInfo, error: infoErr } = await supabase.from('informants').select('*', { count: 'exact', head: true })
+    try {
+        // ใช้ Admin Client เพื่อให้ทุกโรลเห็นสถิติรวมของโครงการ (Bypass RLS)
+        // ย้ายเข้ามาใน try-catch เพื่อไม่ให้หน้าเว็บพังถ้า Env Var หาย
+        const supabase = createAdminClient()
 
-    const canalNames = ['บางเขน', 'เปรมประชากร', 'ลาดพร้าว']
-    const canalStats = await Promise.all(canalNames.map(async (name) => {
-        const { count: menuCount } = await supabase.from('menus').select('menu_id, informants(canal_zone)', { count: 'exact', head: true }).eq('informants.canal_zone', name)
-        const { count: infoCount } = await supabase.from('informants').select('*', { count: 'exact', head: true }).eq('canal_zone', name)
-        return { name, menuCount: menuCount || 0, infoCount: infoCount || 0 }
-    }))
+        // ดึงข้อมูลจำนวนสถิติต่างๆ (Server Side Fetching)
+        const { count: mCount, error: menuErr } = await supabase.from('menus').select('*', { count: 'exact', head: true })
+        const { count: iCount, error: infoErr } = await supabase.from('informants').select('*', { count: 'exact', head: true })
+
+        if (menuErr) console.error('[Dashboard] Error fetching menus:', menuErr)
+        if (infoErr) console.error('[Dashboard] Error fetching informants:', infoErr)
+
+        totalMenus = mCount || 0
+        totalInfo = iCount || 0
+
+        const canalNames = ['บางเขน', 'เปรมประชากร', 'ลาดพร้าว']
+        canalStats = await Promise.all(canalNames.map(async (name) => {
+            // Count menus for this canal - join check
+            const { count: mC } = await supabase
+                .from('menus')
+                .select('menu_id, informants!inner(canal_zone)', { count: 'exact', head: true })
+                .eq('informants.canal_zone', name)
+
+            const { count: iC } = await supabase
+                .from('informants')
+                .select('*', { count: 'exact', head: true })
+                .eq('canal_zone', name)
+
+            return { name, menuCount: mC || 0, infoCount: iC || 0 }
+        }))
+    } catch (err) {
+        console.error('[Dashboard] Critical error during statistics fetching:', err)
+        // Keep defaults (0) to prevent page crash
+    }
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
