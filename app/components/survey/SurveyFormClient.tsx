@@ -620,6 +620,10 @@ export default function SurveyFormClient() {
                                                     <label htmlFor={`ing-unit-${actualIdx}`} className="sr-only">หน่วย</label>
                                                     <input id={`ing-unit-${actualIdx}`} type="text" placeholder="หน่วย" value={ing.unit} onChange={e => updateIngredient(actualIdx, 'unit', e.target.value)} className="w-20 sm:w-24 bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-500 font-medium text-slate-700" />
                                                 </div>
+                                                <div className="space-y-1">
+                                                    <label htmlFor={`ing-note-${actualIdx}`} className="sr-only">หมายเหตุ</label>
+                                                    <input id={`ing-note-${actualIdx}`} type="text" placeholder="หมายเหตุ" value={ing.note} onChange={e => updateIngredient(actualIdx, 'note', e.target.value)} className="w-full md:w-40 bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-500 font-medium text-slate-700 font-sans" />
+                                                </div>
 
                                                 <label className="flex items-center gap-2 cursor-pointer ml-2">
                                                     <input type="checkbox" checked={ing.is_main_ingredient} onChange={e => updateIngredient(actualIdx, 'is_main_ingredient', e.target.checked)} className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
@@ -667,6 +671,10 @@ export default function SurveyFormClient() {
                                                 <div className="space-y-1">
                                                     <label htmlFor={`seasoning-unit-${actualIdx}`} className="sr-only">หน่วย</label>
                                                     <input id={`seasoning-unit-${actualIdx}`} type="text" placeholder="หน่วย" value={ing.unit} onChange={e => updateIngredient(actualIdx, 'unit', e.target.value)} className="w-20 sm:w-24 bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-amber-500 font-medium text-slate-700" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label htmlFor={`seasoning-note-${actualIdx}`} className="sr-only">หมายเหตุ</label>
+                                                    <input id={`seasoning-note-${actualIdx}`} type="text" placeholder="หมายเหตุ" value={ing.note} onChange={e => updateIngredient(actualIdx, 'note', e.target.value)} className="w-full md:w-40 bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:border-amber-500 font-medium text-slate-700 font-sans" />
                                                 </div>
 
                                                 {ingredients.filter(i => i.ingredient_type === 'เครื่องปรุง/สมุนไพร').length > 1 && (

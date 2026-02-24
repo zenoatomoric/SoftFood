@@ -23,6 +23,53 @@ export default function MenuDetailClient({ menu, userRole, userId }: Props) {
 
     if (!menu) return <div className="p-8 text-center">ไม่พบข้อมูลเมนู</div>
 
+    // Local state for ingredients to allow editing notes
+    const [localIngredients, setLocalIngredients] = useState<any[]>(menu.menu_ingredients || [])
+    const [isSavingNotes, setIsSavingNotes] = useState(false)
+
+    useEffect(() => {
+        setLocalIngredients(menu.menu_ingredients || [])
+    }, [menu.menu_ingredients])
+
+    const updateIngredientNote = (index: number, newNote: string) => {
+        const next = [...localIngredients]
+        next[index] = { ...next[index], note: newNote }
+        setLocalIngredients(next)
+    }
+
+    const handleSaveNotes = async () => {
+        setIsSavingNotes(true)
+        try {
+            // Prepare ingredients the same way the survey form does
+            const ingredientsToSave = localIngredients.map(ing => ({
+                ref_ing_id: ing.ref_ing_id,
+                name: ing.master_ingredients?.ing_name || ing.name,
+                ingredient_type: ing.ingredient_type,
+                is_main_ingredient: ing.is_main_ingredient,
+                quantity: ing.quantity,
+                unit: ing.unit,
+                note: ing.note
+            }))
+
+            const res = await fetch(`/api/survey/ingredient`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ref_menu_id: menu.menu_id, ingredients: ingredientsToSave })
+            })
+
+            if (res.ok) {
+                setToast({ show: true, msg: 'อัปเดตหมายเหตุสำเร็จ', type: 'success' })
+                router.refresh()
+            } else {
+                setToast({ show: true, msg: 'ไม่สามารถบันทึกหมายเหตุได้', type: 'error' })
+            }
+        } catch (err) {
+            setToast({ show: true, msg: 'เกิดข้อผิดพลาดในการบันทึก', type: 'error' })
+        } finally {
+            setIsSavingNotes(false)
+        }
+    }
+
     const canEdit = userRole === 'admin' || (userRole === 'user' && menu.ref_sv_code === userId)
 
     const handleDelete = () => {
@@ -234,18 +281,41 @@ export default function MenuDetailClient({ menu, userRole, userId }: Props) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {menu.menu_ingredients?.map((ing: any, i: number) => (
+                                {localIngredients.map((ing: any, i: number) => (
                                     <tr key={i} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                                         {/* HIDDEN CODE: <td className="px-4 py-2 font-mono text-slate-400">{ing.ref_ing_id || '-'}</td> */}
-                                        <td className="px-4 py-2 font-medium text-slate-700">{ing.master_ingredients?.ing_name || ing.name || '-'} {ing.is_main_ingredient && <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded ml-1">หลัก</span>}</td>
-                                        <td className="px-4 py-2">{ing.quantity}</td>
-                                        <td className="px-4 py-2">{ing.unit}</td>
-                                        <td className="px-4 py-2 text-slate-500">{ing.note}</td>
+                                        <td className="px-4 py-2 font-medium text-slate-700">
+                                            {ing.master_ingredients?.ing_name || ing.name || '-'}
+                                            {ing.is_main_ingredient && <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded ml-1 font-bold">หลัก</span>}
+                                        </td>
+                                        <td className="px-4 py-2 text-slate-600">{ing.quantity}</td>
+                                        <td className="px-4 py-2 text-slate-600">{ing.unit}</td>
+                                        <td className="px-4 py-2 min-w-[200px]">
+                                            <input
+                                                type="text"
+                                                value={ing.note || ''}
+                                                onChange={(e) => updateIngredientNote(i, e.target.value)}
+                                                placeholder="ใส่หมายเหตุ..."
+                                                className="w-full bg-slate-50/50 border border-slate-100 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all outline-none"
+                                            />
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
+                    {canEdit && (
+                        <div className="mt-4 flex justify-end">
+                            <button
+                                onClick={handleSaveNotes}
+                                disabled={isSavingNotes}
+                                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                            >
+                                {isSavingNotes ? <Icon icon="solar:refresh-bold" className="animate-spin" /> : <Icon icon="solar:diskette-bold" />}
+                                บันทึกหมายเหตุส่วนผสม
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div>

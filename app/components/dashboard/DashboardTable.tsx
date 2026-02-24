@@ -54,9 +54,25 @@ export default function DashboardTable() {
         return `/api/food?${params.toString()}`
     }, [debouncedSearch, canalFilter, categoryFilter, statusFilter, page])
 
-    const { data: swrData, isLoading } = useSWR(fetchUrl)
+    const { data: swrData, error: swrError, isLoading } = useSWR(fetchUrl)
     const menus = swrData?.data || []
     const totalPages = swrData?.totalPages || 1
+
+    // useEffect(() => {
+    //     if (swrError) console.error('[DashboardTable] SWR Error:', swrError)
+    //     if (swrData) {
+    //         console.log('[DashboardTable] SWR Success:', {
+    //             items: swrData.data?.length,
+    //             total: swrData.total,
+    //             debug: swrData.debug_info
+    //         })
+    //     }
+    // }, [swrError, swrData])
+
+    // console.log('[DashboardTable] Current State:', {
+    //     debouncedSearch, canalFilter, categoryFilter, statusFilter, page,
+    //     isLoading, hasError: !!swrError
+    // })
 
     return (
         <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
@@ -120,7 +136,7 @@ export default function DashboardTable() {
                                             </div>
                                         )}
                                     </div>
-                                    
+
                                     {/* รายละเอียด */}
                                     <div className="flex flex-col justify-between flex-1 min-w-0 py-0.5">
                                         <div>
@@ -136,16 +152,15 @@ export default function DashboardTable() {
                                                 ผู้ให้ข้อมูล: {item.informant_name}
                                             </div>
                                         </div>
-                                        
+
                                         {/* Status Tags */}
                                         <div className="mt-2 flex flex-wrap gap-1.5">
                                             {item.selection_status?.length > 0 ? (
                                                 item.selection_status.map(s => (
-                                                    <span key={s} className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-tight ${
-                                                        s === '36' ? 'bg-emerald-100 text-emerald-700' :
+                                                    <span key={s} className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-tight ${s === '36' ? 'bg-emerald-100 text-emerald-700' :
                                                         s === '93' ? 'bg-indigo-100 text-indigo-700' :
-                                                        'bg-amber-100 text-amber-700'
-                                                    }`}>
+                                                            'bg-amber-100 text-amber-700'
+                                                        }`}>
                                                         {s}
                                                     </span>
                                                 ))
@@ -206,11 +221,10 @@ export default function DashboardTable() {
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {item.selection_status?.length > 0 ? (
                                                         item.selection_status.map(s => (
-                                                            <span key={s} className={`text-[10px] lg:text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-tight ${
-                                                                s === '36' ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' :
+                                                            <span key={s} className={`text-[10px] lg:text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-tight ${s === '36' ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' :
                                                                 s === '93' ? 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200' :
-                                                                'bg-amber-100 text-amber-700 ring-1 ring-amber-200'
-                                                            }`}>
+                                                                    'bg-amber-100 text-amber-700 ring-1 ring-amber-200'
+                                                                }`}>
                                                                 {s}
                                                             </span>
                                                         ))

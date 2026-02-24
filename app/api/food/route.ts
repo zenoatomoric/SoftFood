@@ -1,18 +1,20 @@
-
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 
 // GET: Fetch Menus with Filters & Search
 export async function GET(request: Request) {
     try {
-        const supabase = await createClient()
         const { searchParams } = new URL(request.url)
 
         const session = await auth()
         if (!session?.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
+
+        // Use Admin Client to bypass RLS and show all data to all roles
+        const supabase = createAdminClient()
 
         const svCode = session.user.sv_code
         const role = (session.user.role || 'user').toLowerCase().trim()
@@ -33,7 +35,7 @@ export async function GET(request: Request) {
         // Base Query
         let query = supabase.from('menus').select(full ? `
             *,
-            informants!inner (*),
+            informants (*),
             users (*),
             menu_ingredients (
                 *,
@@ -49,15 +51,15 @@ export async function GET(request: Request) {
             created_at, 
             ref_sv_code,
             ref_info_id,
-            informants!inner (full_name, canal_zone),
+            informants (full_name, canal_zone),
             users (collector_name),
             menu_photos:menu_photos (photo_url)
         `, { count: 'exact' })
 
         // RBAC Filtering:
-        // - Non-admins ONLY see their own records
-        // - Admins see everything UNLESS 'mine' is true
-        if (!isAdmin || mine) {
+        // - By default, all roles see all records to track project progress
+        // - Filter by 'mine' only if explicitly requested
+        if (mine) {
             query = query.eq('ref_sv_code', svCode || 'NONE')
         }
         if (q) {
@@ -108,25 +110,30 @@ export async function GET(request: Request) {
         }
 
         // Transform Data for Frontend
-        // We pick the first photo as thumbnail
-        const formatted = data.map((item: any) => ({
-            ...item, // Include all fields if full
-            menu_id: item.menu_id,
-            menu_name: item.menu_name,
-            category: item.category,
-            selection_status: item.selection_status || [],
-            created_at: item.created_at,
-            informant_name: item.informants?.full_name || 'ไม่ระบุ',
-            canal_zone: item.informants?.canal_zone || 'ไม่ระบุ',
-            surveyor_name: item.users?.collector_name || item.ref_sv_code,
-            thumbnail: (item.menu_photos?.[0]?.photo_url) ? (
-                item.menu_photos[0].photo_url.startsWith('http')
-                    ? item.menu_photos[0].photo_url
-                    : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${item.menu_photos[0].photo_url}`
-            ) : null,
-            ref_sv_code: item.ref_sv_code,
-            ref_info_id: item.ref_info_id
-        }))
+        const formatted = (data || []).map((item: any) => {
+            // Handle cases where join might return data in different formats
+            const inf = item.informants
+            const usr = item.users
+
+            return {
+                ...item,
+                menu_id: item.menu_id,
+                menu_name: item.menu_name,
+                category: item.category,
+                selection_status: item.selection_status || [],
+                created_at: item.created_at,
+                informant_name: inf?.full_name || 'ไม่ระบุ',
+                canal_zone: inf?.canal_zone || 'ไม่ระบุ',
+                surveyor_name: usr?.collector_name || item.ref_sv_code,
+                thumbnail: (item.menu_photos?.[0]?.photo_url) ? (
+                    item.menu_photos[0].photo_url.startsWith('http')
+                        ? item.menu_photos[0].photo_url
+                        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${item.menu_photos[0].photo_url}`
+                ) : null,
+                ref_sv_code: item.ref_sv_code,
+                ref_info_id: item.ref_info_id
+            }
+        })
 
         return NextResponse.json({
             data: formatted,

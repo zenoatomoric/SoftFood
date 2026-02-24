@@ -1,31 +1,34 @@
-import { createClient } from "@/utils/supabase/server";
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Icon } from "@iconify/react";
-import StatCard from "../../components/StatCard";
-import CanalSummaryCard from "../../components/dashboard/CanalSummaryCard";
-import DashboardTable from "../../components/dashboard/DashboardTable";
+import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
+import { auth } from '@/auth'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { Icon } from '@iconify/react'
+import StatCard from '@/app/components/StatCard'
+import CanalSummaryCard from '@/app/components/dashboard/CanalSummaryCard'
+import DashboardTable from '@/app/components/dashboard/DashboardTable'
+
 
 export default async function DashboardHomePage() {
   // ตรวจสอบ authentication
-  const session = await auth();
+  const session = await auth()
 
   if (!session?.user) {
-    redirect("/login");
+    redirect('/login')
   }
 
-  const userRole = session.user.role;
+  const userRole = session.user.role
 
-  const supabase = await createClient();
+  // ใช้ Admin Client เพื่อให้ทุกโรลเห็นสถิติรวมของโครงการ (Bypass RLS)
+  const supabase = createAdminClient()
 
   // ดึงข้อมูลจำนวนสถิติต่างๆ (Server Side Fetching)
-  const { count: totalMenus } = await supabase.from('menus').select('*', { count: 'exact', head: true })
-  const { count: totalInfo } = await supabase.from('informants').select('*', { count: 'exact', head: true })
+  const { count: totalMenus, error: menuErr } = await supabase.from('menus').select('*', { count: 'exact', head: true })
+  const { count: totalInfo, error: infoErr } = await supabase.from('informants').select('*', { count: 'exact', head: true })
 
   const canalNames = ['บางเขน', 'เปรมประชากร', 'ลาดพร้าว']
   const canalStats = await Promise.all(canalNames.map(async (name) => {
-    const { count: menuCount } = await supabase.from('menus').select('menu_id, informants!inner(canal_zone)', { count: 'exact', head: true }).eq('informants.canal_zone', name)
+    const { count: menuCount } = await supabase.from('menus').select('menu_id, informants(canal_zone)', { count: 'exact', head: true }).eq('informants.canal_zone', name)
     const { count: infoCount } = await supabase.from('informants').select('*', { count: 'exact', head: true }).eq('canal_zone', name)
     return { name, menuCount: menuCount || 0, infoCount: infoCount || 0 }
   }))
@@ -35,7 +38,7 @@ export default async function DashboardHomePage() {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold text-slate-950 mb-2">ภาพรวมโครงการ</h1>
-          <p className="text-sm md:text-base text-slate-600 font-medium tracking-tight">สรุปข้อมูลการลงพื้นที่เก็บข้อมูลอาหารพื้นถิ่น (เป้าหมาย 400 รายการ)</p>
+          <p className="text-sm md:text-base text-slate-600 font-medium">สรุปข้อมูลการลงพื้นที่เก็บข้อมูลอาหารพื้นถิ่น (เป้าหมาย 400 รายการ)</p>
         </div>
         <Link
           href="/survey"
@@ -83,6 +86,7 @@ export default async function DashboardHomePage() {
         ))}
       </div>
 
+      {/* Dashboard Table Section */}
       <DashboardTable />
 
       {/* พื้นที่สำหรับกราฟ */}
@@ -90,5 +94,5 @@ export default async function DashboardHomePage() {
         Analytics section coming soon...
       </div>
     </div>
-  );
+  )
 }

@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -17,21 +18,16 @@ export default async function DashboardHomePage() {
 
     const userRole = session.user.role
 
-    // User role ให้ไปหน้า survey
-    if (userRole?.toLowerCase() === 'user') {
-        redirect('/survey')
-    }
-
-    // Admin และ Director ดูหน้า dashboard
-    const supabase = await createClient()
+    // ใช้ Admin Client เพื่อให้ทุกโรลเห็นสถิติรวมของโครงการ (Bypass RLS)
+    const supabase = createAdminClient()
 
     // ดึงข้อมูลจำนวนสถิติต่างๆ (Server Side Fetching)
-    const { count: totalMenus } = await supabase.from('menus').select('*', { count: 'exact', head: true })
-    const { count: totalInfo } = await supabase.from('informants').select('*', { count: 'exact', head: true })
+    const { count: totalMenus, error: menuErr } = await supabase.from('menus').select('*', { count: 'exact', head: true })
+    const { count: totalInfo, error: infoErr } = await supabase.from('informants').select('*', { count: 'exact', head: true })
 
     const canalNames = ['บางเขน', 'เปรมประชากร', 'ลาดพร้าว']
     const canalStats = await Promise.all(canalNames.map(async (name) => {
-        const { count: menuCount } = await supabase.from('menus').select('menu_id, informants!inner(canal_zone)', { count: 'exact', head: true }).eq('informants.canal_zone', name)
+        const { count: menuCount } = await supabase.from('menus').select('menu_id, informants(canal_zone)', { count: 'exact', head: true }).eq('informants.canal_zone', name)
         const { count: infoCount } = await supabase.from('informants').select('*', { count: 'exact', head: true }).eq('canal_zone', name)
         return { name, menuCount: menuCount || 0, infoCount: infoCount || 0 }
     }))
