@@ -589,7 +589,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                     <div className="text-lg md:text-xl font-bold text-slate-800">{userName || 'ไม่ระบุชื่อ'}</div>
                                     <div className="flex items-center justify-center gap-2 mt-2">
                                         <div className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-[10px] md:text-xs font-bold ring-1 ring-indigo-200">
-                                            {userRole === 'admin' ? 'ผู้ดูแลระบบ (Admin)' : userRole === 'director' ? 'ผู้อำนวยการ (Director)' : 'ผู้เก็บข้อมูล (User)'}
+                                            {userRole === 'admin' ? 'ผู้ดูแลระบบ (Admin)' : userRole === 'director' ? 'กรรมการ (Director)' : 'ผู้เก็บข้อมูล (User)'}
                                         </div>
                                     </div>
                                 </div>
