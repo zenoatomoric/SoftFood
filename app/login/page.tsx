@@ -62,9 +62,7 @@ export default function LoginPage() {
           </h1>
           <p className="text-sm md:text-base text-gray-500 leading-relaxed max-w-[280px] sm:max-w-sm mx-auto font-medium">
             กรุณาเข้าสู่ระบบเพื่อจัดการข้อมูลโครงการ <br className="hidden sm:block" />
-            <span className="text-gray-900 font-bold">
-              อาหารพื้นถิ่นไทย (400 รายการ)
-            </span>
+           
           </p>
         </div>
 
