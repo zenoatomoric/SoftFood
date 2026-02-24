@@ -119,8 +119,8 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
               {role.charAt(0).toUpperCase()}
             </div>
             <div className={`overflow-hidden transition-all duration-200 ${isCollapsed ? 'w-0 opacity-0 hidden' : 'w-auto opacity-100'}`}>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Role</p>
-              <p className="text-sm font-black text-slate-900 capitalize truncate">{role}</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{role === 'user' && role === role?.toLowerCase() ? 'Visitor Access' : 'Current Role'}</p>
+              <p className="text-sm font-black text-slate-900 capitalize truncate">{role === 'user' ? 'Guest' : role}</p>
             </div>
           </div>
         </div>

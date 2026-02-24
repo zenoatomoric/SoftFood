@@ -90,15 +90,13 @@ export async function GET(request: Request) {
         const end = start + limit - 1
 
         const session = await auth()
-        if (!session?.user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        // Allow public read access to informant list/detail
 
         const supabase = await createClient()
 
         // 1. Get user identity from session
-        const svCode = session.user.sv_code
-        const role = (session.user.role || 'user').toLowerCase().trim()
+        const svCode = session?.user?.sv_code || ''
+        const role = (session?.user?.role || 'user').toLowerCase().trim()
         const isAdmin = role === 'admin' || role === 'director'
 
         if (id) {

@@ -1,6 +1,7 @@
 'use client'
 import { signOut } from 'next-auth/react'
 import { Icon } from '@iconify/react'
+import Link from 'next/link'
 
 interface HeaderProps {
     userName: string
@@ -65,14 +66,24 @@ export default function Header({ userName, userRole, onMenuClick, isCollapsed }:
                         </div>
                     </div>
 
-                    {/* Logout button */}
-                    <button
-                        onClick={() => signOut({ callbackUrl: '/login' })}
-                        className="flex items-center gap-2 px-3 py-2 lg:px-4 lg:py-2 rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all border border-transparent hover:border-red-200"
-                    >
-                        <Icon icon="solar:logout-2-bold-duotone" width="20" height="20" />
-                        <span className="font-medium hidden md:block">ออกจากระบบ</span>
-                    </button>
+                    {/* Login/Logout button */}
+                    {userName === 'Guest' ? (
+                        <Link
+                            href="/login"
+                            className="flex items-center gap-2 px-3 py-2 lg:px-4 lg:py-2 rounded-xl text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-all border border-indigo-200"
+                        >
+                            <Icon icon="solar:login-2-bold-duotone" width="20" height="20" />
+                            <span className="font-medium hidden md:block">เข้าสู่ระบบ</span>
+                        </Link>
+                    ) : (
+                        <button
+                            onClick={() => signOut({ callbackUrl: '/login' })}
+                            className="flex items-center gap-2 px-3 py-2 lg:px-4 lg:py-2 rounded-xl text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all border border-transparent hover:border-red-200"
+                        >
+                            <Icon icon="solar:logout-2-bold-duotone" width="20" height="20" />
+                            <span className="font-medium hidden md:block">ออกจากระบบ</span>
+                        </button>
+                    )}
                 </div>
             </div>
         </header>

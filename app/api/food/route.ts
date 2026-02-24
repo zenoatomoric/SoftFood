@@ -9,15 +9,13 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url)
 
         const session = await auth()
-        if (!session?.user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        // Allow public read access to food data
 
         // Use Admin Client to bypass RLS and show all data to all roles
         const supabase = createAdminClient()
 
-        const svCode = session.user.sv_code
-        const role = (session.user.role || 'user').toLowerCase().trim()
+        const svCode = session?.user?.sv_code || ''
+        const role = (session?.user?.role || 'user').toLowerCase().trim()
         const isAdmin = role === 'admin' || role === 'director'
 
         const q = searchParams.get('q') || ''

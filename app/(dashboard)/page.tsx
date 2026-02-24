@@ -12,11 +12,9 @@ export default async function DashboardHomePage() {
     // ตรวจสอบ authentication
     const session = await auth()
 
-    if (!session?.user) {
-        redirect('/login')
-    }
+    // No redirect to allow public access to stats
 
-    const userRole = session.user.role
+    const userRole = session?.user?.role
 
     // ใช้ Admin Client เพื่อให้ทุกโรลเห็นสถิติรวมของโครงการ (Bypass RLS)
     const supabase = createAdminClient()

@@ -68,7 +68,7 @@ export default async function InformantDetailPage({ params }: PageProps) {
     const role = (session?.user?.role || 'user').toLowerCase().trim()
     const userId = session?.user?.sv_code || ''
 
-    const userName = (session.user as any).collector_name || session.user.name || ''
+    const userName = (session?.user as any)?.collector_name || session?.user?.name || 'Guest'
     const canEdit = role === 'admin' || role === 'director'
     const isReadOnly = !canEdit
 
