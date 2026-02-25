@@ -72,11 +72,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 }
 
                 // Return user object
+                let normalizedRole = (user.role || 'user').toLowerCase().trim()
+
+                // Map Thai roles to English keys for consistency
+                if (normalizedRole === 'กรรมการ') normalizedRole = 'director'
+                if (normalizedRole === 'ผู้ดูแลระบบ') normalizedRole = 'admin'
+
                 return {
                     id: user.sv_code,
                     name: user.collector_name,
                     email: user.sv_code, // ใช้ sv_code แทน email
-                    role: (user.role || 'user').toLowerCase().trim()
+                    role: normalizedRole
                 }
             }
         })

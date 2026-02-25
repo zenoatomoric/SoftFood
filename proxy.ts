@@ -12,8 +12,10 @@ export async function proxy(request: NextRequest) {
             return NextResponse.redirect(new URL('/login', request.url))
         }
 
-        const userRole = session.user?.role
-        if (userRole !== 'admin') {
+        const userRole = session.user?.role?.toLowerCase()?.trim()
+        const isAuthorized = ['admin', 'director', 'กรรมการ', 'ผู้ดูแลระบบ'].includes(userRole || '')
+
+        if (!isAuthorized) {
             return NextResponse.redirect(new URL('/home', request.url))
         }
     }

@@ -101,12 +101,12 @@ export async function GET(request: Request) {
 
         if (id) {
             // Fetch single informant detail
+            // Removed editor join as the column 'last_edited_by' might not exist in the schema yet
             const { data, error } = await supabase
                 .from('informants')
                 .select(`
                     *,
-                    creator:users!ref_sv_code(collector_name),
-                    editor:users!last_edited_by(collector_name)
+                    creator:users!ref_sv_code(collector_name)
                 `)
                 .eq('info_id', id)
                 .single()
@@ -120,7 +120,7 @@ export async function GET(request: Request) {
             const formatted = {
                 ...data,
                 creator_name: data.creator?.collector_name,
-                editor_name: data.editor?.collector_name,
+                editor_name: data.editor_name || null, // Fallback to plain field if it exists
                 consent_document_url: data.consent_document_url ? (
                     data.consent_document_url.startsWith('http')
                         ? data.consent_document_url
@@ -156,8 +156,7 @@ export async function GET(request: Request) {
         // Try primary join query
         const q1 = await buildQuery(`
             *,
-            creator:users!ref_sv_code(collector_name),
-            editor:users!last_edited_by(collector_name)
+            creator:users!ref_sv_code(collector_name)
         `)
 
         let finalData = q1.data
@@ -184,11 +183,17 @@ export async function GET(request: Request) {
         }
 
         // 3. Transform & Return
-        const flattenedList = (finalData || []).map((item: any) => ({
-            ...item,
-            creator_name: item.creator?.collector_name,
-            editor_name: item.editor?.collector_name || null
-        }))
+        const flattenedList = (finalData || []).map((item: any) => {
+            const creatorInfo = Array.isArray(item.creator) ? item.creator[0] : item.creator;
+            // No editor join currently, but if added later, this logic is safer.
+            const editorInfo = Array.isArray(item.editor) ? item.editor[0] : item.editor;
+
+            return {
+                ...item,
+                creator_name: creatorInfo?.collector_name || null,
+                editor_name: editorInfo?.collector_name || null
+            };
+        })
 
         return NextResponse.json({
             data: flattenedList,

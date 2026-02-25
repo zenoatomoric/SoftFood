@@ -8,8 +8,11 @@ import { revalidatePath } from 'next/cache'
 export async function getUsers() {
   const session = await auth()
 
-  // ตรวจสอบว่าเป็น admin หรือ director หรือไม่
-  if (session?.user?.role !== 'admin' && session?.user?.role !== 'director') {
+  // ตรวจสอบว่าเป็น admin หรือ director หรือไม่ (รองรับหลายรูปแบบตัวอักษรและภาษาไทย)
+  const currentRole = (session?.user?.role || '').toLowerCase().trim();
+  const isAuthorized = ['admin', 'director', 'กรรมการ', 'ผู้ดูแลระบบ'].includes(currentRole);
+
+  if (!isAuthorized) {
     return { error: 'ไม่มีสิทธิ์เข้าถึง' }
   }
 
@@ -47,20 +50,21 @@ export async function getUsers() {
     return { error: `เกิดข้อผิดพลาดในการดึงข้อมูล: ${error.message || 'Unknown database error'}` }
   }
 
-  // Filter in memory for safety if column might be missing
-  if (session.user.role === 'admin' && users) {
-    const svCode = session.user.sv_code;
+  // ปรับให้ Director เห็นข้อมูลแบบเดียวกับ Admin (ทีมของตัวเอง + คนที่ไม่มีสังกัด)
+  // หรือถ้าต้องการให้ Director เห็นทุกคน ก็สามารถเอาเงื่อนไข || currentRole === 'director' ออกได้
+  if ((currentRole === 'admin' || currentRole === 'director') && users) {
+    const svCode = session?.user?.sv_code;
     if (svCode) {
       // Filter users who are either:
-      // 1. Subordinates of this admin
+      // 1. Subordinates of this admin/director
       // 2. Unassigned (supervisor_sv_code is null or doesn't exist in record)
-      // 3. The admin themselves (so they can see their own role/status)
-      // 4. Other admins (to see who's who)
+      // 3. The admin/director themselves
+      // 4. Other admins/directors (to see who's who)
       users = users.filter((u: any) =>
         u.supervisor_sv_code === svCode ||
         !u.supervisor_sv_code ||
         u.sv_code === svCode ||
-        u.role === 'admin'
+        ['admin', 'director', 'กรรมการ', 'ผู้ดูแลระบบ'].includes(u.role?.toLowerCase()?.trim() || '')
       );
     }
   }
@@ -71,8 +75,11 @@ export async function getUsers() {
 export async function createUser(formData: FormData) {
   const session = await auth()
 
-  // ตรวจสอบว่าเป็น admin หรือ director หรือไม่
-  if (session?.user?.role !== 'admin' && session?.user?.role !== 'director') {
+  // ตรวจสอบว่าเป็น admin หรือ director หรือไม่ (รองรับภาษาไทย)
+  const currentRole = (session?.user?.role || '').toLowerCase().trim();
+  const isAuthorized = ['admin', 'director', 'กรรมการ', 'ผู้ดูแลระบบ'].includes(currentRole);
+
+  if (!isAuthorized) {
     return { error: 'ไม่มีสิทธิ์เข้าถึง' }
   }
 
@@ -121,8 +128,11 @@ export async function createUser(formData: FormData) {
 export async function deleteUser(sv_code: string) {
   const session = await auth()
 
-  // ตรวจสอบว่าเป็น admin หรือ director หรือไม่
-  if (session?.user?.role !== 'admin' && session?.user?.role !== 'director') {
+  // ตรวจสอบว่าเป็น admin หรือ director หรือไม่ (รองรับภาษาไทย)
+  const currentRole = (session?.user?.role || '').toLowerCase().trim();
+  const isAuthorized = ['admin', 'director', 'กรรมการ', 'ผู้ดูแลระบบ'].includes(currentRole);
+
+  if (!isAuthorized) {
     return { error: 'ไม่มีสิทธิ์เข้าถึง' }
   }
 
@@ -148,8 +158,11 @@ export async function deleteUser(sv_code: string) {
 export async function updateUser(formData: FormData) {
   const session = await auth()
 
-  // ตรวจสอบว่าเป็น admin หรือ director หรือไม่
-  if (session?.user?.role !== 'admin' && session?.user?.role !== 'director') {
+  // ตรวจสอบว่าเป็น admin หรือ director หรือไม่ (รองรับภาษาไทย)
+  const currentRole = (session?.user?.role || '').toLowerCase().trim();
+  const isAuthorized = ['admin', 'director', 'กรรมการ', 'ผู้ดูแลระบบ'].includes(currentRole);
+
+  if (!isAuthorized) {
     return { error: 'ไม่มีสิทธิ์เข้าถึง' }
   }
 

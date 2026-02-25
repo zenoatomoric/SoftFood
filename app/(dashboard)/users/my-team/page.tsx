@@ -1,7 +1,10 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { getUsers } from '../actions'
-import MyTeamClient from './MyTeamClient'
+import MyTeamClient from './MyTeamClient';
+// import MyTeamClient from './MyTeamClient'
+
+export const dynamic = 'force-dynamic';
 
 export default async function MyTeamPage() {
     const session = await auth()
@@ -11,8 +14,11 @@ export default async function MyTeamPage() {
     }
 
     // Admin และ Director สามารถดูเมนูนี้ได้ (Director ดูเพื่อความเหมาะสมในการจัดการ)
-    if (session.user.role !== 'admin' && session.user.role !== 'director') {
-        redirect('/')
+    const role = session.user.role?.toLowerCase()?.trim();
+    const isAuthorized = ['admin', 'director', 'กรรมการ', 'ผู้ดูแลระบบ'].includes(role || '');
+
+    if (!isAuthorized) {
+        redirect('/home')
     }
 
     const result = await getUsers()

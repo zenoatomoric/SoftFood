@@ -9,10 +9,12 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url)
 
         const session = await auth()
-        // Allow public read access to food data
+
+        const svCode = session?.user?.sv_code || ''
+        const role = (session?.user?.role || 'user').toLowerCase().trim()
+        const isAdmin = role === 'admin' || role === 'director'
 
         // Use Admin Client to bypass RLS and show all data to all roles
-        // Hardened with try-catch to prevent 500 when keys are missing
         let supabase;
         try {
             supabase = createAdminClient()
@@ -20,11 +22,6 @@ export async function GET(request: Request) {
             console.warn('[API Food] Admin client failed, falling back to server client:', adminErr)
             supabase = await createClient()
         }
-
-
-        const svCode = session?.user?.sv_code || ''
-        const role = (session?.user?.role || 'user').toLowerCase().trim()
-        const isAdmin = role === 'admin' || role === 'director'
 
         const q = searchParams.get('q') || ''
         const canal = searchParams.get('canal')
@@ -117,9 +114,9 @@ export async function GET(request: Request) {
 
         // Transform Data for Frontend
         const formatted = (data || []).map((item: any) => {
-            // Handle cases where join might return data in different formats
-            const inf = item.informants
-            const usr = item.users
+            // Handle cases where join might return data in different formats (object or array)
+            const inf = Array.isArray(item.informants) ? item.informants[0] : item.informants
+            const usr = Array.isArray(item.users) ? item.users[0] : item.users
 
             return {
                 ...item,

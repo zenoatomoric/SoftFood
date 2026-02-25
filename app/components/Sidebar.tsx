@@ -17,15 +17,15 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
   const menus = [
     {
       name: 'สรุปข้อมูล',
-      icon: 'solar:chart-square-bold-duotone',
+      icon: 'solar:chart-2-bold-duotone',
       href: '/home',
-      roles: ['user', 'admin', 'director']
+      roles: ['admin', 'director', 'Director', 'กรรมการ', 'ผู้ดูแลระบบ']
     },
     {
       name: 'จัดการผู้ใช้งาน',
-      icon: 'solar:users-group-rounded-bold-duotone',
+      icon: 'solar:user-id-bold-duotone',
       href: '/users',
-      roles: ['admin'] // เฉพาะ Admin เท่านั้น
+      roles: ['admin', 'ผู้ดูแลระบบ']
     },
     {
       name: 'แบบสอบถาม',
@@ -37,13 +37,13 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
       name: 'ทีมของฉัน',
       icon: 'solar:users-group-two-rounded-bold-duotone',
       href: '/users/my-team',
-      roles: ['admin', 'director']
+      roles: ['admin', 'director', 'Director', 'กรรมการ', 'ผู้ดูแลระบบ']
     },
     {
-      name: 'รายการอาหาร',
-      icon: 'solar:chef-hat-heart-bold-duotone',
+      name: 'รายชื่ออาหาร',
+      icon: 'solar:plate-bold-duotone',
       href: '/menus',
-      roles: ['user', 'admin', 'director']
+      roles: ['admin', 'director', 'user', 'Director', 'กรรมการ', 'ผู้ดูแลระบบ']
     },
     {
       name: 'คัดเลือกรายการอาหาร',
@@ -86,7 +86,11 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
 
         {/* Menu Links */}
         <nav className="flex-1 px-4 space-y-2 py-4 overflow-y-auto custom-scrollbar">
-          {menus.filter(m => m.roles.some(r => r.toLowerCase() === role?.toLowerCase())).map((item) => {
+          {menus.filter(m => {
+            const currentRole = (role || '').toLowerCase().trim();
+            // ถ้าเป็น admin หรือ director ให้สามารถเข้าถึงเมนูที่กำหนดไว้ได้
+            return m.roles.some(r => r.toLowerCase().trim() === currentRole);
+          }).map((item) => {
             const isActive = pathname === item.href
             return (
               <Link
