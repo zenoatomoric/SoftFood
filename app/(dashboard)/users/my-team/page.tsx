@@ -1,7 +1,7 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { getUsers } from '../actions'
-import MyTeamClient from './MyTeamClient';
+import MyTeamClient from '@/app/(dashboard)/users/my-team/MyTeamClient';
 // import MyTeamClient from './MyTeamClient'
 
 export const dynamic = 'force-dynamic';

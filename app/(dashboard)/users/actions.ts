@@ -50,22 +50,24 @@ export async function getUsers() {
     return { error: `เกิดข้อผิดพลาดในการดึงข้อมูล: ${error.message || 'Unknown database error'}` }
   }
 
-  // ปรับให้ Director เห็นข้อมูลแบบเดียวกับ Admin (ทีมของตัวเอง + คนที่ไม่มีสังกัด)
-  // หรือถ้าต้องการให้ Director เห็นทุกคน ก็สามารถเอาเงื่อนไข || currentRole === 'director' ออกได้
-  if ((currentRole === 'admin' || currentRole === 'director') && users) {
+  // กรองข้อมูลตามสิทธิ์ (Admin เห็นทุกคน, Director เห็นเฉพาะทีมตัวเองและคนไม่มีสังกัด)
+  const isAdmin = ['admin', 'ผู้ดูแลระบบ'].includes(currentRole);
+  const isDirector = ['director', 'กรรมการ'].includes(currentRole);
+
+  if (isDirector && users) {
     const svCode = session?.user?.sv_code;
     if (svCode) {
-      // Filter users who are either:
-      // 1. Subordinates of this admin/director
-      // 2. Unassigned (supervisor_sv_code is null or doesn't exist in record)
-      // 3. The admin/director themselves
-      // 4. Other admins/directors (to see who's who)
-      users = users.filter((u: any) =>
-        u.supervisor_sv_code === svCode ||
-        !u.supervisor_sv_code ||
-        u.sv_code === svCode ||
-        ['admin', 'director', 'กรรมการ', 'ผู้ดูแลระบบ'].includes(u.role?.toLowerCase()?.trim() || '')
-      );
+      users = users.filter((u: any) => {
+        const userRole = (u.role || '').toLowerCase().trim();
+        const isUserAdminOrDirector = ['admin', 'director', 'กรรมการ', 'ผู้ดูแลระบบ'].includes(userRole);
+
+        return (
+          u.supervisor_sv_code === svCode || // ลูกทีมตัวเอง
+          !u.supervisor_sv_code ||           // คนที่ยังไม่มีสังกัด
+          u.sv_code === svCode ||            // ตัวเอง
+          isUserAdminOrDirector              // Admin/Director คนอื่นๆ
+        );
+      });
     }
   }
 
@@ -122,6 +124,7 @@ export async function createUser(formData: FormData) {
   }
 
   revalidatePath('/users')
+  revalidatePath('/users/my-team')
   return { success: 'เพิ่มผู้ใช้สำเร็จ' }
 }
 
@@ -152,6 +155,7 @@ export async function deleteUser(sv_code: string) {
   }
 
   revalidatePath('/users')
+  revalidatePath('/users/my-team')
   return { success: 'ลบผู้ใช้สำเร็จ' }
 }
 
@@ -208,5 +212,6 @@ export async function updateUser(formData: FormData) {
   }
 
   revalidatePath('/users')
+  revalidatePath('/users/my-team')
   return { success: 'แก้ไขข้อมูลผู้ใช้สำเร็จ' }
 }
