@@ -25,7 +25,7 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
       name: 'จัดการผู้ใช้งาน',
       icon: 'solar:users-group-rounded-bold-duotone',
       href: '/users',
-      roles: ['admin'] // เฉพาะ Admin เท่านั้น
+      roles: ['admin', 'director'] // ทั้ง Admin และ Director
     },
     {
       name: 'แบบสอบถาม',

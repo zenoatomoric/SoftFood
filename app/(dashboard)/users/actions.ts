@@ -71,8 +71,8 @@ export async function getUsers() {
 export async function createUser(formData: FormData) {
   const session = await auth()
 
-  // ตรวจสอบว่าเป็น admin หรือไม่
-  if (session?.user?.role !== 'admin') {
+  // ตรวจสอบว่าเป็น admin หรือ director หรือไม่
+  if (session?.user?.role !== 'admin' && session?.user?.role !== 'director') {
     return { error: 'ไม่มีสิทธิ์เข้าถึง' }
   }
 
@@ -121,8 +121,8 @@ export async function createUser(formData: FormData) {
 export async function deleteUser(sv_code: string) {
   const session = await auth()
 
-  // ตรวจสอบว่าเป็น admin หรือไม่
-  if (session?.user?.role !== 'admin') {
+  // ตรวจสอบว่าเป็น admin หรือ director หรือไม่
+  if (session?.user?.role !== 'admin' && session?.user?.role !== 'director') {
     return { error: 'ไม่มีสิทธิ์เข้าถึง' }
   }
 
@@ -148,8 +148,8 @@ export async function deleteUser(sv_code: string) {
 export async function updateUser(formData: FormData) {
   const session = await auth()
 
-  // ตรวจสอบว่าเป็น admin หรือไม่
-  if (session?.user?.role !== 'admin') {
+  // ตรวจสอบว่าเป็น admin หรือ director หรือไม่
+  if (session?.user?.role !== 'admin' && session?.user?.role !== 'director') {
     return { error: 'ไม่มีสิทธิ์เข้าถึง' }
   }
 
