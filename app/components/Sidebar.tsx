@@ -16,7 +16,7 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
   // กำหนดสิทธิ์การเข้าถึงเมนู
   const menus = [
     {
-      name: 'หน้าแรกสรุปข้อมูล',
+      name: 'สรุปข้อมูล',
       icon: 'solar:chart-square-bold-duotone',
       href: '/home',
       roles: ['user', 'admin', 'director']
@@ -32,6 +32,12 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
       icon: 'solar:clipboard-list-bold-duotone',
       href: '/survey',
       roles: ['user', 'admin', 'director'] // ทุกสิทธิ์เข้าใช้งานเว้นแต่จะระบุเพิ่ม
+    },
+    {
+      name: 'ทีมของฉัน',
+      icon: 'solar:users-group-two-rounded-bold-duotone',
+      href: '/users/my-team',
+      roles: ['admin', 'director']
     },
     {
       name: 'รายการอาหาร',

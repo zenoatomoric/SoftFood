@@ -148,9 +148,19 @@ export default function MenuDetailClient({ menu, userRole, userId }: Props) {
         </div>
     )
 
-    const Badge = ({ text }: { text: string }) => (
-        <span className="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium mr-2 mb-2">{text}</span>
-    )
+    const Badge = ({ text, variant = 'slate' }: { text: string, variant?: 'slate' | 'indigo' | 'amber' | 'rose' }) => {
+        const colors = {
+            slate: 'bg-slate-50 text-slate-500 border-slate-100',
+            indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+            amber: 'bg-amber-50 text-amber-600 border-amber-100',
+            rose: 'bg-rose-50 text-rose-600 border-rose-100'
+        }
+        return (
+            <span className={`inline-block px-2.5 py-1 ${colors[variant]} border rounded-lg text-sm font-bold mr-1.5 mb-1.5`}>
+                {text}
+            </span>
+        )
+    }
 
     return (
         <div className="max-w-5xl mx-auto pb-20">
@@ -211,13 +221,17 @@ export default function MenuDetailClient({ menu, userRole, userId }: Props) {
                             <span className={`px-2 py-1 rounded-lg text-xs font-bold bg-teal-50 text-teal-600`}>{menu.informants?.canal_zone}</span>
                         </div>
                         <h1 className="text-2xl md:text-3xl font-bold text-slate-800 break-words">{menu.menu_name}</h1>
-                        <p className="text-slate-500 text-lg">{menu.local_name || '-'}</p>
+                        <div className="flex flex-col gap-1 mt-1">
+                            {menu.local_name && <p className="text-slate-500 text-lg font-medium flex items-center gap-2"><Icon icon="solar:map-point-wave-bold" className="text-slate-400" /> {menu.local_name}</p>}
+                            {menu.other_name && <p className="text-slate-400 text-base italic flex items-center gap-2"><Icon icon="solar:global-bold" className="text-slate-300" /> {menu.other_name}</p>}
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 py-4 border-t border-slate-50">
                         <Field label="ผู้ให้ข้อมูล" value={menu.informants?.full_name} />
                         <Field label="ชุมชน" value={menu.informants?.address_full} />
-                        <Field label="ผู้เก็บข้อมูล" value={menu.users?.collector_name || '-'} /> {/* Hiding Code if just sv_code? User said 'hide Code'. I'll show name or - */}
+                        <Field label="ผู้เก็บข้อมูล" value={menu.users?.collector_name || '-'} />
+                        <Field label="ปริมาณที่เสิร์ฟ" value={menu.serving_size === 'อื่นๆ' ? menu.other_serving_size : menu.serving_size} />
                         <Field label="สถานะคัดเลือก" value={menu.selection_status?.length ? menu.selection_status.join(', ') + ' เมนู' : 'รอการคัดเลือก'} />
 
                         {(userRole === 'admin' || userRole === 'director') && (
@@ -247,63 +261,169 @@ export default function MenuDetailClient({ menu, userRole, userId }: Props) {
 
             {/* Part 3: Survey Depth */}
             <Section title="ข้อมูลเชิงลึก (อัตลักษณ์)" icon="solar:clipboard-check-bold-duotone">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Field label="ความนิยม" value={menu.popularity} />
-                    <Field label="ฤดูกาล" value={menu.seasonality} />
-                    <Field label="โอกาส/ประเพณี" value={menu.rituals?.map((r: string) => <Badge key={r} text={r} />)} />
-                    <Field label="รสชาติโดดเด่น" value={menu.taste_appeal} />
-                    <Field label="ความยากในการทำ" value={menu.complexity} />
-                    <Field label="ความถี่ในการบริโภค" value={menu.consumption_freq} />
-                    <Field label="แหล่งวัตถุดิบ" value={menu.ingredient_sources?.map((s: string) => <Badge key={s} text={s} />)} />
-                    <Field label="ประโยชน์ต่อสุขภาพ" value={menu.health_benefits?.map((h: string) => <Badge key={h} text={h} />)} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                    <Field
+                        label="ความนิยม / การเป็นที่รู้จัก"
+                        value={
+                            <div className="flex flex-wrap gap-1">
+                                {(Array.isArray(menu.popularity) ? menu.popularity : [menu.popularity])
+                                    .filter((t: string) => t && t !== 'อื่นๆ')
+                                    .map((t: string) => <Badge key={t} text={t} />)}
+                                {menu.other_popularity && <Badge text={menu.other_popularity} variant="indigo" />}
+                            </div>
+                        }
+                    />
+                    <Field
+                        label="ความเชื่อและประเพณี / โอกาสในการกิน"
+                        value={
+                            <div className="flex flex-wrap gap-1">
+                                {(menu.rituals || [])
+                                    .filter((t: string) => t && t !== 'อื่นๆ')
+                                    .map((t: string) => <Badge key={t} text={t} />)}
+                                {menu.other_rituals && <Badge text={menu.other_rituals} variant="indigo" />}
+                            </div>
+                        }
+                    />
+                    <Field
+                        label="ฤดูกาล / ช่วงเวลาที่หารับประทานได้"
+                        value={
+                            <div className="flex flex-wrap gap-1">
+                                {(Array.isArray(menu.seasonality) ? menu.seasonality : [menu.seasonality])
+                                    .filter((t: string) => t && t !== 'อื่นๆ')
+                                    .map((t: string) => <Badge key={t} text={t} />)}
+                                {menu.other_seasonality && <Badge text={menu.other_seasonality} variant="indigo" />}
+                            </div>
+                        }
+                    />
+                    <Field
+                        label="แหล่งที่มาของวัตถุดิบ"
+                        value={
+                            <div className="flex flex-wrap gap-1">
+                                {(menu.ingredient_sources || [])
+                                    .filter((t: string) => t && t !== 'อื่นๆ')
+                                    .map((t: string) => <Badge key={t} text={t} />)}
+                                {menu.other_ingredient_sources && <Badge text={menu.other_ingredient_sources} variant="indigo" />}
+                            </div>
+                        }
+                    />
+                    <Field
+                        label="สุขภาพและสรรพคุณ"
+                        value={
+                            <div className="flex flex-wrap gap-1">
+                                {(menu.health_benefits || [])
+                                    .filter((t: string) => t && t !== 'อื่นๆ')
+                                    .map((t: string) => <Badge key={t} text={t} />)}
+                                {menu.other_health_benefits && <Badge text={menu.other_health_benefits} variant="indigo" />}
+                            </div>
+                        }
+                    />
+                    <Field
+                        label="ความถี่ในการรับประทาน"
+                        value={
+                            <div className="flex flex-wrap gap-1">
+                                {(Array.isArray(menu.consumption_freq) ? menu.consumption_freq : [menu.consumption_freq])
+                                    .filter((t: string) => t && t !== 'อื่นๆ')
+                                    .map((t: string) => <Badge key={t} text={t} />)}
+                                {menu.other_consumption_freq && <Badge text={menu.other_consumption_freq} variant="indigo" />}
+                            </div>
+                        }
+                    />
+                    <Field
+                        label="ความยากง่ายในการทำ"
+                        value={
+                            <div className="flex flex-wrap gap-1">
+                                {(Array.isArray(menu.complexity) ? menu.complexity : [menu.complexity])
+                                    .filter((t: string) => t && t !== 'อื่นๆ')
+                                    .map((t: string) => <Badge key={t} text={t} />)}
+                                {menu.other_complexity && <Badge text={menu.other_complexity} variant="indigo" />}
+                            </div>
+                        }
+                    />
+                    <Field
+                        label="รสชาติ / ความเหมาะสม"
+                        value={
+                            <div className="flex flex-wrap gap-1">
+                                {(Array.isArray(menu.taste_appeal) ? menu.taste_appeal : [menu.taste_appeal])
+                                    .filter((t: string) => t && t !== 'อื่นๆ')
+                                    .map((t: string) => <Badge key={t} text={t} />)}
+                                {menu.other_taste_appeal && <Badge text={menu.other_taste_appeal} variant="indigo" />}
+                            </div>
+                        }
+                    />
+                    <Field label="คุณค่าทางโภชนาการ" value={menu.nutrition} full />
+                    <Field label="คุณค่าทางสังคมและวัฒนธรรม" value={menu.social_value} full />
                 </div>
             </Section>
 
             {/* Part 4: Story */}
             <Section title="เรื่องราวและตำนาน" icon="solar:book-2-bold-duotone">
-                <Field label="ความเป็นมา/เรื่องเล่า" value={menu.story} full />
-                <div className="mt-4"><Field label="สถานะการสืบทอด" value={menu.heritage_status} /></div>
+                <Field label="ความเป็นมา/เรื่องเล่า/ตำนาน" value={menu.story} full />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <Field label="สถานะการสืบทอด" value={menu.heritage_status} />
+                    <Field label="รางวัล / อ้างอิง" value={menu.awards_references} />
+                </div>
             </Section>
 
             {/* Part 5: Recipe */}
             <Section title="สูตรอาหาร" icon="solar:chef-hat-minimalistic-bold-duotone">
-                <div className="mb-6">
-                    <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><Icon icon="solar:leaf-bold" className="text-green-500" /> วัตถุดิบ</h3>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="text-xs text-slate-400 uppercase bg-slate-50">
-                                <tr>
-                                    {/* HIDDEN CODE: <th className="px-4 py-2 rounded-l-lg">รหัส</th> */}
-                                    <th className="px-4 py-2 rounded-l-lg">ชื่อ</th>
-                                    <th className="px-4 py-2">ปริมาณ</th>
-                                    <th className="px-4 py-2">หน่วย</th>
-                                    <th className="px-4 py-2 rounded-r-lg">หมายเหตุ</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {localIngredients.map((ing: any, i: number) => (
-                                    <tr key={i} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                                        {/* HIDDEN CODE: <td className="px-4 py-2 font-mono text-slate-400">{ing.ref_ing_id || '-'}</td> */}
-                                        <td className="px-4 py-2 font-medium text-slate-700">
-                                            {ing.master_ingredients?.ing_name || ing.name || '-'}
-                                            {ing.is_main_ingredient && <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded ml-1 font-bold">หลัก</span>}
-                                        </td>
-                                        <td className="px-4 py-2 text-slate-600">{ing.quantity}</td>
-                                        <td className="px-4 py-2 text-slate-600">{ing.unit}</td>
-                                        <td className="px-4 py-2 min-w-[200px]">
-                                            <input
-                                                type="text"
-                                                value={ing.note || ''}
-                                                onChange={(e) => updateIngredientNote(i, e.target.value)}
-                                                placeholder="ใส่หมายเหตุ..."
-                                                className="w-full bg-slate-50/50 border border-slate-100 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all outline-none"
-                                            />
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                <div className="mb-8">
+                    <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 text-lg">
+                        <Icon icon="solar:leaf-bold" className="text-green-500" /> วัตถุดิบ
+                    </h3>
+
+                    {/* Main Ingredients Group */}
+                    <div className="space-y-6">
+                        {['วัตถุดิบ', 'เครื่องปรุง/สมุนไพร'].map(type => {
+                            const filtered = localIngredients.filter(ing => ing.ingredient_type === type)
+                            if (filtered.length === 0) return null
+
+                            return (
+                                <div key={type} className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
+                                    <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                                        <Icon icon={type === 'วัตถุดิบ' ? 'solar:meat-bold' : 'solar:bottle-bold'} />
+                                        {type}
+                                    </h4>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm text-left table-fixed">
+                                            <thead className="text-[10px] text-slate-400 uppercase border-b border-slate-100">
+                                                <tr>
+                                                    <th className="px-2 py-2 w-[35%]">ชื่อ</th>
+                                                    <th className="px-2 py-2 w-[15%] text-center">ปริมาณ</th>
+                                                    <th className="px-2 py-2 w-[15%] text-center">หน่วย</th>
+                                                    <th className="px-2 py-2 w-[35%]">หมายเหตุ</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {filtered.map((ing: any, i: number) => {
+                                                    const originalIndex = localIngredients.findIndex(li => li === ing)
+                                                    return (
+                                                        <tr key={i} className="border-b border-slate-50 last:border-0 hover:bg-white/50 transition-colors">
+                                                            <td className="px-2 py-2.5 font-medium text-slate-700 truncate">
+                                                                {ing.master_ingredients?.ing_name || ing.name || '-'}
+                                                                {ing.is_main_ingredient && <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1.5 font-black shrink-0">หลัก</span>}
+                                                            </td>
+                                                            <td className="px-2 py-2.5 text-slate-600 text-center">{ing.quantity}</td>
+                                                            <td className="px-2 py-2.5 text-slate-600 text-center">{ing.unit}</td>
+                                                            <td className="px-2 py-2.5">
+                                                                <input
+                                                                    type="text"
+                                                                    value={ing.note || ''}
+                                                                    onChange={(e) => updateIngredientNote(originalIndex, e.target.value)}
+                                                                    placeholder="ระบุหมายเหตุ..."
+                                                                    className="w-full bg-transparent border border-transparent rounded-lg px-2 py-1 text-xs focus:border-indigo-200 focus:bg-white transition-all outline-none"
+                                                                />
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )
+                        })}
                     </div>
+
                     {canEdit && (
                         <div className="mt-4 flex justify-end">
                             <button
@@ -318,21 +438,35 @@ export default function MenuDetailClient({ menu, userRole, userId }: Props) {
                     )}
                 </div>
 
-                <div>
-                    <h3 className="font-bold text-slate-700 mb-3 flex items-center gap-2"><Icon icon="solar:list-check-bold" className="text-orange-500" /> วิธีทำ</h3>
-                    <div className="space-y-3">
-                        {menu.menu_steps?.sort((a: any, b: any) => a.step_order - b.step_order).map((step: any) => (
-                            <div key={step.step_id} className="flex gap-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                                <div className="flex-none w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-500 text-sm">
-                                    {step.step_order}
-                                </div>
-                                <div>
-                                    <span className="text-xs font-bold text-indigo-500 mb-1 block">{step.step_type}</span>
-                                    <p className="text-slate-700">{step.instruction}</p>
+                <div className="space-y-8">
+                    {['เตรียม', 'ปรุง'].map(type => {
+                        const steps = (menu.menu_steps || [])
+                            .filter((s: any) => s.step_type === type)
+                            .sort((a: any, b: any) => a.step_order - b.step_order)
+
+                        if (steps.length === 0) return null
+
+                        return (
+                            <div key={type}>
+                                <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2 text-lg">
+                                    <Icon icon={type === 'เตรียม' ? 'solar:box-minimalistic-bold' : 'solar:fire-bold'} className={type === 'เตรียม' ? 'text-blue-500' : 'text-orange-500'} />
+                                    ขั้นตอนการ{type}
+                                </h3>
+                                <div className="space-y-3">
+                                    {steps.map((step: any) => (
+                                        <div key={step.step_id} className="flex gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-slate-200 transition-colors">
+                                            <div className="flex-none w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center font-bold text-slate-800 text-sm shadow-sm">
+                                                {step.step_order}
+                                            </div>
+                                            <div className="pt-1">
+                                                <p className="text-slate-700 leading-relaxed font-medium">{step.instruction}</p>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        ))}
-                    </div>
+                        )
+                    })}
                 </div>
 
                 {menu.secret_tips && (

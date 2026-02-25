@@ -12,16 +12,105 @@ interface User {
     phone?: string;
     role: string;
     created_at: string;
+    supervisor_sv_code?: string;
+    supervisor?: {
+        collector_name: string;
+    };
+}
+
+const ROLE_OPTIONS = [
+    {
+        value: "user",
+        label: "User",
+        icon: "solar:user-rounded-bold",
+        color: "text-green-600 bg-green-50",
+    },
+    {
+        value: "admin",
+        label: "Admin",
+        icon: "solar:shield-user-bold",
+        color: "text-purple-600 bg-purple-50",
+    },
+    {
+        value: "director",
+        label: "Director",
+        icon: "solar:user-id-bold",
+        color: "text-blue-600 bg-blue-50",
+    },
+];
+
+function CustomRoleSelect({
+    id,
+    name,
+    defaultValue = "user",
+}: {
+    id?: string;
+    name: string;
+    defaultValue?: string;
+}) {
+    const [selected, setSelected] = useState(defaultValue);
+
+    return (
+        <div className="relative">
+            <input
+                id={id}
+                type="text"
+                name={name}
+                value={selected}
+                readOnly
+                className="sr-only"
+                aria-hidden="true"
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {ROLE_OPTIONS.map((option) => (
+                    <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setSelected(option.value)}
+                        className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all group ${selected === option.value ? "bg-slate-900 border-slate-900 shadow-lg shadow-slate-900/10" : "bg-white border-slate-100 hover:border-slate-200"}`}
+                    >
+                        <div
+                            className={`p-2 rounded-xl ${selected === option.value ? "bg-white/10 text-white" : option.color}`}
+                        >
+                            <Icon icon={option.icon} width="24" />
+                        </div>
+                        <span
+                            className={`text-xs font-bold text-center ${selected === option.value ? "text-white" : "text-slate-600"}`}
+                        >
+                            {option.label}
+                        </span>
+                        {selected === option.value && (
+                            <div className="absolute top-2 right-2">
+                                <Icon
+                                    icon="solar:check-circle-bold"
+                                    className="text-emerald-400 bg-white rounded-full"
+                                />
+                            </div>
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            <p className="mt-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">
+                การเลือกสิทธิ์จะมีผลต่อการเข้าถึงปุ่มต่างๆ ในระบบ
+            </p>
+        </div>
+    );
 }
 
 export default function UserManagementClient({
     users: initialUsers,
+    currentUserSvCode,
 }: {
     users: User[];
+    currentUserSvCode: string;
 }) {
     const [users, setUsers] = useState(initialUsers);
     const [roleFilter, setRoleFilter] = useState("all");
+    const [searchQuery, setSearchQuery] = useState("");
     const [showAddForm, setShowAddForm] = useState(false);
+
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{
@@ -55,8 +144,6 @@ export default function UserManagementClient({
                 text: result.success || "เพิ่มผู้ใช้สำเร็จ",
             });
             setShowAddForm(false);
-            // Trigger a refresh/reload handled by parent/server component technically,
-            // but for client-side we'll just wait for the prop update or manual reload
             window.location.reload();
         }
         setLoading(false);
@@ -65,7 +152,6 @@ export default function UserManagementClient({
     async function handleUpdateSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
-        // Basic validation could happen here if needed
         setPendingUpdateData(formData);
     }
 
@@ -78,7 +164,6 @@ export default function UserManagementClient({
 
         if (result.error) {
             setMessage({ type: "error", text: result.error });
-            // Keep the form/confirmation open to let user retry or cancel
             setPendingUpdateData(null);
         } else {
             setMessage({
@@ -92,12 +177,10 @@ export default function UserManagementClient({
         setLoading(false);
     }
 
-    // Open delete modal
     function requestDelete(user: User) {
         setUserToDelete(user);
     }
 
-    // Actual delete action
     async function confirmDelete() {
         if (!userToDelete) return;
 
@@ -108,17 +191,23 @@ export default function UserManagementClient({
             alert(result.error);
         } else {
             setUsers(users.filter((u) => u.sv_code !== userToDelete.sv_code));
-            // alert(result.success) // Optional: remove alert for smoother UX or use message state
             setMessage({ type: "success", text: result.success || "ลบผู้ใช้สำเร็จ" });
         }
         setLoading(false);
         setUserToDelete(null);
     }
 
-    // Helper for phone restriction
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
         e.target.value = val;
+    };
+
+    const calculateAccountAge = (createdAt: string) => {
+        const created = new Date(createdAt);
+        const now = new Date();
+        const diffTime = Math.abs(now.getTime() - created.getTime());
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
     };
 
     const getRoleBadge = (role: string) => {
@@ -127,30 +216,41 @@ export default function UserManagementClient({
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 whitespace-nowrap">
                         <Icon icon="solar:shield-user-bold" />
-                        แอดมิน (Admin)
+                        Admin
                     </span>
                 );
             case "director":
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 whitespace-nowrap">
                         <Icon icon="solar:user-id-bold" />
-                        กรรมการ (Director)
+                        Director
                     </span>
                 );
             default:
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold bg-green-100 text-green-700 border border-green-200 whitespace-nowrap">
                         <Icon icon="solar:user-rounded-bold" />
-                        ผู้กรอก (User)
+                        User
                     </span>
                 );
         }
     };
 
     const filteredUsers = useMemo(() => {
-        if (roleFilter === "all") return users;
-        return users.filter((u) => u.role.toLowerCase() === roleFilter.toLowerCase());
-    }, [users, roleFilter]);
+        let result = users;
+        if (roleFilter !== "all") {
+            result = result.filter((u) => u.role.toLowerCase() === roleFilter.toLowerCase());
+        }
+        if (searchQuery.trim() !== "") {
+            const q = searchQuery.toLowerCase().trim();
+            result = result.filter(
+                (u) =>
+                    u.collector_name.toLowerCase().includes(q) ||
+                    u.sv_code.toLowerCase().includes(q)
+            );
+        }
+        return result;
+    }, [users, roleFilter, searchQuery]);
 
     const stats = useMemo(() => {
         return {
@@ -159,6 +259,10 @@ export default function UserManagementClient({
             director: users.filter((u) => u.role.toLowerCase() === "director").length,
             user: users.filter((u) => u.role.toLowerCase() === "user").length,
         };
+    }, [users]);
+
+    const supervisors = useMemo(() => {
+        return users.filter(u => ['admin', 'director'].includes(u.role.toLowerCase()));
     }, [users]);
 
     return (
@@ -187,55 +291,73 @@ export default function UserManagementClient({
                 </button>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 bg-slate-100/50 p-1.5 rounded-2xl w-full sm:w-fit overflow-x-auto sm:overflow-visible no-scrollbar" role="radiogroup" aria-label="กรองตามสิทธิ์การใช้งาน">
-                <button
-                    onClick={() => setRoleFilter("all")}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
-                    role="radio"
-                    aria-checked={roleFilter === "all"}
-                >
-                    ทั้งหมด
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "all" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>
-                        {stats.all}
-                    </span>
-                </button>
-                <button
-                    onClick={() => setRoleFilter("admin")}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "admin" ? "bg-white text-purple-700 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
-                    role="radio"
-                    aria-checked={roleFilter === "admin"}
-                >
-                    <Icon icon="solar:shield-user-bold" />
-                    แอดมิน
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "admin" ? "bg-purple-600 text-white" : "bg-slate-200 text-slate-500"}`}>
-                        {stats.admin}
-                    </span>
-                </button>
-                <button
-                    onClick={() => setRoleFilter("director")}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "director" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
-                    role="radio"
-                    aria-checked={roleFilter === "director"}
-                >
-                    <Icon icon="solar:user-id-bold" />
-                    กรรมการ
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "director" ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-500"}`}>
-                        {stats.director}
-                    </span>
-                </button>
-                <button
-                    onClick={() => setRoleFilter("user")}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "user" ? "bg-white text-green-700 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
-                    role="radio"
-                    aria-checked={roleFilter === "user"}
-                >
-                    <Icon icon="solar:user-rounded-bold" />
-                    ผู้กรอก
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "user" ? "bg-green-600 text-white" : "bg-slate-200 text-slate-500"}`}>
-                        {stats.user}
-                    </span>
-                </button>
+            {/* Search and Filters Container */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+                {/* Search Input */}
+                <div className="relative w-full md:w-96">
+                    <Icon
+                        icon="solar:magnifer-linear"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"
+                    />
+                    <input
+                        type="text"
+                        placeholder="ค้นหาชื่อผู้ใช้ หรือ SV Code..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border-2 border-transparent hover:border-slate-200 focus:border-gray-900 focus:bg-white focus:ring-4 focus:ring-gray-100 rounded-2xl outline-none text-sm font-semibold transition-all"
+                    />
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 bg-slate-100/50 p-1.5 rounded-2xl overflow-x-auto sm:overflow-visible no-scrollbar" role="radiogroup" aria-label="กรองตามสิทธิ์การใช้งาน">
+                    <button
+                        onClick={() => setRoleFilter("all")}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                        role="radio"
+                        aria-checked={roleFilter === "all"}
+                    >
+                        ทั้งหมด
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "all" ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-500"}`}>
+                            {stats.all}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setRoleFilter("admin")}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "admin" ? "bg-white text-purple-700 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                        role="radio"
+                        aria-checked={roleFilter === "admin"}
+                    >
+                        <Icon icon="solar:shield-user-bold" />
+                        แอดมิน
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "admin" ? "bg-purple-600 text-white" : "bg-slate-200 text-slate-500"}`}>
+                            {stats.admin}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setRoleFilter("director")}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "director" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                        role="radio"
+                        aria-checked={roleFilter === "director"}
+                    >
+                        <Icon icon="solar:user-id-bold" />
+                        กรรมการ
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "director" ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-500"}`}>
+                            {stats.director}
+                        </span>
+                    </button>
+                    <button
+                        onClick={() => setRoleFilter("user")}
+                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${roleFilter === "user" ? "bg-white text-green-700 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"}`}
+                        role="radio"
+                        aria-checked={roleFilter === "user"}
+                    >
+                        <Icon icon="solar:user-rounded-bold" />
+                        ผู้กรอก
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] ${roleFilter === "user" ? "bg-green-600 text-white" : "bg-slate-200 text-slate-500"}`}>
+                            {stats.user}
+                        </span>
+                    </button>
+                </div>
             </div>
 
             {/* Message Alert */}
@@ -345,11 +467,31 @@ export default function UserManagementClient({
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label htmlFor="role" className="text-xs font-bold text-slate-400 uppercase ml-1">
-                                สิทธิ์การใช้งาน (Role) *
-                            </label>
-                            <CustomRoleSelect id="role" name="role" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label htmlFor="role" className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                    สิทธิ์การใช้งาน (Role) *
+                                </label>
+                                <CustomRoleSelect id="role" name="role" />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label htmlFor="supervisor_sv_code" className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                    ผู้ดูแล (Supervisor)
+                                </label>
+                                <select
+                                    id="supervisor_sv_code"
+                                    name="supervisor_sv_code"
+                                    className="w-full bg-slate-50 border-none rounded-xl py-3 px-4 font-medium text-slate-900 focus:ring-2 focus:ring-gray-900/10"
+                                >
+                                    <option value="">-- ไม่ระบุ --</option>
+                                    {supervisors.map(s => (
+                                        <option key={s.sv_code} value={s.sv_code}>
+                                            {s.collector_name} ({s.sv_code})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
                         <button
@@ -390,7 +532,6 @@ export default function UserManagementClient({
                             </div>
 
                             <form onSubmit={handleUpdateSubmit} className="space-y-6">
-                                {/* Hidden SV Code field - ensure it's sent but not editable */}
                                 <input
                                     type="hidden"
                                     name="sv_code"
@@ -481,15 +622,36 @@ export default function UserManagementClient({
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label htmlFor="edit-role" className="text-xs font-bold text-slate-400 uppercase ml-1">
-                                        สิทธิ์การใช้งาน (Role) *
-                                    </label>
-                                    <CustomRoleSelect
-                                        id="edit-role"
-                                        name="role"
-                                        defaultValue={editingUser.role}
-                                    />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label htmlFor="edit-role" className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                            สิทธิ์การใช้งาน (Role) *
+                                        </label>
+                                        <CustomRoleSelect
+                                            id="edit-role"
+                                            name="role"
+                                            defaultValue={editingUser.role}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label htmlFor="edit-supervisor" className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                            ผู้ดูแล (Supervisor)
+                                        </label>
+                                        <select
+                                            id="edit-supervisor"
+                                            name="supervisor_sv_code"
+                                            defaultValue={editingUser.supervisor_sv_code || ""}
+                                            className="w-full bg-slate-50 border-none rounded-xl py-3 px-4 font-medium text-slate-900 focus:ring-2 focus:ring-gray-900/10"
+                                        >
+                                            <option value="">-- ไม่ระบุ --</option>
+                                            {supervisors.filter(s => s.sv_code !== editingUser.sv_code).map(s => (
+                                                <option key={s.sv_code} value={s.sv_code}>
+                                                    {s.collector_name} ({s.sv_code})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div className="flex gap-4 pt-2">
@@ -509,8 +671,7 @@ export default function UserManagementClient({
                                             "กำลังบันทึก..."
                                         ) : (
                                             <>
-                                                <Icon icon="solar:disk-bold" width="20" />{" "}
-                                                บันทึกการแก้ไข
+                                                <Icon icon="solar:disk-bold" width="20" /> บันทึกการแก้ไข
                                             </>
                                         )}
                                     </button>
@@ -533,10 +694,7 @@ export default function UserManagementClient({
                         </h3>
                         <p className="text-slate-500 mb-6 font-medium">
                             คุณต้องการบันทึกการเปลี่ยนแปลง <br />
-                            <span className="text-slate-900 font-bold">
-                                ข้อมูลผู้ใช้
-                            </span>{" "}
-                            ใช่หรือไม่?
+                            <span className="text-slate-900 font-bold">ข้อมูลผู้ใช้</span> ใช่หรือไม่?
                         </p>
 
                         <div className="flex gap-3">
@@ -569,14 +727,8 @@ export default function UserManagementClient({
                             ยืนยันการลบ?
                         </h3>
                         <p className="text-slate-500 mb-6 font-medium">
-                            คุณต้องการลบผู้ใช้{" "}
-                            <span className="text-slate-900 font-bold">
-                                {userToDelete.collector_name}
-                            </span>{" "}
-                            ใช่หรือไม่? <br />
-                            <span className="text-xs text-red-400">
-                                การกระทำนี้ไม่สามารถย้อนกลับได้
-                            </span>
+                            คุณต้องการลบผู้ใช้ <span className="text-slate-900 font-bold">{userToDelete.collector_name}</span> ใช่หรือไม่? <br />
+                            <span className="text-xs text-red-400">การกระทำนี้ไม่สามารถย้อนกลับได้</span>
                         </p>
 
                         <div className="flex gap-3">
@@ -651,13 +803,24 @@ export default function UserManagementClient({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Icon
+                                            icon="solar:shield-user-bold-duotone"
+                                            className="text-slate-400"
+                                        />
+                                        <span className="font-bold text-slate-700">ผู้ดูแล:</span>
+                                        <span>
+                                            {user.supervisor?.collector_name || user.supervisor_sv_code || "-"}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Icon
                                             icon="solar:calendar-bold-duotone"
                                             className="text-slate-400"
                                         />
                                         <span>
-                                            {new Date(user.created_at).toLocaleDateString(
-                                                "th-TH",
-                                            )}
+                                            {new Date(user.created_at).toLocaleDateString("th-TH")}
+                                            <span className="text-[10px] text-slate-400 ml-2 font-bold bg-slate-100 px-1.5 py-0.5 rounded-md">
+                                                {calculateAccountAge(user.created_at)} วัน
+                                            </span>
                                         </span>
                                     </div>
                                 </div>
@@ -670,13 +833,15 @@ export default function UserManagementClient({
                                         <Icon icon="solar:pen-new-square-bold" width="18" />
                                         แก้ไข
                                     </button>
-                                    <button
-                                        onClick={() => requestDelete(user)}
-                                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors font-bold text-sm"
-                                    >
-                                        <Icon icon="solar:trash-bin-trash-bold" width="18" />
-                                        ลบ
-                                    </button>
+                                    {user.sv_code !== currentUserSvCode && (
+                                        <button
+                                            onClick={() => requestDelete(user)}
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors font-bold text-sm"
+                                        >
+                                            <Icon icon="solar:trash-bin-trash-bold" width="18" />
+                                            ลบ
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -690,73 +855,57 @@ export default function UserManagementClient({
                     <table className="w-full">
                         <thead className="bg-slate-50 border-b border-slate-100">
                             <tr>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    SV Code
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    ชื่อ-นามสกุล
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    คณะ/สาขา
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider min-w-[120px]">
-                                    เบอร์โทร
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider min-w-[140px]">
-                                    สิทธิ์
-                                </th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    วันที่สร้าง
-                                </th>
-                                <th className="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    จัดการ
-                                </th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">SV Code</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">ชื่อ-นามสกุล</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">ผู้ดูแล</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">คณะ/สาขา</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">เบอร์โทร</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider min-w-[140px]">บทบาท</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">วันที่สร้าง</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">อายุบัญชี</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {filteredUsers.length === 0 ? (
                                 <tr>
-                                    <td
-                                        colSpan={7}
-                                        className="px-6 py-12 text-center text-slate-400"
-                                    >
-                                        <Icon
-                                            icon="solar:user-cross-bold-duotone"
-                                            width="48"
-                                            className="mx-auto mb-2 opacity-50"
-                                        />
-                                        <p className="font-medium">
-                                            ไม่พบผู้ใช้ในหมวดหมู่นี้
-                                        </p>
+                                    <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
+                                        <Icon icon="solar:user-cross-bold-duotone" width="48" className="mx-auto mb-2 opacity-50" />
+                                        <p className="font-medium">ไม่พบผู้ใช้ในหมวดหมู่นี้</p>
                                     </td>
                                 </tr>
                             ) : (
                                 filteredUsers.map((user) => (
-                                    <tr
-                                        key={user.sv_code}
-                                        className="hover:bg-slate-50 transition-colors"
-                                    >
-                                        <td className="px-6 py-4 font-bold text-slate-900">
-                                            {user.sv_code}
-                                        </td>
-                                        <td className="px-6 py-4 font-medium text-slate-900">
-                                            {user.collector_name}
+                                    <tr key={user.sv_code} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-6 py-4 font-bold text-slate-900">{user.sv_code}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-900">{user.collector_name}</td>
+                                        <td className="px-6 py-4 text-sm font-bold text-slate-600">
+                                            {user.supervisor?.collector_name ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Icon icon="solar:user-hand-up-bold" className="text-blue-500" />
+                                                    {user.supervisor.collector_name}
+                                                </div>
+                                            ) : user.supervisor_sv_code ? (
+                                                <div className="flex items-center gap-1.5 text-slate-400 font-medium">
+                                                    <Icon icon="solar:user-id-bold" width="16" />
+                                                    {user.supervisor_sv_code}
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-300 font-normal">ไม่มีผู้ดูแล</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-600">
                                             {user.faculty && user.major
                                                 ? `${user.faculty} / ${user.major}`
                                                 : user.faculty || user.major || "-"}
                                         </td>
+                                        <td className="px-6 py-4 text-sm text-slate-600">{user.phone || "-"}</td>
+                                        <td className="px-6 py-4">{getRoleBadge(user.role)}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600">
-                                            {user.phone || "-"}
+                                            {new Date(user.created_at).toLocaleDateString("th-TH")}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            {getRoleBadge(user.role)}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-600">
-                                            {new Date(user.created_at).toLocaleDateString(
-                                                "th-TH",
-                                            )}
+                                        <td className="px-6 py-4 text-sm font-bold text-slate-600">
+                                            {calculateAccountAge(user.created_at)} วัน
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
@@ -764,22 +913,16 @@ export default function UserManagementClient({
                                                     onClick={() => setEditingUser(user)}
                                                     className="inline-flex items-center gap-1 px-3 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-medium text-sm"
                                                 >
-                                                    <Icon
-                                                        icon="solar:pen-new-square-bold"
-                                                        width="18"
-                                                    />
-                                                    แก้ไข
+                                                    <Icon icon="solar:pen-new-square-bold" width="18" /> แก้ไข
                                                 </button>
-                                                <button
-                                                    onClick={() => requestDelete(user)}
-                                                    className="inline-flex items-center gap-1 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium text-sm"
-                                                >
-                                                    <Icon
-                                                        icon="solar:trash-bin-trash-bold"
-                                                        width="18"
-                                                    />
-                                                    ลบ
-                                                </button>
+                                                {user.sv_code !== currentUserSvCode && (
+                                                    <button
+                                                        onClick={() => requestDelete(user)}
+                                                        className="inline-flex items-center gap-1 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium text-sm"
+                                                    >
+                                                        <Icon icon="solar:trash-bin-trash-bold" width="18" /> ลบ
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -789,88 +932,6 @@ export default function UserManagementClient({
                     </table>
                 </div>
             </div>
-        </div>
-    );
-}
-
-const ROLE_OPTIONS = [
-    {
-        value: "user",
-        label: "User (ผู้เก็บข้อมูล)",
-        icon: "solar:user-rounded-bold",
-        color: "text-green-600 bg-green-50",
-    },
-    {
-        value: "admin",
-        label: "Admin (ผู้ดูแลระบบ)",
-        icon: "solar:shield-user-bold",
-        color: "text-purple-600 bg-purple-50",
-    },
-    {
-        value: "director",
-        label: "Director (กรรมการคัดเลือก)",
-        icon: "solar:user-id-bold",
-        color: "text-blue-600 bg-blue-50",
-    },
-];
-
-function CustomRoleSelect({
-    id,
-    name,
-    defaultValue = "user",
-}: {
-    id?: string;
-    name: string;
-    defaultValue?: string;
-}) {
-    const [selected, setSelected] = useState(defaultValue);
-
-    return (
-        <div className="relative">
-            <input
-                id={id}
-                type="text"
-                name={name}
-                value={selected}
-                readOnly
-                className="sr-only"
-                aria-hidden="true"
-            />
-
-            {/* Desktop Transition: Hidden on Desktop, Grid on Mobile */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {ROLE_OPTIONS.map((option) => (
-                    <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setSelected(option.value)}
-                        className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all group ${selected === option.value ? "bg-slate-900 border-slate-900 shadow-lg shadow-slate-900/10" : "bg-white border-slate-100 hover:border-slate-200"}`}
-                    >
-                        <div
-                            className={`p-2 rounded-xl ${selected === option.value ? "bg-white/10 text-white" : option.color}`}
-                        >
-                            <Icon icon={option.icon} width="24" />
-                        </div>
-                        <span
-                            className={`text-xs font-bold text-center ${selected === option.value ? "text-white" : "text-slate-600"}`}
-                        >
-                            {option.label}
-                        </span>
-                        {selected === option.value && (
-                            <div className="absolute top-2 right-2">
-                                <Icon
-                                    icon="solar:check-circle-bold"
-                                    className="text-emerald-400 bg-white rounded-full"
-                                />
-                            </div>
-                        )}
-                    </button>
-                ))}
-            </div>
-
-            <p className="mt-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">
-                การเลือกสิทธิ์จะมีผลต่อการเข้าถึงปุ่มต่างๆ ในระบบ
-            </p>
         </div>
     );
 }

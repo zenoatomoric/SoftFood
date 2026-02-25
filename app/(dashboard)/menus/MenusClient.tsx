@@ -35,6 +35,19 @@ interface FoodItem {
     ingredient_sources?: string[]
     health_benefits?: string[]
     secret_tips?: string
+    serving_size?: string
+    other_serving_size?: string
+    other_popularity?: string
+    other_rituals?: string
+    other_seasonality?: string
+    other_ingredient_sources?: string
+    other_health_benefits?: string
+    other_consumption_freq?: string
+    other_complexity?: string
+    other_taste_appeal?: string
+    nutrition?: string
+    social_value?: string
+    awards_references?: string
 }
 
 interface Props {
@@ -190,31 +203,56 @@ export default function MenusClient({ userRole, userId }: Props) {
 
             // Prepare Data for XLSX
             const exportData = json.data.map((item: FoodItem) => {
-                const ingredients = item.menu_ingredients?.map((i: any) => `${i.name} (${i.quantity} ${i.unit}) - ${i.note || ''}`).join('\n') || ''
-                const steps = item.menu_steps?.sort((a: any, b: any) => a.step_order - b.step_order).map((s: any) => `${s.step_order}. ${s.instruction}`).join('\n') || ''
-                const photos = item.menu_photos?.map((p: any) => p.photo_url).join('\n') || ''
-                const rituals = Array.isArray(item.rituals) ? item.rituals.join(', ') : item.rituals || ''
-                const sources = Array.isArray(item.ingredient_sources) ? item.ingredient_sources.join(', ') : item.ingredient_sources || ''
-                const benefits = Array.isArray(item.health_benefits) ? item.health_benefits.join(', ') : item.health_benefits || ''
+                // Formatting Helpers
+                const combineOption = (main: string | string[] | undefined, other: string | undefined) => {
+                    const mainStr = Array.isArray(main) ? main.join(', ') : (main || '')
+                    if (other) return `${mainStr}${mainStr ? ', ' : ''}${other}`
+                    return mainStr
+                }
+
+                const rawIngredients = item.menu_ingredients?.filter((i: any) => i.ingredient_type === 'วัตถุดิบ') || []
+                const seasoningIngredients = item.menu_ingredients?.filter((i: any) => i.ingredient_type === 'เครื่องปรุง/สมุนไพร') || []
+
+                const formatIngs = (list: any[]) => list.map((i, idx) =>
+                    `${idx + 1}. ${i.name} (${i.quantity} ${i.unit})${i.is_main_ingredient ? ' [วัตถุดิบหลัก]' : ''}${i.note ? ` - ${i.note}` : ''}`
+                ).join('\n')
+
+                const prepSteps = item.menu_steps?.filter((s: any) => s.step_type === 'เตรียม').sort((a: any, b: any) => a.step_order - b.step_order) || []
+                const cookSteps = item.menu_steps?.filter((s: any) => s.step_type === 'ปรุง').sort((a: any, b: any) => a.step_order - b.step_order) || []
+
+                const formatSteps = (list: any[]) => list.map((s, idx) => `${idx + 1}. ${s.instruction}`).join('\n')
 
                 return {
-                    'ชื่อเมนู': item.menu_name,
-                    'ชื่อท้องถิ่น': (item as any).local_name || '',
-                    'ประเภท': item.category,
-                    'โซนคลอง': item.canal_zone,
-                    'ความนิยม': item.popularity || '',
-                    'ฤดูกาล': item.seasonality || '',
-                    'ความสัมพันธ์/ประเพณี': rituals,
-                    'รสชาติ': item.taste_appeal || '',
-                    'ความยาก': item.complexity || '',
-                    'ความถี่': item.consumption_freq || '',
-                    'แหล่งวัตถุดิบ': sources,
-                    'ประโยชน์': benefits,
-                    'เรื่องราว': item.story || '',
+                    // 🔵 ส่วนที่ 3: ข้อมูลอัตลักษณ์เมนู
+                    'ชื่อเมนูอาหาร (ชื่อทางการ)': item.menu_name,
+                    'ชื่อเรียกในท้องถิ่น': (item as any).local_name || '',
+                    'ชื่อภาษาอื่น': (item as any).other_name || '',
+                    'ประเภทอาหาร': item.category,
+                    'ปริมาณการทานต่อ 1 เมนู': item.serving_size === 'อื่นๆ' ? (item.other_serving_size || 'อื่นๆ') : (item.serving_size || ''),
+
+                    // 🟠 ส่วนที่ 4: แบบสำรวจเจาะลึก
+                    'ระดับความนิยม / การเป็นที่รู้จัก': combineOption(item.popularity, item.other_popularity),
+                    'ความเชื่อและประเพณี / โอกาสในการกิน': combineOption(item.rituals, item.other_rituals),
+                    'ฤดูกาล / ช่วงเวลาที่หารับประทานได้': combineOption(item.seasonality, item.other_seasonality),
+                    'แหล่งที่มาของวัตถุดิบ': combineOption(item.ingredient_sources, item.other_ingredient_sources),
+                    'สุขภาพและสรรพคุณ': combineOption(item.health_benefits, item.other_health_benefits),
+                    'ความถี่ในการรับประทาน': combineOption(item.consumption_freq, item.other_consumption_freq),
+                    'ความยากง่ายในการทำ': combineOption(item.complexity, item.other_complexity),
+                    'รสชาติ / ความเหมาะสม': combineOption(item.taste_appeal, item.other_taste_appeal),
+                    'คุณค่าทางโภชนาการ': item.nutrition || '',
+                    'คุณค่าทางสังคมและวัฒนธรรม': item.social_value || '',
+
+                    // 🟣 ส่วนที่ 5: เรื่องราวและสถานะ
+                    'เรื่องเล่า / ตำนาน / ประวัติความเป็นมา': item.story || '',
                     'สถานะการสืบทอด': item.heritage_status || '',
-                    'วัตถุดิบ': ingredients,
-                    'วิธีทำ': steps,
-                    'เคล็ดลับ': item.secret_tips || '',
+                    'เคล็ดลับ / เทคนิคพิเศษ': item.secret_tips || '',
+                    'รางวัล / อ้างอิง': item.awards_references || '',
+
+                    // 🟡 ส่วนที่ 6: ข้อมูลสูตรอาหาร
+                    'วัตถุดิบหลัก (เนื้อสัตว์/ผัก/เส้น)': formatIngs(rawIngredients),
+                    'เครื่องปรุงรสและสมุนไพร': formatIngs(seasoningIngredients),
+                    'ขั้นตอนการเตรียม': formatSteps(prepSteps),
+                    'ขั้นตอนการปรุง': formatSteps(cookSteps),
                 }
             })
 

@@ -26,6 +26,7 @@ CREATE TABLE users (
     major TEXT,
     phone TEXT,
     role TEXT CHECK (role IN ('user', 'admin', 'director')) DEFAULT 'user',
+    supervisor_sv_code TEXT REFERENCES users(sv_code) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

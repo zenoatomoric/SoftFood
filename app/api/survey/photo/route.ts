@@ -11,6 +11,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing ref_menu_id or photos array' }, { status: 400 })
         }
 
+        // Delete existing photos for this menu first (replace strategy)
+        await supabase.from('menu_photos').delete().eq('ref_menu_id', ref_menu_id)
+
         const rows = photos.map((p: any) => ({
             ref_menu_id,
             photo_url: p.photo_url,

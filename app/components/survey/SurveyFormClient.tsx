@@ -22,6 +22,7 @@ const FREQ_OPTIONS = ['ทุกวัน', 'สัปดาห์ละ 2-3 ค
 const COMPLEXITY_OPTIONS = ['ง่ายมาก', 'ค่อนข้างง่าย', 'ปานกลาง', 'ค่อนข้างยาก', 'ยากมาก', 'อื่นๆ']
 const TASTE_OPTIONS = ['จืด', 'หวาน', 'เค็ม', 'เปรี้ยว', 'เผ็ด', 'มัน', 'ขม', 'กลมกล่อม', 'จัดจ้าน', 'อื่นๆ']
 const HERITAGE_OPTIONS = ['ยังมีการสืบทอดทั่วไป', 'สืบทอดเฉพาะในครอบครัว', 'เสี่ยงสูญหาย', 'แทบสูญหายแล้ว', 'อื่นๆ']
+const SERVING_SIZE_OPTIONS = ['1 คน', '2-3 คน', '4-5 คน', '6 คนขึ้นไป', 'อื่นๆ']
 const SECTION_TITLES = [
     { num: '๒', title: 'ข้อมูลอัตลักษณ์เมนู', icon: 'solar:chef-hat-heart-bold-duotone' },
     { num: '๓', title: 'แบบสำรวจเจาะลึก', icon: 'solar:clipboard-check-bold-duotone' },
@@ -154,7 +155,9 @@ export default function SurveyFormClient() {
         other_health_benefits: '',
         other_consumption_freq: '',
         other_complexity: '',
-        other_taste_appeal: ''
+        other_taste_appeal: '',
+        serving_size: '',
+        other_serving_size: ''
     })
     const [storyData, setStoryData] = useState({ story: '', heritage_status: '' })
     const [ingredients, setIngredients] = useState<IngredientRow[]>([])
@@ -180,6 +183,7 @@ export default function SurveyFormClient() {
 
     const [secretTips, setSecretTips] = useState('')
     const [photoUrls, setPhotoUrls] = useState<Photo[]>([])
+    const initialPhotosRef = useRef<any[]>([])
     const [awardsRef, setAwardsRef] = useState('')
     const [uploadingPhotos, setUploadingPhotos] = useState(false)
 
@@ -224,11 +228,13 @@ export default function SurveyFormClient() {
                             other_popularity: m.other_popularity || '',
                             other_rituals: m.other_rituals || '',
                             other_seasonality: m.other_seasonality || '',
-                            other_ingredient_sources: m.other_ingredient_sources || '',
+                            other_ingredient_sources: m.ingredient_sources || '',
                             other_health_benefits: m.other_health_benefits || '',
                             other_consumption_freq: m.other_consumption_freq || '',
                             other_complexity: m.other_complexity || '',
-                            other_taste_appeal: m.other_taste_appeal || ''
+                            other_taste_appeal: m.other_taste_appeal || '',
+                            serving_size: m.serving_size || '',
+                            other_serving_size: m.other_serving_size || ''
                         })
                         setStoryData({
                             story: m.story || '',
@@ -248,7 +254,13 @@ export default function SurveyFormClient() {
                 setPrepSteps(steps.filter(s => s.step_type === 'เตรียม'))
                 setCookSteps(steps.filter(s => s.step_type === 'ปรุง'))
             })
-            fetch(`/api/survey/photo?menu_id=${menuIdParam}`).then(r => r.json()).then(j => setPhotoUrls((j.data || []).map((p: { photo_url: string; caption: string }) => ({ url: p.photo_url, caption: p.caption }))))
+            fetch(`/api/survey/photo?menu_id=${menuIdParam}`)
+                .then(r => r.json())
+                .then(j => {
+                    const photos = (j.data || []).map((p: any) => ({ url: p.photo_url, caption: p.caption || '' }))
+                    setPhotoUrls(photos)
+                    initialPhotosRef.current = photos
+                })
         }
     }, [menuIdParam])
 
@@ -280,13 +292,9 @@ export default function SurveyFormClient() {
     const handleResetForm = () => {
         setMenuData({ menu_name: '', local_name: '', other_name: '', category: '' })
         setSurveyData({
-            popularity: [], rituals: [], seasonality: [],
-            ingredient_sources: [], health_benefits: [], consumption_freq: [],
-            complexity: [], taste_appeal: [],
-            nutrition: '', social_value: '',
-            other_popularity: '', other_rituals: '',
-            other_seasonality: '', other_ingredient_sources: '', other_health_benefits: '',
-            other_consumption_freq: '', other_complexity: '', other_taste_appeal: ''
+            popularity: [], rituals: [], seasonality: [], ingredient_sources: [], health_benefits: [], consumption_freq: [], complexity: [], taste_appeal: [], nutrition: '', social_value: '',
+            other_popularity: '', other_rituals: '', other_seasonality: '', other_ingredient_sources: '', other_health_benefits: '', other_consumption_freq: '', other_complexity: '', other_taste_appeal: '',
+            serving_size: '', other_serving_size: ''
         })
         setStoryData({ story: '', heritage_status: '' })
         setIngredients([
@@ -408,13 +416,22 @@ export default function SurveyFormClient() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ref_menu_id: mId, steps: [...prepSteps, ...cookSteps] })
-                }),
-                fetch('/api/survey/photo', {
+                })
+            ])
+
+            // 4. Photos (Only if changed)
+            const currentPhotos = updatedPhotoUrls.map(p => ({ url: p.url, caption: p.caption }))
+            const hasPhotoChanges = pendingUploads.length > 0 || JSON.stringify(currentPhotos) !== JSON.stringify(initialPhotosRef.current)
+
+            if (hasPhotoChanges) {
+                await fetch('/api/survey/photo', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ref_menu_id: mId, photos: updatedPhotoUrls.map(p => ({ photo_url: p.url, caption: p.caption })) })
                 })
-            ])
+                // Update ref for subsequent saves without reload
+                initialPhotosRef.current = currentPhotos
+            }
 
             setShowSuccess(true)
         } catch (err) {
@@ -564,6 +581,8 @@ export default function SurveyFormClient() {
                                     </div>
                                 )}
                             </div>
+
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-slate-50">
                                 <div className="space-y-2">
                                     <Label text="คุณค่าทางโภชนาการ" htmlFor="nutrition" />
@@ -692,6 +711,7 @@ export default function SurveyFormClient() {
                             </button>
                         </div>
 
+
                         <div className="space-y-8">
                             <div className="space-y-4">
                                 <Label text="ขั้นตอนการเตรียม" />
@@ -726,6 +746,16 @@ export default function SurveyFormClient() {
                             </div>
                         </div>
                         <textarea value={secretTips} onChange={e => setSecretTips(e.target.value)} placeholder="เคล็ดลับ/เทคนิคพิเศษ..." className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none" rows={3} />
+
+                        <div className="space-y-3 pt-6 border-t border-slate-50">
+                            <Label text="ทำหนึ่งครั้ง (1 เมนู) ทานได้กี่คน?" required />
+                            <RadioSet idPrefix="serving_size" options={SERVING_SIZE_OPTIONS} value={surveyData.serving_size} onChange={v => setSurveyData(p => ({ ...p, serving_size: v }))} />
+                            {surveyData.serving_size === 'อื่นๆ' && (
+                                <div className="mt-3">
+                                    <TextInput id="other_serving_size" name="other_serving_size" value={surveyData.other_serving_size} onChange={v => setSurveyData(p => ({ ...p, other_serving_size: v }))} placeholder="ระบุจำนวนคนอื่นๆ เช่น 10 คนขึ้นไป หรืออื่นๆ..." />
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </SectionCard>
 

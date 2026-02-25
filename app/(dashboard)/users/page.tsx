@@ -18,6 +18,7 @@ export default async function UsersPage() {
   // ดึงข้อมูล users
   const result = await getUsers()
   const users = result.users || []
+  const currentUserSvCode = session.user.sv_code
 
-  return <UserManagementClient users={users} />
+  return <UserManagementClient users={users} currentUserSvCode={currentUserSvCode} />
 }

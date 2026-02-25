@@ -36,7 +36,9 @@ export async function POST(request: Request) {
             other_health_benefits,
             other_consumption_freq,
             other_complexity,
-            other_taste_appeal
+            other_taste_appeal,
+            serving_size,
+            other_serving_size
         } = body
 
         if (!ref_info_id || !menu_name) {
@@ -72,7 +74,9 @@ export async function POST(request: Request) {
             other_health_benefits,
             other_consumption_freq,
             other_complexity,
-            other_taste_appeal
+            other_taste_appeal,
+            serving_size,
+            other_serving_size
         }
 
         const { data, error } = await supabase
@@ -111,7 +115,8 @@ export async function PATCH(request: Request) {
             'awards_references', 'selection_status',
             'other_popularity', 'other_rituals', 'other_seasonality',
             'other_ingredient_sources', 'other_health_benefits',
-            'other_consumption_freq', 'other_complexity', 'other_taste_appeal'
+            'other_consumption_freq', 'other_complexity', 'other_taste_appeal',
+            'serving_size', 'other_serving_size'
         ]
 
         const updateData: Record<string, any> = {}

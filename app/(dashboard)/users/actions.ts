@@ -8,19 +8,61 @@ import { revalidatePath } from 'next/cache'
 export async function getUsers() {
   const session = await auth()
 
-  // ตรวจสอบว่าเป็น admin หรือไม่
-  if (session?.user?.role !== 'admin') {
+  // ตรวจสอบว่าเป็น admin หรือ director หรือไม่
+  if (session?.user?.role !== 'admin' && session?.user?.role !== 'director') {
     return { error: 'ไม่มีสิทธิ์เข้าถึง' }
   }
 
   const supabase = await createClient()
-  const { data: users, error } = await supabase
+
+  // Try with join first - Using column name as hint for self-join
+  let { data: users, error } = await supabase
     .from('users')
-    .select('*')
+    .select(`
+      *,
+      supervisor:supervisor_sv_code(collector_name)
+    `)
     .order('created_at', { ascending: false })
 
+  // If failed (likely due to missing column/relation), try simple select
   if (error) {
-    return { error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' }
+    console.warn('Supervisor join failed, falling back to simple select. Error:', error.message || error);
+
+    const simpleResult = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    users = simpleResult.data;
+    error = simpleResult.error;
+  }
+
+  if (error) {
+    console.error('Error fetching users final attempt:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint
+    })
+    return { error: `เกิดข้อผิดพลาดในการดึงข้อมูล: ${error.message || 'Unknown database error'}` }
+  }
+
+  // Filter in memory for safety if column might be missing
+  if (session.user.role === 'admin' && users) {
+    const svCode = session.user.sv_code;
+    if (svCode) {
+      // Filter users who are either:
+      // 1. Subordinates of this admin
+      // 2. Unassigned (supervisor_sv_code is null or doesn't exist in record)
+      // 3. The admin themselves (so they can see their own role/status)
+      // 4. Other admins (to see who's who)
+      users = users.filter((u: any) =>
+        u.supervisor_sv_code === svCode ||
+        !u.supervisor_sv_code ||
+        u.sv_code === svCode ||
+        u.role === 'admin'
+      );
+    }
   }
 
   return { users }
@@ -41,6 +83,7 @@ export async function createUser(formData: FormData) {
   const major = formData.get('major') as string
   const phone = formData.get('phone') as string
   const role = formData.get('role') as string
+  const supervisor_sv_code = formData.get('supervisor_sv_code') as string
 
   // Validate required fields
   if (!sv_code || !password || !collector_name || !role) {
@@ -60,7 +103,8 @@ export async function createUser(formData: FormData) {
       faculty,
       major,
       phone,
-      role
+      role,
+      supervisor_sv_code: supervisor_sv_code || null
     })
 
   if (error) {
@@ -116,6 +160,7 @@ export async function updateUser(formData: FormData) {
   const major = formData.get('major') as string
   const phone = formData.get('phone') as string
   const role = formData.get('role') as string
+  const supervisor_sv_code = formData.get('supervisor_sv_code') as string
 
   // Validate required fields
   if (!sv_code || !collector_name || !role) {
@@ -131,7 +176,8 @@ export async function updateUser(formData: FormData) {
     faculty,
     major,
     phone,
-    role
+    role,
+    supervisor_sv_code: supervisor_sv_code || null
   }
 
   // Only update password if provided

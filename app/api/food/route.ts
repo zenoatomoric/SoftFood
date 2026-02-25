@@ -12,7 +12,15 @@ export async function GET(request: Request) {
         // Allow public read access to food data
 
         // Use Admin Client to bypass RLS and show all data to all roles
-        const supabase = createAdminClient()
+        // Hardened with try-catch to prevent 500 when keys are missing
+        let supabase;
+        try {
+            supabase = createAdminClient()
+        } catch (adminErr) {
+            console.warn('[API Food] Admin client failed, falling back to server client:', adminErr)
+            supabase = await createClient()
+        }
+
 
         const svCode = session?.user?.sv_code || ''
         const role = (session?.user?.role || 'user').toLowerCase().trim()
