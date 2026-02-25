@@ -11,7 +11,7 @@ export default async function UsersPage() {
     redirect('/login')
   }
 
-  if (session.user.role !== 'admin' && session.user.role !== 'director') {
+  if (session.user.role !== 'admin') {
     redirect('/')
   }
 
