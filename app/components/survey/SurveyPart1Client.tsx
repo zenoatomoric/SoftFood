@@ -87,6 +87,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
     const [loadingMyInformants, setLoadingMyInformants] = useState(false)
     const [myInformantsSearch, setMyInformantsSearch] = useState('')
     const [showVerifyEdit, setShowVerifyEdit] = useState(false)
+    const [isDraftLoaded, setIsDraftLoaded] = useState(false)
 
     const CustomSelect = ({
         label,
@@ -305,6 +306,41 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
         }
 
         setFormData(prev => ({ ...prev, [name]: value }))
+    }
+
+    // --- Auto-save Logic ---
+    const STORAGE_KEY = 'survey_part1_draft'
+
+    // Load draft on mount
+    useEffect(() => {
+        if (!isEditMode) {
+            const saved = localStorage.getItem(STORAGE_KEY)
+            if (saved) {
+                try {
+                    const draft = JSON.parse(saved)
+                    if (draft.formData) setFormData(prev => ({ ...prev, ...draft.formData, friendly_id: prev.friendly_id })) // Keep friendly_id from URL/initial if any
+                    if (draft.addressFields) setAddressFields(draft.addressFields)
+                    if (draft.consentDocUrl) setConsentDocUrl(draft.consentDocUrl)
+                } catch (e) {
+                    console.error('Error loading part 1 draft:', e)
+                }
+            }
+            setIsDraftLoaded(true)
+        } else {
+            setIsDraftLoaded(true)
+        }
+    }, [isEditMode])
+
+    // Save draft on changes
+    useEffect(() => {
+        if (!isEditMode && isDraftLoaded && !loading) {
+            const draft = { formData, addressFields, consentDocUrl }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(draft))
+        }
+    }, [formData, addressFields, consentDocUrl, isEditMode, isDraftLoaded, loading])
+
+    const clearDraft = () => {
+        localStorage.removeItem(STORAGE_KEY)
     }
 
     // Debounce search query
@@ -537,6 +573,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
             setToastConfig({ isVisible: true, message: 'บันทึกข้อมูลสำเร็จ', type: 'success' })
 
             if (!isEditMode) {
+                clearDraft()
                 router.push(`/survey/part2?info_id=${json.data.info_id}`)
             }
         } catch (err) {

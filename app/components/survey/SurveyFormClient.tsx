@@ -131,6 +131,7 @@ export default function SurveyFormClient() {
     const [informantName, setInformantName] = useState('')
     const [friendlyId, setFriendlyId] = useState('')
     const [showSuccess, setShowSuccess] = useState(false)
+    const [isDraftLoaded, setIsDraftLoaded] = useState(false)
     const sectionRefs = useRef<(HTMLElement | null)[]>([])
 
     const [confirmConfig, setConfirmConfig] = useState<{ isOpen: boolean; title: string; message: string; type: 'info' | 'danger' | 'success' | 'warning'; onConfirm: () => void }>({ isOpen: false, title: '', message: '', type: 'info', onConfirm: () => { } })
@@ -166,7 +167,7 @@ export default function SurveyFormClient() {
 
     // Initialize with one empty row if no data
     useEffect(() => {
-        if (!loading && !editMode) {
+        if (!loading && !editMode && isDraftLoaded) {
             setIngredients(prev => {
                 const hasRaw = prev.some(ing => ing.ingredient_type === 'วัตถุดิบ')
                 const hasSeasoning = prev.some(ing => ing.ingredient_type === 'เครื่องปรุง/สมุนไพร')
@@ -179,7 +180,7 @@ export default function SurveyFormClient() {
             if (prepSteps.length === 0) setPrepSteps([{ step_type: 'เตรียม', step_order: 1, instruction: '' }])
             if (cookSteps.length === 0) setCookSteps([{ step_type: 'ปรุง', step_order: 1, instruction: '' }])
         }
-    }, [loading, editMode, prepSteps.length, cookSteps.length])
+    }, [loading, editMode, isDraftLoaded, prepSteps.length, cookSteps.length])
 
     const [secretTips, setSecretTips] = useState('')
     const [photoUrls, setPhotoUrls] = useState<Photo[]>([])
@@ -264,6 +265,50 @@ export default function SurveyFormClient() {
         }
     }, [menuIdParam])
 
+    // --- Auto-save Logic ---
+    const STORAGE_KEY = `survey_draft_${infoId}`
+
+    // Load draft on mount (only for new entries)
+    useEffect(() => {
+        if (!editMode && infoId) {
+            const saved = localStorage.getItem(STORAGE_KEY)
+            if (saved) {
+                try {
+                    const draft = JSON.parse(saved)
+                    setMenuData(draft.menuData || { menu_name: '', local_name: '', other_name: '', category: '' })
+                    setSurveyData(draft.surveyData || {
+                        popularity: [], rituals: [], seasonality: [], ingredient_sources: [], health_benefits: [], consumption_freq: [], complexity: [], taste_appeal: [], nutrition: '', social_value: '',
+                        other_popularity: '', other_rituals: '', other_seasonality: '', other_ingredient_sources: '', other_health_benefits: '', other_consumption_freq: '', other_complexity: '', other_taste_appeal: '',
+                        serving_size: '', other_serving_size: ''
+                    })
+                    setStoryData(draft.storyData || { story: '', heritage_status: '' })
+                    setIngredients(draft.ingredients || [])
+                    setPrepSteps(draft.prepSteps || [])
+                    setCookSteps(draft.cookSteps || [])
+                    setSecretTips(draft.secretTips || '')
+                    setAwardsRef(draft.awardsRef || '')
+                } catch (e) {
+                    console.error('Error loading draft:', e)
+                }
+            }
+            setIsDraftLoaded(true)
+        } else if (editMode) {
+            setIsDraftLoaded(true)
+        }
+    }, [editMode, infoId])
+
+    // Save draft on changes
+    useEffect(() => {
+        if (!editMode && infoId && isDraftLoaded && !loading && !showSuccess) {
+            const draft = { menuData, surveyData, storyData, ingredients, prepSteps, cookSteps, secretTips, awardsRef }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(draft))
+        }
+    }, [menuData, surveyData, storyData, ingredients, prepSteps, cookSteps, secretTips, awardsRef, editMode, infoId, loading, showSuccess, isDraftLoaded])
+
+    const clearDraft = () => {
+        if (infoId) localStorage.removeItem(STORAGE_KEY)
+    }
+
     const updateIngredient = (idx: number, field: keyof IngredientRow, value: any) => setIngredients(prev => prev.map((item, i) => i === idx ? { ...item, [field]: value } : item))
     const removeIngredient = (idx: number) => setIngredients(prev => {
         const itemToRemove = prev[idx];
@@ -308,6 +353,7 @@ export default function SurveyFormClient() {
         setAwardsRef('')
         setEditMode(false)
         setShowSuccess(false)
+        clearDraft()
         router.push(`/survey/part2?info_id=${infoId}`)
     }
 
@@ -433,6 +479,7 @@ export default function SurveyFormClient() {
                 initialPhotosRef.current = currentPhotos
             }
 
+            clearDraft()
             setShowSuccess(true)
         } catch (err) {
             console.error('Submit Error:', err)

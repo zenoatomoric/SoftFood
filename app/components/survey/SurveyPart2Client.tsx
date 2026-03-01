@@ -13,6 +13,7 @@ export default function SurveyPart2Client() {
     const [loading, setLoading] = useState(false)
     const [informantName, setInformantName] = useState('')
     const [showSuccess, setShowSuccess] = useState(false)
+    const [isDraftLoaded, setIsDraftLoaded] = useState(false)
 
     // Confirm Modal State
     const [confirmConfig, setConfirmConfig] = useState<{
@@ -49,6 +50,37 @@ export default function SurveyPart2Client() {
                 .catch(err => console.error(err))
         }
     }, [infoId])
+
+    // --- Auto-save Logic ---
+    const STORAGE_KEY = `survey_part2_draft_${infoId}`
+
+    // Load draft on mount
+    useEffect(() => {
+        if (infoId) {
+            const saved = localStorage.getItem(STORAGE_KEY)
+            if (saved) {
+                try {
+                    const draft = JSON.parse(saved)
+                    if (draft.formData) setFormData(prev => ({ ...prev, ...draft.formData, friendly_id: prev.friendly_id }))
+                } catch (e) {
+                    console.error('Error loading part 2 draft:', e)
+                }
+            }
+            setIsDraftLoaded(true)
+        }
+    }, [infoId])
+
+    // Save draft on changes
+    useEffect(() => {
+        if (infoId && isDraftLoaded && !loading && !showSuccess) {
+            const draft = { formData }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(draft))
+        }
+    }, [formData, infoId, isDraftLoaded, loading, showSuccess])
+
+    const clearDraft = () => {
+        if (infoId) localStorage.removeItem(STORAGE_KEY)
+    }
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target
@@ -120,6 +152,7 @@ export default function SurveyPart2Client() {
             if (!res.ok) throw new Error(json.error || 'Failed to save')
 
             // Show Success Screen instead of Alert
+            clearDraft()
             setShowSuccess(true)
 
         } catch (err) {
