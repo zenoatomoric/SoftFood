@@ -137,9 +137,12 @@ export default function SurveyPart2Client() {
         setLoading(true)
 
         try {
+            // The database schema uses TEXT for nutrition and social_value, so we convert arrays to comma-separated strings
             const payload = {
                 ref_info_id: infoId,
-                ...formData
+                ...formData,
+                nutrition: formData.nutrition.length > 0 ? formData.nutrition.join(', ') : '',
+                social_value: formData.social_value.length > 0 ? formData.social_value.join(', ') : ''
             }
 
             const res = await fetch('/api/survey/menu', {
