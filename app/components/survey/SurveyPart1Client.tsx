@@ -208,13 +208,13 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
         )
     }
 
-    // Capture canal_zone from URL if it's a new survey
+    // Capture canal_zone from URL — always use URL value (user picks a new canal each time)
     useEffect(() => {
         const canalParam = searchParams.get('canal')
-        if (canalParam && !formData.canal_zone) {
+        if (canalParam) {
             setFormData(prev => ({ ...prev, canal_zone: canalParam }))
         }
-    }, [searchParams, formData.canal_zone])
+    }, [searchParams])
 
     // Fetch Bangkok Address Data
     useEffect(() => {
@@ -318,7 +318,8 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
             if (saved) {
                 try {
                     const draft = JSON.parse(saved)
-                    if (draft.formData) setFormData(prev => ({ ...prev, ...draft.formData, friendly_id: prev.friendly_id })) // Keep friendly_id from URL/initial if any
+                    // Keep friendly_id from URL/initial and canal_zone from URL param (not draft)
+                    if (draft.formData) setFormData(prev => ({ ...prev, ...draft.formData, friendly_id: prev.friendly_id, canal_zone: prev.canal_zone || draft.formData.canal_zone || '' }))
                     if (draft.addressFields) setAddressFields(draft.addressFields)
                     if (draft.consentDocUrl) setConsentDocUrl(draft.consentDocUrl)
                 } catch (e) {
