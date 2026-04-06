@@ -6,8 +6,16 @@ import { Icon } from '@iconify/react'
 import MenuDetailClient from './MenuDetailClient'
 import { auth } from '@/auth'
 
-export default async function MenuPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function MenuPage({ 
+    params, 
+    searchParams 
+}: { 
+    params: Promise<{ id: string }>, 
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }> 
+}) {
     const { id } = await params
+    const sParams = await searchParams
+    const isSelectionMode = sParams.mode === 'selection'
     const session = await auth()
     const supabase = await createClient()
 
@@ -52,6 +60,8 @@ export default async function MenuPage({ params }: { params: Promise<{ id: strin
             menu={menu}
             userRole={role}
             userId={svCode}
+            userName={session?.user?.name || 'Guest'}
+            isSelectionMode={isSelectionMode}
         />
     )
 }

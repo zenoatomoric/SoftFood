@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Icon } from "@iconify/react";
+import Pagination from "@/app/components/Pagination";
 import { createUser, deleteUser, updateUser } from "./actions";
 
 interface User {
@@ -110,6 +111,8 @@ export default function UserManagementClient({
     const [roleFilter, setRoleFilter] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
     const [showAddForm, setShowAddForm] = useState(false);
+    const [page, setPage] = useState(1);
+    const ITEMS_PER_PAGE = 20;
 
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(false);
@@ -252,6 +255,18 @@ export default function UserManagementClient({
         return result;
     }, [users, roleFilter, searchQuery]);
 
+    const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+    
+    const paginatedUsers = useMemo(() => {
+        const start = (page - 1) * ITEMS_PER_PAGE;
+        return filteredUsers.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredUsers, page]);
+
+    // Reset page when filter changes
+    useEffect(() => {
+        setPage(1);
+    }, [roleFilter, searchQuery]);
+
     const stats = useMemo(() => {
         return {
             all: users.length,
@@ -261,9 +276,7 @@ export default function UserManagementClient({
         };
     }, [users]);
 
-    const supervisors = useMemo(() => {
-        return users.filter(u => ['admin', 'director'].includes(u.role.toLowerCase()));
-    }, [users]);
+    // Supervisor calculation removed as requested
 
     return (
         <div className="max-w-[1600px] mx-auto space-y-4 sm:space-y-6 lg:space-y-8 animate-in fade-in duration-500">
@@ -381,6 +394,13 @@ export default function UserManagementClient({
                         </h2>
                     </div>
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="space-y-2">
+                            <label htmlFor="role" className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                สิทธิ์การใช้งาน (Role) *
+                            </label>
+                            <CustomRoleSelect id="role" name="role" />
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label htmlFor="sv_code" className="text-xs font-bold text-slate-400 uppercase ml-1">
@@ -467,32 +487,6 @@ export default function UserManagementClient({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label htmlFor="role" className="text-xs font-bold text-slate-400 uppercase ml-1">
-                                    สิทธิ์การใช้งาน (Role) *
-                                </label>
-                                <CustomRoleSelect id="role" name="role" />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label htmlFor="supervisor_sv_code" className="text-xs font-bold text-slate-400 uppercase ml-1">
-                                    ผู้ดูแล (Supervisor)
-                                </label>
-                                <select
-                                    id="supervisor_sv_code"
-                                    name="supervisor_sv_code"
-                                    className="w-full bg-slate-50 border-none rounded-xl py-3 px-4 font-medium text-slate-900 focus:ring-2 focus:ring-gray-900/10"
-                                >
-                                    <option value="">-- ไม่ระบุ --</option>
-                                    {supervisors.map(s => (
-                                        <option key={s.sv_code} value={s.sv_code}>
-                                            {s.collector_name} ({s.sv_code})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
 
                         <button
                             type="submit"
@@ -537,6 +531,17 @@ export default function UserManagementClient({
                                     name="sv_code"
                                     value={editingUser.sv_code}
                                 />
+
+                                <div className="space-y-2">
+                                    <label htmlFor="edit-role" className="text-xs font-bold text-slate-400 uppercase ml-1">
+                                        สิทธิ์การใช้งาน (Role) *
+                                    </label>
+                                    <CustomRoleSelect
+                                        id="edit-role"
+                                        name="role"
+                                        defaultValue={editingUser.role}
+                                    />
+                                </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
@@ -622,37 +627,6 @@ export default function UserManagementClient({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label htmlFor="edit-role" className="text-xs font-bold text-slate-400 uppercase ml-1">
-                                            สิทธิ์การใช้งาน (Role) *
-                                        </label>
-                                        <CustomRoleSelect
-                                            id="edit-role"
-                                            name="role"
-                                            defaultValue={editingUser.role}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label htmlFor="edit-supervisor" className="text-xs font-bold text-slate-400 uppercase ml-1">
-                                            ผู้ดูแล (Supervisor)
-                                        </label>
-                                        <select
-                                            id="edit-supervisor"
-                                            name="supervisor_sv_code"
-                                            defaultValue={editingUser.supervisor_sv_code || ""}
-                                            className="w-full bg-slate-50 border-none rounded-xl py-3 px-4 font-medium text-slate-900 focus:ring-2 focus:ring-gray-900/10"
-                                        >
-                                            <option value="">-- ไม่ระบุ --</option>
-                                            {supervisors.filter(s => s.sv_code !== editingUser.sv_code).map(s => (
-                                                <option key={s.sv_code} value={s.sv_code}>
-                                                    {s.collector_name} ({s.sv_code})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
 
                                 <div className="flex gap-4 pt-2">
                                     <button
@@ -847,6 +821,12 @@ export default function UserManagementClient({
                         ))}
                     </div>
                 )}
+                
+                <Pagination 
+                    currentPage={page} 
+                    totalPages={totalPages} 
+                    onPageChangeAction={setPage} 
+                />
             </div>
 
             {/* Desktop Users Table */}
@@ -867,7 +847,7 @@ export default function UserManagementClient({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {filteredUsers.length === 0 ? (
+                            {paginatedUsers.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} className="px-6 py-12 text-center text-slate-400">
                                         <Icon icon="solar:user-cross-bold-duotone" width="48" className="mx-auto mb-2 opacity-50" />
@@ -875,7 +855,7 @@ export default function UserManagementClient({
                                     </td>
                                 </tr>
                             ) : (
-                                filteredUsers.map((user) => (
+                                paginatedUsers.map((user) => (
                                     <tr key={user.sv_code} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-bold text-slate-900">{user.sv_code}</td>
                                         <td className="px-6 py-4 font-medium text-slate-900">{user.collector_name}</td>
@@ -931,6 +911,12 @@ export default function UserManagementClient({
                         </tbody>
                     </table>
                 </div>
+                
+                <Pagination 
+                    currentPage={page} 
+                    totalPages={totalPages} 
+                    onPageChangeAction={setPage} 
+                />
             </div>
         </div>
     );

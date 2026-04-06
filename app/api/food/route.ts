@@ -27,6 +27,7 @@ export async function GET(request: Request) {
         const canal = searchParams.get('canal')
         const category = searchParams.get('category')
         const status = searchParams.get('status')
+        const filterSvCode = searchParams.get('sv_code')
         const page = parseInt(searchParams.get('page') || '1')
         const limitStr = searchParams.get('limit')
         const limit = limitStr ? parseInt(limitStr) : 20
@@ -52,8 +53,11 @@ export async function GET(request: Request) {
             category, 
             selection_status, 
             created_at, 
-            ref_sv_code,
             ref_info_id,
+            video_url,
+            promo_video_url,
+            selection_image_url,
+            selection_metadata,
             informants (full_name, canal_zone),
             users (collector_name),
             menu_photos:menu_photos (photo_url)
@@ -85,6 +89,10 @@ export async function GET(request: Request) {
             // Filter by Selection Status (Array containment)
             // status might be '108', '93', '36'
             query = query.contains('selection_status', [status])
+        }
+
+        if (filterSvCode) {
+            query = query.eq('ref_sv_code', filterSvCode)
         }
 
         const id = searchParams.get('id')
@@ -128,11 +136,15 @@ export async function GET(request: Request) {
                 informant_name: inf?.full_name || 'ไม่ระบุ',
                 canal_zone: inf?.canal_zone || 'ไม่ระบุ',
                 surveyor_name: usr?.collector_name || item.ref_sv_code,
-                thumbnail: (item.menu_photos?.[0]?.photo_url) ? (
-                    item.menu_photos[0].photo_url.startsWith('http')
-                        ? item.menu_photos[0].photo_url
-                        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${item.menu_photos[0].photo_url}`
-                ) : null,
+                thumbnail: item.selection_image_url
+                    ? (item.selection_image_url.startsWith('http')
+                        ? item.selection_image_url
+                        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${item.selection_image_url}`)
+                    : (item.menu_photos?.[0]?.photo_url)
+                        ? (item.menu_photos[0].photo_url.startsWith('http')
+                            ? item.menu_photos[0].photo_url
+                            : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${item.menu_photos[0].photo_url}`)
+                        : null,
                 ref_sv_code: item.ref_sv_code,
                 ref_info_id: item.ref_info_id
             }
@@ -150,7 +162,7 @@ export async function GET(request: Request) {
     }
 }
 
-// PATCH: Update Selection Status (Director/Admin Only)
+// PATCH: Update Selection Status or Video URL (Director/Admin Only)
 export async function PATCH(request: Request) {
     try {
         const session = await auth()
@@ -160,16 +172,67 @@ export async function PATCH(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const { menu_id, selection_status } = await request.json()
+        const payload = await request.json()
+        const { menu_id, selection_status, video_url, promo_video_url, selection_image_url, selection_metadata } = payload
 
-        if (!menu_id || !Array.isArray(selection_status)) {
-            return NextResponse.json({ error: 'Invalid data' }, { status: 400 })
+        if (!menu_id) {
+            return NextResponse.json({ error: 'Missing menu_id' }, { status: 400 })
         }
 
         const supabase = await createClient()
+
+        const updateData: any = {}
+        if (selection_status !== undefined) {
+            // Validate "ซิกเนเจอร์" limit per canal
+            if (Array.isArray(selection_status) && selection_status.includes('ซิกเนเจอร์')) {
+                // Get the current menu's existing status and its canal
+                const { data: menuData } = await supabase
+                    .from('menus')
+                    .select('selection_status, informants!inner(canal_zone)')
+                    .eq('menu_id', menu_id)
+                    .single()
+                
+                const hadSignature = Array.isArray(menuData?.selection_status) && menuData.selection_status.includes('ซิกเนเจอร์')
+                
+                const informantData = Array.isArray(menuData?.informants) ? menuData?.informants[0] : menuData?.informants
+                const canalZone = (informantData as any)?.canal_zone
+
+                if (!hadSignature && canalZone) {
+                    
+                    // Fetch all menus to count how many already have signature in this canal
+                    const { data: allMenus } = await supabase
+                        .from('menus')
+                        .select('selection_status, informants!inner(canal_zone)')
+                    
+                    if (allMenus) {
+                        const signatureCount = allMenus.filter(m => {
+                            const mInf = Array.isArray(m.informants) ? m.informants[0] : m.informants
+                            const mCanal = (mInf as any)?.canal_zone
+                            return Array.isArray(m.selection_status) && 
+                                m.selection_status.includes('ซิกเนเจอร์') && 
+                                mCanal === canalZone
+                        }).length
+
+                        if (signatureCount >= 5) {
+                            return NextResponse.json({ error: `เกินจำนวนสูงสุด! เมนูซิกเนเจอร์ ถูกจำกัดไว้เพียง 5 เมนูต่อพื้นที่ (${canalZone})` }, { status: 400 })
+                        }
+                    }
+                }
+            }
+            updateData.selection_status = selection_status
+        }
+
+        if (video_url !== undefined) updateData.video_url = video_url
+        if (promo_video_url !== undefined) updateData.promo_video_url = promo_video_url
+        if (selection_image_url !== undefined) updateData.selection_image_url = selection_image_url
+        if (selection_metadata !== undefined) updateData.selection_metadata = selection_metadata
+
+        if (Object.keys(updateData).length === 0) {
+            return NextResponse.json({ error: 'No data to update' }, { status: 400 })
+        }
         const { error } = await supabase
             .from('menus')
-            .update({ selection_status })
+            .update(updateData)
             .eq('menu_id', menu_id)
 
         if (error) throw error

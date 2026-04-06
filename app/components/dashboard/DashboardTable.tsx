@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Icon } from '@iconify/react'
 import { useRouter } from 'next/navigation'
 import useSWR from 'swr'
+import Pagination from '@/app/components/Pagination'
 
 interface FoodItem {
     menu_id: string
@@ -25,7 +26,7 @@ const STATUS_OPTIONS = [
     { label: 'คัดเลือกแล้ว (36)', value: '36' }
 ]
 
-export default function DashboardTable() {
+export default function DashboardTable({ svCode }: { svCode?: string }) {
     const router = useRouter()
     const [page, setPage] = useState(1)
     const [search, setSearch] = useState('')
@@ -41,7 +42,7 @@ export default function DashboardTable() {
 
     useEffect(() => {
         setPage(1)
-    }, [debouncedSearch, canalFilter, categoryFilter, statusFilter])
+    }, [debouncedSearch, canalFilter, categoryFilter, statusFilter, svCode])
 
     const fetchUrl = useMemo(() => {
         const params = new URLSearchParams()
@@ -49,10 +50,11 @@ export default function DashboardTable() {
         if (canalFilter) params.set('canal', canalFilter)
         if (categoryFilter) params.set('category', categoryFilter)
         if (statusFilter) params.set('status', statusFilter)
+        if (svCode) params.set('sv_code', svCode)
         params.set('page', page.toString())
         params.set('limit', '10')
         return `/api/food?${params.toString()}`
-    }, [debouncedSearch, canalFilter, categoryFilter, statusFilter, page])
+    }, [debouncedSearch, canalFilter, categoryFilter, statusFilter, page, svCode])
 
     const { data: swrData, error: swrError, isLoading } = useSWR(fetchUrl)
     const menus = swrData?.data || []
@@ -75,7 +77,7 @@ export default function DashboardTable() {
     // })
 
     return (
-        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] sm:rounded-[2.5rem] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col">
             {/* Header & Filters */}
             <div className="p-5 md:p-8 border-b border-slate-100 space-y-5 md:space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -85,14 +87,15 @@ export default function DashboardTable() {
                         </div>
                         รายการข้อมูลทั้งหมด
                     </h2>
-                    <div className="relative w-full md:w-80">
-                        <Icon icon="solar:magnifer-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
+                    <div className="relative w-full md:w-80 group" suppressHydrationWarning>
+                        <Icon icon="solar:magnifer-linear" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-indigo-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder="ค้นหาชื่อเมนู / ผู้เก็บข้อมูล..."
+                            placeholder="ค้นหาชื่อเมนู..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3 md:py-3.5 bg-slate-50 border-2 border-transparent hover:border-slate-200 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-50 rounded-2xl outline-none text-sm font-semibold transition-all"
+                            className="w-full pl-11 pr-4 py-3 md:py-3.5 bg-slate-50/50 backdrop-blur-sm border hover:border-slate-300 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-50 rounded-[1.25rem] outline-none text-sm font-bold transition-all shadow-inner focus:shadow-md text-slate-800 placeholder-slate-400"
+                            suppressHydrationWarning
                         />
                     </div>
                 </div>
@@ -177,7 +180,7 @@ export default function DashboardTable() {
                         <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-left border-collapse bg-white">
                                 <thead>
-                                    <tr className="bg-slate-50/80 text-[11px] lg:text-xs font-bold text-slate-500 uppercase tracking-widest border-y border-slate-100">
+                                    <tr className="bg-slate-50/50 backdrop-blur-sm text-[11px] lg:text-xs font-bold text-slate-400 uppercase tracking-widest border-y border-slate-100">
                                         <th className="px-6 py-4 w-20">รูป</th>
                                         <th className="px-6 py-4">ชื่อเมนูอาหาร</th>
                                         <th className="px-6 py-4">พื้นที่ / ผู้ให้ข้อมูล</th>
@@ -190,7 +193,7 @@ export default function DashboardTable() {
                                         <tr
                                             key={item.menu_id}
                                             onClick={() => router.push(`/menus/${item.menu_id}`)}
-                                            className="hover:bg-indigo-50/40 cursor-pointer transition-colors group"
+                                            className="hover:bg-white cursor-pointer transition-all duration-300 group hover:shadow-[0_4px_20px_rgb(0,0,0,0.03)] relative z-0 hover:z-10"
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden border border-slate-200 group-hover:shadow-md transition-shadow shrink-0">
@@ -243,25 +246,12 @@ export default function DashboardTable() {
             </div>
 
             {/* Pagination */}
-            <div className="p-4 md:p-6 border-t border-slate-100 bg-white flex flex-col md:flex-row items-center justify-between gap-4">
-                <p className="text-xs md:text-sm font-bold text-slate-500">หน้า {page} จาก {totalPages}</p>
-                <div className="flex gap-2 w-full md:w-auto justify-center">
-                    <button
-                        disabled={page === 1 || isLoading}
-                        onClick={() => setPage(p => p - 1)}
-                        className="flex-1 md:flex-none w-auto md:w-11 h-10 md:h-11 px-4 md:px-0 rounded-xl border-2 border-slate-200 flex items-center justify-center bg-white text-slate-600 hover:border-indigo-500 hover:text-indigo-600 hover:shadow-md transition-all disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:shadow-none"
-                    >
-                        <Icon icon="solar:alt-arrow-left-linear" className="text-xl" />
-                    </button>
-                    <button
-                        disabled={page === totalPages || isLoading}
-                        onClick={() => setPage(p => p + 1)}
-                        className="flex-1 md:flex-none w-auto md:w-11 h-10 md:h-11 px-4 md:px-0 rounded-xl border-2 border-slate-200 flex items-center justify-center bg-white text-slate-600 hover:border-indigo-500 hover:text-indigo-600 hover:shadow-md transition-all disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:shadow-none"
-                    >
-                        <Icon icon="solar:alt-arrow-right-linear" className="text-xl" />
-                    </button>
-                </div>
-            </div>
+            <Pagination 
+                currentPage={page} 
+                totalPages={totalPages} 
+                onPageChangeAction={setPage} 
+                isLoading={isLoading} 
+            />
         </div>
     )
 }
@@ -271,8 +261,9 @@ function FilterDropdown({ label, value, onChange, options, optionLabels, icon }:
     const selectedLabel = optionLabels ? optionLabels.find((o: any) => o.value === value)?.label : value
 
     return (
-        <div className="relative">
+        <div className="relative" suppressHydrationWarning>
             <button
+                suppressHydrationWarning
                 onClick={() => setIsOpen(!isOpen)}
                 className={`w-full flex items-center justify-between px-4 py-3 bg-white border-2 rounded-2xl text-sm font-bold transition-all shadow-sm ${isOpen ? 'border-indigo-500 ring-4 ring-indigo-50' : 'border-slate-100 hover:border-slate-200'}`}
             >

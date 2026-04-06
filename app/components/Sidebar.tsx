@@ -1,7 +1,7 @@
 'use client'
 import { Icon } from '@iconify/react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 
 interface SidebarProps {
   role: string
@@ -12,6 +12,8 @@ interface SidebarProps {
 
 export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: SidebarProps) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const isSelectionMode = searchParams.get('mode') === 'selection'
 
   // กำหนดสิทธิ์การเข้าถึงเมนู
   const menus = [
@@ -37,7 +39,7 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
       name: 'ทีมของฉัน',
       icon: 'solar:users-group-two-rounded-bold-duotone',
       href: '/users/my-team',
-      roles: ['admin', 'director', 'Director', 'กรรมการ', 'ผู้ดูแลระบบ']
+      roles: []
     },
     {
       name: 'รายชื่ออาหาร',
@@ -91,7 +93,16 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
             // ถ้าเป็น admin หรือ director ให้สามารถเข้าถึงเมนูที่กำหนดไว้ได้
             return m.roles.some(r => r.toLowerCase().trim() === currentRole);
           }).map((item) => {
-            const isActive = pathname === item.href
+            let isActive = false
+            if (isSelectionMode && pathname.startsWith('/menus/')) {
+              // If we are in a menu detail but in selection mode, highlight /food instead of /menus
+              if (item.href === '/food') isActive = true
+              else if (item.href === '/menus') isActive = false
+              else isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            } else {
+              isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            }
+
             return (
               <Link
                 key={item.href}

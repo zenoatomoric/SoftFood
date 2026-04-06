@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import ConfirmModal from '@/app/components/ConfirmModal'
 import Toast from '@/app/components/Toast'
 import useSWR from 'swr'
+import Pagination from '@/app/components/Pagination'
 import * as XLSX from 'xlsx'
 
 interface FoodItem {
@@ -18,6 +19,7 @@ interface FoodItem {
     surveyor_name: string
     thumbnail: string | null
     ref_sv_code: string
+    video_url?: string
     // Full data fields (optional)
     informants?: any
     users?: any
@@ -204,8 +206,21 @@ export default function MenusClient({ userRole, userId }: Props) {
             // Prepare Data for XLSX
             const exportData = json.data.map((item: FoodItem) => {
                 // Formatting Helpers
+                const parseOption = (val: string | string[] | undefined) => {
+                    if (Array.isArray(val)) return val;
+                    if (typeof val === 'string' && val.trim().startsWith('[') && val.trim().endsWith(']')) {
+                        try {
+                            return JSON.parse(val);
+                        } catch {
+                            return val;
+                        }
+                    }
+                    return val;
+                };
+
                 const combineOption = (main: string | string[] | undefined, other: string | undefined) => {
-                    const mainStr = Array.isArray(main) ? main.join(', ') : (main || '')
+                    const parsedMain = parseOption(main);
+                    const mainStr = Array.isArray(parsedMain) ? parsedMain.join(', ') : (parsedMain || '');
                     if (other) return `${mainStr}${mainStr ? ', ' : ''}${other}`
                     return mainStr
                 }
@@ -222,12 +237,22 @@ export default function MenusClient({ userRole, userId }: Props) {
 
                 const formatSteps = (list: any[]) => list.map((s, idx) => `${idx + 1}. ${s.instruction}`).join('\n')
 
+                const inf = Array.isArray(item.informants) ? item.informants[0] : (item.informants || {});
+
                 return {
+                    // 🟢 ส่วนที่ 1: ข้อมูลผู้ให้ข้อมูล
+                    'รหัสผู้ให้ข้อมูล (INFO ID)': inf.friendly_id || '',
+                    'ชื่อผู้ให้ข้อมูล': inf.full_name || item.informant_name || '',
+                    'ชุมชน': inf.community || '',
+                    'คลอง': inf.canal_zone || item.canal_zone || '',
+                    'GPS ละติจูด': inf.gps_lat || '',
+                    'GPS ลองจิจูด': inf.gps_lng || '',
+
                     // 🔵 ส่วนที่ 3: ข้อมูลอัตลักษณ์เมนู
-                    'ชื่อเมนูอาหาร (ชื่อทางการ)': item.menu_name,
+                    'ชื่อเมนูอาหาร (ชื่อทางการ)': item.menu_name || '',
                     'ชื่อเรียกในท้องถิ่น': (item as any).local_name || '',
                     'ชื่อภาษาอื่น': (item as any).other_name || '',
-                    'ประเภทอาหาร': item.category,
+                    'ประเภทอาหาร': item.category || '',
                     'ปริมาณการทานต่อ 1 เมนู': item.serving_size === 'อื่นๆ' ? (item.other_serving_size || 'อื่นๆ') : (item.serving_size || ''),
 
                     // 🟠 ส่วนที่ 4: แบบสำรวจเจาะลึก
@@ -489,17 +514,12 @@ export default function MenusClient({ userRole, userId }: Props) {
                 )}
 
                 {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="flex justify-center gap-2 p-6 border-t border-slate-100 bg-slate-50/50">
-                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2.5 rounded-xl bg-white border border-slate-200 disabled:opacity-50 hover:bg-slate-50 flex items-center justify-center" aria-label="หน้าก่อนหน้า">
-                            <Icon icon="solar:alt-arrow-left-linear" className="text-xl" />
-                        </button>
-                        <span className="px-4 py-2 font-bold text-slate-600 text-sm">หน้า {page} / {totalPages}</span>
-                        <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2.5 rounded-xl bg-white border border-slate-200 disabled:opacity-50 hover:bg-slate-50 flex items-center justify-center" aria-label="หน้าถัดไป">
-                            <Icon icon="solar:alt-arrow-right-linear" className="text-xl" />
-                        </button>
-                    </div>
-                )}
+                <Pagination 
+                    currentPage={page} 
+                    totalPages={totalPages} 
+                    onPageChangeAction={setPage} 
+                    isLoading={isLoading} 
+                />
             </div>
         </div>
     )

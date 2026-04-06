@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react'
 import { useRouter } from 'next/navigation'
 import ConfirmModal from '@/app/components/ConfirmModal'
 import Toast from '@/app/components/Toast'
+import Pagination from '@/app/components/Pagination'
 import * as XLSX from 'xlsx'
 
 interface FoodItem {
@@ -17,14 +18,18 @@ interface FoodItem {
     surveyor_name: string
     thumbnail: string | null
     ref_sv_code: string
+    selection_image_url: string | null
+    selection_metadata: any
 }
 
 interface Props {
     userRole: string
     userId: string // sv_code
+    userName: string
+    mode: string
 }
 
-export default function FoodListClient({ userRole, userId }: Props) {
+export default function FoodListClient({ userRole, userId, userName, mode }: Props) {
     const router = useRouter()
     const [menus, setMenus] = useState<FoodItem[]>([])
     const [loading, setLoading] = useState(true)
@@ -112,32 +117,60 @@ export default function FoodListClient({ userRole, userId }: Props) {
         })
     }
 
-    const handleStatusToggle = async (menuId: string, currentStatus: string[], targetStatus: string) => {
-        let newStatus = [...currentStatus]
-        if (newStatus.includes(targetStatus)) {
-            newStatus = newStatus.filter(s => s !== targetStatus)
-        } else {
-            newStatus.push(targetStatus)
-        }
+    const handleStatusToggle = async (menuId: string, currentStatus: string[], currentMetadata: any, targetStatus: string) => {
+        const isRemoving = currentStatus.includes(targetStatus)
 
-        // Optimistic update
-        setMenus(prev => prev.map(m => m.menu_id === menuId ? { ...m, selection_status: newStatus } : m))
+        setConfirmConfig({
+            isOpen: true,
+            title: isRemoving ? 'ยืนยันการยกเลิก' : 'ยืนยันการคัดเลือก',
+            message: isRemoving 
+                ? `คุณต้องการยกเลิกการคัดเลือก "${targetStatus}" ใช่หรือไม่?`
+                : `คุณต้องการคัดเลือกเป็น "${targetStatus}" ใช่หรือไม่?`,
+            type: isRemoving ? 'warning' : 'success',
+            onConfirm: async () => {
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }))
+                
+                let newStatus = [...currentStatus]
+                let newMetadata = { ...(currentMetadata || {}) }
 
-        try {
-            const res = await fetch(`/api/food`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ menu_id: menuId, selection_status: newStatus })
-            })
-            if (!res.ok) {
-                // Revert
-                setMenus(prev => prev.map(m => m.menu_id === menuId ? { ...m, selection_status: currentStatus } : m))
-                setToast({ show: true, msg: 'อัปเดตสถานะไม่สำเร็จ', type: 'error' })
+                if (isRemoving) {
+                    newStatus = newStatus.filter(s => s !== targetStatus)
+                    delete newMetadata[targetStatus]
+                } else {
+                    newStatus.push(targetStatus)
+                    newMetadata[targetStatus] = {
+                        approved_by: userName,
+                        approved_at: new Date().toISOString()
+                    }
+                }
+
+                // Optimistic update
+                setMenus(prev => prev.map(m => m.menu_id === menuId ? { ...m, selection_status: newStatus, selection_metadata: newMetadata } : m))
+
+                try {
+                    const res = await fetch(`/api/food`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            menu_id: menuId, 
+                            selection_status: newStatus,
+                            selection_metadata: newMetadata
+                        })
+                    })
+                    if (!res.ok) {
+                        const json = await res.json()
+                        // Revert
+                        setMenus(prev => prev.map(m => m.menu_id === menuId ? { ...m, selection_status: currentStatus, selection_metadata: currentMetadata } : m))
+                        setToast({ show: true, msg: json.error || 'อัปเดตสถานะไม่สำเร็จ', type: 'error' })
+                    } else {
+                        setToast({ show: true, msg: 'อัปเดตสถานะสำเร็จ', type: 'success' })
+                    }
+                } catch (err) {
+                    setMenus(prev => prev.map(m => m.menu_id === menuId ? { ...m, selection_status: currentStatus, selection_metadata: currentMetadata } : m))
+                    setToast({ show: true, msg: 'เกิดข้อผิดพลาดในการเชื่อมต่อ', type: 'error' })
+                }
             }
-        } catch (err) {
-            setMenus(prev => prev.map(m => m.menu_id === menuId ? { ...m, selection_status: currentStatus } : m))
-            setToast({ show: true, msg: 'เกิดข้อผิดพลาดในการเชื่อมต่อ', type: 'error' })
-        }
+        })
     }
 
 
@@ -324,20 +357,28 @@ export default function FoodListClient({ userRole, userId }: Props) {
                             className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-slate-100 group cursor-pointer flex flex-row md:flex-col"
                             onClick={(e) => {
                                 if ((e.target as HTMLElement).closest('button')) return;
-                                router.push(`/menus/${menu.menu_id}`)
+                                router.push(`/menus/${menu.menu_id}?mode=selection`)
                             }}
                         >
                             {/* Card Image: Left on Mobile, Top on Desktop */}
                             <div
                                 className="relative w-32 sm:w-40 md:w-full min-h-[140px] md:h-48 bg-slate-100 overflow-hidden shrink-0 group-hover:opacity-95 transition-opacity"
                             >
-                                {menu.thumbnail ? (
-                                    <img src={menu.thumbnail} alt={menu.menu_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">
-                                        <Icon icon="solar:gallery-wide-linear" className="text-4xl" />
-                                    </div>
-                                )}
+                                {(() => {
+                                    const isSelectionPage = mode === 'selection';
+                                    const hasVoted = menu.selection_status?.length > 0;
+                                    const displayImg = (isSelectionPage && hasVoted && menu.selection_image_url) 
+                                        ? menu.selection_image_url 
+                                        : menu.thumbnail;
+                                    
+                                    return displayImg ? (
+                                        <img src={displayImg} alt={menu.menu_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">
+                                            <Icon icon="solar:gallery-wide-linear" className="text-4xl" />
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Desktop Badges (Hidden on Mobile, overlay on image) */}
                                 <div className="hidden md:flex absolute top-3 left-3 flex-col gap-2">
@@ -387,44 +428,30 @@ export default function FoodListClient({ userRole, userId }: Props) {
                                 <div className="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-slate-50">
                                     {(userRole === 'director' || userRole === 'admin') && (
                                         <div className="flex flex-wrap gap-1.5 mb-2">
-                                            {['108', '93', '36'].map(tag => (
+                                            {['108', '93', '36', 'ซิกเนเจอร์'].map(tag => (
                                                 <button
                                                     key={tag}
-                                                    onClick={() => handleStatusToggle(menu.menu_id, menu.selection_status, tag)}
-                                                    className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-lg text-[10px] md:text-xs font-bold border transition-all flex items-center gap-1
+                                                    onClick={() => handleStatusToggle(menu.menu_id, menu.selection_status, menu.selection_metadata, tag)}
+                                                    className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-lg text-[10px] md:text-xs font-bold border transition-all flex flex-col items-start
                                                         ${menu.selection_status.includes(tag)
                                                             ? (tag === '108' ? 'bg-amber-100 text-amber-700 border-amber-200' :
                                                                 tag === '93' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-rose-100 text-rose-700 border-rose-200')
                                                             : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300'}`}
                                                 >
-                                                    <Icon icon={menu.selection_status.includes(tag) ? 'solar:check-circle-bold' : 'solar:add-circle-linear'} />
-                                                    {tag}
+                                                    <div className="flex items-center gap-1">
+                                                        <Icon icon={menu.selection_status.includes(tag) ? 'solar:check-circle-bold' : 'solar:add-circle-linear'} />
+                                                        {tag}
+                                                    </div>
+                                                    {menu.selection_status.includes(tag) && menu.selection_metadata?.[tag]?.approved_by && (
+                                                        <span className="text-[8px] opacity-60 font-normal leading-tight">
+                                                            โดย: {menu.selection_metadata[tag].approved_by}
+                                                        </span>
+                                                    )}
                                                 </button>
                                             ))}
                                         </div>
                                     )}
 
-                                    {/* Edit / Delete Buttons */}
-                                    <div className="flex justify-end gap-1 md:gap-2">
-                                        {(userRole === 'admin' || (userRole === 'user' && menu.ref_sv_code === userId)) && (
-                                            <button
-                                                onClick={() => router.push(`/survey/part2?menu_id=${menu.menu_id}`)}
-                                                className="text-slate-400 hover:text-indigo-600 p-1.5 md:p-2 rounded-full hover:bg-indigo-50 transition-colors"
-                                                title="แก้ไขเมนู"
-                                            >
-                                                <Icon icon="solar:pen-new-square-bold" className="text-sm md:text-base" />
-                                            </button>
-                                        )}
-                                        {userRole === 'admin' && (
-                                            <button
-                                                onClick={() => handleDelete(menu.menu_id, menu.menu_name)}
-                                                className="text-slate-400 hover:text-red-500 p-1.5 md:p-2 rounded-full hover:bg-red-50 transition-colors"
-                                                title="ลบเมนู"
-                                            >
-                                                <Icon icon="solar:trash-bin-trash-bold" className="text-sm md:text-base" />
-                                            </button>
-                                        )}
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -433,27 +460,12 @@ export default function FoodListClient({ userRole, userId }: Props) {
             )}
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-8">
-                    <button
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                        className="px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-white border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 font-bold text-sm md:text-base"
-                    >
-                        ก่อนหน้า
-                    </button>
-                    <span className="px-2 md:px-4 py-2 text-slate-600 font-bold text-sm md:text-base">
-                        หน้า {page} / {totalPages}
-                    </span>
-                    <button
-                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                        disabled={page === totalPages}
-                        className="px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-white border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 font-bold text-sm md:text-base"
-                    >
-                        ถัดไป
-                    </button>
-                </div>
-            )}
+            <Pagination 
+                currentPage={page} 
+                totalPages={totalPages} 
+                onPageChangeAction={setPage} 
+                isLoading={loading} 
+            />
         </div>
     )
 }

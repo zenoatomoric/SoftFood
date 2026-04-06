@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { auth } from '@/auth'
@@ -7,8 +9,16 @@ import { Icon } from '@iconify/react'
 import StatCard from '../components/StatCard'
 import CanalSummaryCard from '../components/dashboard/CanalSummaryCard'
 import DashboardTable from '../components/dashboard/DashboardTable'
+import DashboardGlobalSearch from '../components/dashboard/DashboardGlobalSearch'
 
-export default async function DashboardHomePage() {
+export default async function DashboardHomePage({
+    searchParams
+}: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+    const resolvedParams = await searchParams
+    const svCode = typeof resolvedParams?.sv_code === 'string' ? resolvedParams.sv_code : ''
+
     // ตรวจสอบ authentication
     const session = await auth()
 
@@ -26,8 +36,16 @@ export default async function DashboardHomePage() {
         const supabase = createAdminClient()
 
         // ดึงข้อมูลจำนวนสถิติต่างๆ (Server Side Fetching)
-        const { count: mCount, error: menuErr } = await supabase.from('menus').select('*', { count: 'exact', head: true })
-        const { count: iCount, error: infoErr } = await supabase.from('informants').select('*', { count: 'exact', head: true })
+        let menuQuery = supabase.from('menus').select('*', { count: 'exact', head: true })
+        let infoQuery = supabase.from('informants').select('*', { count: 'exact', head: true })
+
+        if (svCode) {
+            menuQuery = menuQuery.eq('ref_sv_code', svCode)
+            infoQuery = infoQuery.eq('ref_sv_code', svCode)
+        }
+
+        const { count: mCount, error: menuErr } = await menuQuery
+        const { count: iCount, error: infoErr } = await infoQuery
 
         if (menuErr) console.error('[Dashboard] Error fetching menus:', menuErr)
         if (infoErr) console.error('[Dashboard] Error fetching informants:', infoErr)
@@ -38,15 +56,23 @@ export default async function DashboardHomePage() {
         const canalNames = ['บางเขน', 'เปรมประชากร', 'ลาดพร้าว']
         canalStats = await Promise.all(canalNames.map(async (name) => {
             // Count menus for this canal - join check
-            const { count: mC } = await supabase
+            let mQuery = supabase
                 .from('menus')
                 .select('menu_id, informants!inner(canal_zone)', { count: 'exact', head: true })
                 .eq('informants.canal_zone', name)
 
-            const { count: iC } = await supabase
+            let iQuery = supabase
                 .from('informants')
                 .select('*', { count: 'exact', head: true })
                 .eq('canal_zone', name)
+
+            if (svCode) {
+                mQuery = mQuery.eq('ref_sv_code', svCode)
+                iQuery = iQuery.eq('ref_sv_code', svCode)
+            }
+
+            const { count: mC } = await mQuery
+            const { count: iC } = await iQuery
 
             return { name, menuCount: mC || 0, infoCount: iC || 0 }
         }))
@@ -62,13 +88,16 @@ export default async function DashboardHomePage() {
                     <h1 className="text-2xl md:text-3xl font-semibold text-slate-950 mb-2">ภาพรวมโครงการ</h1>
                     <p className="text-sm md:text-base text-slate-600 font-medium">สรุปข้อมูลการลงพื้นที่เก็บข้อมูลอาหารพื้นถิ่น (เป้าหมาย 400 รายการ)</p>
                 </div>
-                <Link
-                    href="/survey"
-                    className="flex items-center justify-center w-full md:w-auto gap-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-8 py-5 md:px-6 md:py-3 rounded-3xl md:rounded-xl font-semibold text-xl md:text-base transition-all shadow-xl shadow-indigo-400/30 active:scale-95 border-2 border-white/10"
-                >
-                    <Icon icon="solar:document-add-bold-duotone" className="text-3xl md:text-2xl" />
-                    ทำแบบสอบถาม
-                </Link>
+                <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                    <DashboardGlobalSearch initialValue={svCode} />
+                    <Link
+                        href="/survey"
+                        className="flex items-center justify-center w-full md:w-auto gap-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-8 py-5 md:px-6 md:py-3 rounded-3xl md:rounded-xl font-semibold text-xl md:text-base transition-all shadow-xl shadow-indigo-400/30 active:scale-95 border-2 border-white/10 shrink-0"
+                    >
+                        <Icon icon="solar:document-add-bold-duotone" className="text-3xl md:text-2xl" />
+                        ทำแบบสอบถาม
+                    </Link>
+                </div>
             </header>
 
             {/* Stats Grid */}
@@ -109,7 +138,7 @@ export default async function DashboardHomePage() {
             </div>
 
             {/* Dashboard Table Section */}
-            <DashboardTable />
+            <DashboardTable svCode={svCode} />
 
             {/* พื้นที่สำหรับกราฟ */}
             <div className="bg-white rounded-3xl md:rounded-[2.5rem] p-8 border border-slate-100 shadow-sm h-32 flex items-center justify-center text-slate-400 font-medium text-center text-sm md:text-base italic">

@@ -145,7 +145,7 @@ export default function SurveyFormClient() {
         ingredient_sources: [] as string[],
         health_benefits: [] as string[],
         consumption_freq: [] as string[],
-        complexity: [] as string[],
+        complexity: '',
         taste_appeal: [] as string[],
         nutrition: '',
         social_value: '',
@@ -222,7 +222,7 @@ export default function SurveyFormClient() {
                             ingredient_sources: m.ingredient_sources || [],
                             health_benefits: m.health_benefits || [],
                             consumption_freq: Array.isArray(m.consumption_freq) ? m.consumption_freq : m.consumption_freq ? [m.consumption_freq] : [],
-                            complexity: Array.isArray(m.complexity) ? m.complexity : m.complexity ? [m.complexity] : [],
+                            complexity: Array.isArray(m.complexity) ? (m.complexity[0] || '') : m.complexity || '',
                             taste_appeal: Array.isArray(m.taste_appeal) ? m.taste_appeal : m.taste_appeal ? [m.taste_appeal] : [],
                             nutrition: m.nutrition || '',
                             social_value: m.social_value || '',
@@ -277,7 +277,7 @@ export default function SurveyFormClient() {
                     const draft = JSON.parse(saved)
                     setMenuData(draft.menuData || { menu_name: '', local_name: '', other_name: '', category: '' })
                     setSurveyData(draft.surveyData || {
-                        popularity: [], rituals: [], seasonality: [], ingredient_sources: [], health_benefits: [], consumption_freq: [], complexity: [], taste_appeal: [], nutrition: '', social_value: '',
+                        popularity: [], rituals: [], seasonality: [], ingredient_sources: [], health_benefits: [], consumption_freq: [], complexity: '', taste_appeal: [], nutrition: '', social_value: '',
                         other_popularity: '', other_rituals: '', other_seasonality: '', other_ingredient_sources: '', other_health_benefits: '', other_consumption_freq: '', other_complexity: '', other_taste_appeal: '',
                         serving_size: '', other_serving_size: ''
                     })
@@ -337,7 +337,7 @@ export default function SurveyFormClient() {
     const handleResetForm = () => {
         setMenuData({ menu_name: '', local_name: '', other_name: '', category: '' })
         setSurveyData({
-            popularity: [], rituals: [], seasonality: [], ingredient_sources: [], health_benefits: [], consumption_freq: [], complexity: [], taste_appeal: [], nutrition: '', social_value: '',
+            popularity: [], rituals: [], seasonality: [], ingredient_sources: [], health_benefits: [], consumption_freq: [], complexity: '', taste_appeal: [], nutrition: '', social_value: '',
             other_popularity: '', other_rituals: '', other_seasonality: '', other_ingredient_sources: '', other_health_benefits: '', other_consumption_freq: '', other_complexity: '', other_taste_appeal: '',
             serving_size: '', other_serving_size: ''
         })
@@ -611,9 +611,9 @@ export default function SurveyFormClient() {
                                 )}
                             </div>
                             <div className="space-y-3">
-                                <Label text="ความยากง่ายในการทำ (เลือกได้หลายข้อ)" />
-                                <CheckboxSet idPrefix="complexity" options={COMPLEXITY_OPTIONS} values={surveyData.complexity} onToggle={v => toggleCheckbox(surveyData.complexity, setSurveyData, 'complexity', v)} />
-                                {surveyData.complexity.includes('อื่นๆ') && (
+                                <Label text="ความยากง่ายในการทำ (เลือกได้ 1 ข้อ)" />
+                                <RadioSet idPrefix="complexity" options={COMPLEXITY_OPTIONS} value={surveyData.complexity} onChange={v => setSurveyData(p => ({ ...p, complexity: v }))} />
+                                {surveyData.complexity === 'อื่นๆ' && (
                                     <div className="mt-3">
                                         <TextInput id="other_complexity" name="other_complexity" value={surveyData.other_complexity} onChange={v => setSurveyData(p => ({ ...p, other_complexity: v }))} placeholder="ระบุความยากง่ายอื่นๆ..." />
                                     </div>

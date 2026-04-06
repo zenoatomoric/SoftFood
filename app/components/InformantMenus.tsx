@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react'
 import { useRouter } from 'next/navigation'
 import ConfirmModal from '@/app/components/ConfirmModal'
 import Toast from '@/app/components/Toast'
+import Pagination from '@/app/components/Pagination'
 
 interface FoodItem {
     menu_id: string
@@ -193,28 +194,12 @@ export default function InformantMenus({ infoId, canEdit }: Props) {
                 </div>
             )}
 
-            {/* Simple Pagination */}
-            {totalPages > 1 && (
-                <div className="p-4 border-t border-slate-100 flex justify-center gap-2">
-                    <button
-                        disabled={page === 1}
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        className="p-2 rounded-lg hover:bg-slate-100 disabled:opacity-30"
-                        aria-label="หน้าก่อนหน้า"
-                    >
-                        <Icon icon="solar:alt-arrow-left-linear" />
-                    </button>
-                    <span className="text-sm font-medium self-center">หน้า {page} / {totalPages}</span>
-                    <button
-                        disabled={page === totalPages}
-                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                        className="p-2 rounded-lg hover:bg-slate-100 disabled:opacity-30"
-                        aria-label="หน้าถัดไป"
-                    >
-                        <Icon icon="solar:alt-arrow-right-linear" />
-                    </button>
-                </div>
-            )}
+            {/* Numeric Pagination */}
+            <Pagination 
+                currentPage={page} 
+                totalPages={totalPages} 
+                onPageChangeAction={setPage} 
+            />
         </div>
     )
 }

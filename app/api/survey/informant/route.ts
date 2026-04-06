@@ -116,16 +116,38 @@ export async function GET(request: Request) {
                 return NextResponse.json({ error: error.message }, { status: 500 })
             }
 
+            // Standardize URL helper
+            const buildUrl = (url: string) => {
+                if (!url) return null
+                return url.startsWith('http')
+                    ? url
+                    : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${url}`
+            }
+
+            // Parse consent URLs (handle backward compatibility: single string vs JSON array)
+            let parsedConsentUrls: string[] = []
+            if (data.consent_document_url) {
+                try {
+                    const parsed = JSON.parse(data.consent_document_url)
+                    if (Array.isArray(parsed)) {
+                        parsedConsentUrls = parsed.map(buildUrl).filter(Boolean) as string[]
+                    } else {
+                        const built = buildUrl(data.consent_document_url)
+                        if (built) parsedConsentUrls = [built]
+                    }
+                } catch {
+                    // Not JSON, assume it's a single URL string
+                    const built = buildUrl(data.consent_document_url)
+                    if (built) parsedConsentUrls = [built]
+                }
+            }
+
             // Flatten data & standardise URL
             const formatted = {
                 ...data,
                 creator_name: data.creator?.collector_name,
                 editor_name: data.editor_name || null, // Fallback to plain field if it exists
-                consent_document_url: data.consent_document_url ? (
-                    data.consent_document_url.startsWith('http')
-                        ? data.consent_document_url
-                        : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${data.consent_document_url}`
-                ) : null
+                consent_document_url: parsedConsentUrls.length > 0 ? JSON.stringify(parsedConsentUrls) : null
             }
             delete formatted.creator
             delete formatted.editor

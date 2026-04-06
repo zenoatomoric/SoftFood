@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import ConfirmModal from '@/app/components/ConfirmModal'
 import Toast from '@/app/components/Toast'
 import useSWR from 'swr'
+import Pagination from '@/app/components/Pagination'
 
 interface Informant {
     info_id: string
@@ -340,25 +341,12 @@ export default function InformantsClient({ userRole, userId }: Props) {
                 </div>
 
                 {/* Pagination */}
-                <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
-                    <button
-                        disabled={page === 1 || isLoading}
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        className="p-2 hover:bg-white rounded-lg disabled:opacity-30 transition-all border border-transparent hover:border-slate-200 hover:shadow-sm"
-                        aria-label="หน้าก่อนหน้า"
-                    >
-                        <Icon icon="solar:alt-arrow-left-linear" className="text-xl" />
-                    </button>
-                    <span className="text-sm font-medium text-slate-600">หน้า {page} จาก {totalPages}</span>
-                    <button
-                        disabled={page === totalPages || isLoading}
-                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                        className="p-2 hover:bg-white rounded-lg disabled:opacity-30 transition-all border border-transparent hover:border-slate-200 hover:shadow-sm"
-                        aria-label="หน้าถัดไป"
-                    >
-                        <Icon icon="solar:alt-arrow-right-linear" className="text-xl" />
-                    </button>
-                </div>
+                <Pagination 
+                    currentPage={page} 
+                    totalPages={totalPages} 
+                    onPageChangeAction={setPage} 
+                    isLoading={isLoading} 
+                />
             </div>
         </div>
     )

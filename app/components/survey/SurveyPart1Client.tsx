@@ -32,8 +32,28 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
     const [isGettingLocation, setIsGettingLocation] = useState(false)
     const [showMapPicker, setShowMapPicker] = useState(false)
     const [uploadingConsent, setUploadingConsent] = useState(false)
-    const [pendingConsentFile, setPendingConsentFile] = useState<File | null>(null)
-    const [consentDocUrl, setConsentDocUrl] = useState(initialData?.consent_document_url || '')
+    const [pendingConsentFiles, setPendingConsentFiles] = useState<File[]>([])
+    // Parse consent URLs: support both legacy string and JSON array
+    const parseConsentUrls = (raw: any): string[] => {
+        if (!raw) return []
+        if (Array.isArray(raw)) return raw.filter(Boolean)
+        if (typeof raw === 'string') {
+            try {
+                const parsed = JSON.parse(raw)
+                if (Array.isArray(parsed)) return parsed.filter(Boolean)
+            } catch { /* not JSON, treat as single URL */ }
+            return raw ? [raw] : []
+        }
+        return []
+    }
+    const [consentDocUrls, setConsentDocUrls] = useState<string[]>(parseConsentUrls(initialData?.consent_document_url))
+
+    // Edit toggle: in edit mode, fields are read-only until user clicks edit button
+    const [isEditingEnabled, setIsEditingEnabled] = useState(false)
+    const effectiveReadOnly = readOnly || (isEditMode && !isEditingEnabled)
+
+    // Lightbox state for viewing PDPA images
+    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
     const [formData, setFormData] = useState({
         full_name: initialData?.full_name || '',
@@ -321,7 +341,8 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                     // Keep friendly_id from URL/initial and canal_zone from URL param (not draft)
                     if (draft.formData) setFormData(prev => ({ ...prev, ...draft.formData, friendly_id: prev.friendly_id, canal_zone: prev.canal_zone || draft.formData.canal_zone || '' }))
                     if (draft.addressFields) setAddressFields(draft.addressFields)
-                    if (draft.consentDocUrl) setConsentDocUrl(draft.consentDocUrl)
+                    if (draft.consentDocUrls) setConsentDocUrls(draft.consentDocUrls)
+                    else if (draft.consentDocUrl) setConsentDocUrls(draft.consentDocUrl ? [draft.consentDocUrl] : [])
                 } catch (e) {
                     console.error('Error loading part 1 draft:', e)
                 }
@@ -335,10 +356,10 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
     // Save draft on changes
     useEffect(() => {
         if (!isEditMode && isDraftLoaded && !loading) {
-            const draft = { formData, addressFields, consentDocUrl }
+            const draft = { formData, addressFields, consentDocUrls }
             localStorage.setItem(STORAGE_KEY, JSON.stringify(draft))
         }
-    }, [formData, addressFields, consentDocUrl, isEditMode, isDraftLoaded, loading])
+    }, [formData, addressFields, consentDocUrls, isEditMode, isDraftLoaded, loading])
 
     const clearDraft = () => {
         localStorage.removeItem(STORAGE_KEY)
@@ -441,36 +462,55 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
     }
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
+        const files = e.target.files
+        if (!files || files.length === 0) return
 
         setUploadingConsent(true)
         try {
-            let fileToUpload = file
-            // Compress if image
-            if (file.type.startsWith('image/')) {
-                fileToUpload = await compressImage(file)
+            const newFiles: File[] = []
+            const newPreviewUrls: string[] = []
+
+            for (let i = 0; i < files.length; i++) {
+                let fileToUpload = files[i]
+                // Compress if image
+                if (fileToUpload.type.startsWith('image/')) {
+                    fileToUpload = await compressImage(fileToUpload)
+                }
+                newFiles.push(fileToUpload)
+                newPreviewUrls.push(URL.createObjectURL(fileToUpload))
             }
 
-            // Revoke old blob URL if exists
-            if (consentDocUrl.startsWith('blob:')) {
-                URL.revokeObjectURL(consentDocUrl)
-            }
+            setPendingConsentFiles(prev => [...prev, ...newFiles])
+            setConsentDocUrls(prev => [...prev, ...newPreviewUrls])
 
-            // Store file in state for later upload
-            setPendingConsentFile(fileToUpload)
-
-            // Create local preview
-            const previewUrl = URL.createObjectURL(fileToUpload)
-            setConsentDocUrl(previewUrl)
-
-            setToastConfig({ isVisible: true, message: 'เลือกไฟล์สำเร็จ (จะอัปโหลดเมื่อกดบันทึก)', type: 'info' })
+            setToastConfig({ isVisible: true, message: `เลือก ${files.length} ไฟล์สำเร็จ (จะอัปโหลดเมื่อกดบันทึก)`, type: 'info' })
         } catch (err) {
             console.error(err)
             setToastConfig({ isVisible: true, message: 'เตรียมไฟล์ล้มเหลว: ' + String(err), type: 'error' })
         } finally {
             setUploadingConsent(false)
+            // Reset input so same files can be selected again
+            e.target.value = ''
         }
+    }
+
+    const handleRemoveConsentImage = (index: number) => {
+        const url = consentDocUrls[index]
+        if (url.startsWith('blob:')) {
+            URL.revokeObjectURL(url)
+            // Also remove from pendingConsentFiles
+            // Count how many blob URLs are before this index to find the right pending file index
+            const blobIndexesBefore = consentDocUrls.slice(0, index).filter(u => u.startsWith('blob:')).length
+            const isBlob = true
+            if (isBlob) {
+                setPendingConsentFiles(prev => {
+                    const copy = [...prev]
+                    copy.splice(blobIndexesBefore, 1)
+                    return copy
+                })
+            }
+        }
+        setConsentDocUrls(prev => prev.filter((_, i) => i !== index))
     }
 
     const handleDownload = async (url: string) => {
@@ -529,23 +569,33 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
         setShowVerifyEdit(false)
 
         try {
-            let finalConsentUrl = consentDocUrl
+            // 1. Upload pending files
+            let finalConsentUrls = [...consentDocUrls]
 
-            // 1. Upload file if pending
-            if (pendingConsentFile) {
+            if (pendingConsentFiles.length > 0) {
                 setUploadingConsent(true)
                 try {
-                    const formDataUpload = new FormData()
-                    formDataUpload.append('file', pendingConsentFile)
-                    formDataUpload.append('folder', 'pdpa')
+                    const uploadedUrls: string[] = []
+                    for (const file of pendingConsentFiles) {
+                        const formDataUpload = new FormData()
+                        formDataUpload.append('file', file)
+                        formDataUpload.append('folder', 'pdpa')
 
-                    const uploadRes = await fetch('/api/upload', {
-                        method: 'POST',
-                        body: formDataUpload
+                        const uploadRes = await fetch('/api/upload', {
+                            method: 'POST',
+                            body: formDataUpload
+                        })
+                        const uploadJson = await uploadRes.json()
+                        if (!uploadRes.ok) throw new Error(uploadJson.error || 'Failed to upload document')
+                        uploadedUrls.push(uploadJson.url)
+                    }
+                    // Replace blob URLs with uploaded URLs
+                    finalConsentUrls = finalConsentUrls.map(url => {
+                        if (url.startsWith('blob:')) {
+                            return uploadedUrls.shift() || url
+                        }
+                        return url
                     })
-                    const uploadJson = await uploadRes.json()
-                    if (!uploadRes.ok) throw new Error(uploadJson.error || 'Failed to upload document')
-                    finalConsentUrl = uploadJson.url
                 } finally {
                     setUploadingConsent(false)
                 }
@@ -558,7 +608,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
             const payload = {
                 ...formData,
                 address_full: addressFull,
-                consent_document_url: finalConsentUrl
+                consent_document_url: JSON.stringify(finalConsentUrls)
             }
 
             const method = isEditMode ? 'PATCH' : 'POST'
@@ -572,6 +622,10 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
             if (!res.ok) throw new Error(json.error)
 
             setToastConfig({ isVisible: true, message: 'บันทึกข้อมูลสำเร็จ', type: 'success' })
+            setPendingConsentFiles([])
+            if (isEditMode) {
+                setIsEditingEnabled(false)
+            }
 
             if (!isEditMode) {
                 clearDraft()
@@ -592,8 +646,9 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
     }
 
     return (
-        <div className="max-w-4xl mx-auto w-full px-4 md:px-8 space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-28 md:pb-32 mt-4 md:mt-0">
-            <ConfirmModal isOpen={confirmConfig.isOpen} title={confirmConfig.title} message={confirmConfig.message} type={confirmConfig.type} onConfirm={confirmConfig.onConfirm} onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))} />
+        <>
+            <div className="max-w-4xl mx-auto w-full px-4 md:px-8 space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-28 md:pb-32 mt-4 md:mt-0">
+                <ConfirmModal isOpen={confirmConfig.isOpen} title={confirmConfig.title} message={confirmConfig.message} type={confirmConfig.type} onConfirm={confirmConfig.onConfirm} onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))} />
             <Toast isVisible={toastConfig.isVisible} message={toastConfig.message} type={toastConfig.type} onCloseAction={() => setToastConfig(prev => ({ ...prev, isVisible: false }))} />
 
             {/* Edit Verification Popup */}
@@ -846,14 +901,60 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                         <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 flex-shrink-0">
                             <Icon icon="solar:user-id-bold-duotone" className="text-xl md:text-3xl" />
                         </div>
-                        <h2 className="text-lg md:text-2xl font-black text-slate-800 leading-tight">{isEditMode ? 'แก้ไขข้อมูลผู้ให้ข้อมูล' : 'ส่วนที่ ๑ ข้อมูลผู้ให้ข้อมูล'}</h2>
+                        <h2 className="text-lg md:text-2xl font-black text-slate-800 leading-tight flex-1">{isEditMode ? 'แก้ไขข้อมูลผู้ให้ข้อมูล' : 'ส่วนที่ ๑ ข้อมูลผู้ให้ข้อมูล'}</h2>
+                        {isEditMode && !readOnly && (
+                            <div className="flex gap-2">
+                                {!isEditingEnabled ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsEditingEnabled(true)}
+                                        className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-xs md:text-sm hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-200"
+                                    >
+                                        <Icon icon="solar:pen-2-bold" className="text-base md:text-lg" />
+                                        แก้ไขข้อมูล
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsEditingEnabled(false)
+                                            // Revert to initial data
+                                            setFormData({
+                                                full_name: initialData?.full_name || '',
+                                                gender: initialData?.gender || '',
+                                                age: initialData?.age || '',
+                                                occupation: initialData?.occupation || '',
+                                                income: initialData?.income || '',
+                                                address_full: initialData?.address_full || '',
+                                                canal_zone: initialData?.canal_zone || '',
+                                                residency_years: initialData?.residency_years || '',
+                                                residency_months: initialData?.residency_months || '',
+                                                residency_days: initialData?.residency_days || '',
+                                                phone: initialData?.phone || '',
+                                                social_media: initialData?.social_media || '',
+                                                gps_lat: initialData?.gps_lat || '',
+                                                gps_long: initialData?.gps_long || '',
+                                                gps_alt: initialData?.gps_alt || '',
+                                                friendly_id: initialData?.friendly_id || ''
+                                            })
+                                            setConsentDocUrls(parseConsentUrls(initialData?.consent_document_url))
+                                            setPendingConsentFiles([])
+                                        }}
+                                        className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs md:text-sm hover:bg-slate-200 transition-all active:scale-95"
+                                    >
+                                        <Icon icon="solar:close-circle-bold" className="text-base md:text-lg" />
+                                        ยกเลิกแก้ไข
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="space-y-6 md:space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                             <div className="space-y-1.5 md:space-y-2">
                                 <label htmlFor="full_name" className="text-sm md:text-base font-medium text-slate-900 uppercase flex items-center gap-1.5 md:gap-2">ชื่อ-นามสกุล <span className="text-red-500">*</span></label>
-                                <input id="full_name" name="full_name" value={formData.full_name} onChange={handleInputChange} type="text" required disabled={readOnly} autoComplete="name"
+                                <input id="full_name" name="full_name" value={formData.full_name} onChange={handleInputChange} type="text" required disabled={effectiveReadOnly} autoComplete="name"
                                     className="w-full text-base md:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors disabled:text-slate-500" placeholder="ระบุชื่อ-นามสกุล" />
                             </div>
                             <div className="space-y-1.5 md:space-y-2" role="radiogroup" aria-labelledby="gender-label">
@@ -865,7 +966,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                             <label
                                                 key={g}
                                                 htmlFor={id}
-                                                className={`flex items-center gap-2 cursor-pointer transition-all ${formData.gender === g ? 'text-indigo-600 font-bold' : 'text-slate-900 font-medium'} ${readOnly ? 'pointer-events-none opacity-80' : ''}`}
+                                                className={`flex items-center gap-2 cursor-pointer transition-all ${formData.gender === g ? 'text-indigo-600 font-bold' : 'text-slate-900 font-medium'} ${effectiveReadOnly ? 'pointer-events-none opacity-80' : ''}`}
                                             >
                                                 <input
                                                     id={id}
@@ -873,7 +974,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                                     name="gender"
                                                     value={g}
                                                     checked={formData.gender === g}
-                                                    onChange={() => !readOnly && setFormData(prev => ({ ...prev, gender: g }))}
+                                                    onChange={() => !effectiveReadOnly && setFormData(prev => ({ ...prev, gender: g }))}
                                                     className="sr-only"
                                                 />
                                                 <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center border-2 flex-shrink-0 ${formData.gender === g ? 'border-indigo-600 bg-indigo-50' : 'border-slate-300 bg-slate-50'}`}>
@@ -888,18 +989,18 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                             <div className="grid grid-cols-2 gap-4 md:gap-6">
                                 <div className="space-y-1.5 md:space-y-2">
                                     <label htmlFor="age" className="text-sm md:text-base font-medium text-slate-900 uppercase">อายุ (ปี)</label>
-                                    <input id="age" name="age" value={formData.age} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="ระบุอายุ"
+                                    <input id="age" name="age" value={formData.age} onChange={handleInputChange} type="number" disabled={effectiveReadOnly} placeholder="ระบุอายุ"
                                         className="w-full text-base md:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors disabled:text-slate-500" />
                                 </div>
                                 <div className="space-y-1.5 md:space-y-2">
                                     <label htmlFor="occupation" className="text-sm md:text-base font-medium text-slate-900 uppercase">อาชีพ</label>
-                                    <input id="occupation" name="occupation" value={formData.occupation} onChange={handleInputChange} type="text" disabled={readOnly} placeholder="ระบุอาชีพ"
+                                    <input id="occupation" name="occupation" value={formData.occupation} onChange={handleInputChange} type="text" disabled={effectiveReadOnly} placeholder="ระบุอาชีพ"
                                         className="w-full text-base md:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors disabled:text-slate-500" />
                                 </div>
                             </div>
                             <div className="space-y-1.5 md:space-y-2">
                                 <label htmlFor="income" className="text-sm md:text-base font-medium text-slate-900 uppercase">รายได้เฉลี่ย (บาท/เดือน)</label>
-                                <input id="income" name="income" value={formData.income} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="ระบุรายได้"
+                                <input id="income" name="income" value={formData.income} onChange={handleInputChange} type="number" disabled={effectiveReadOnly} placeholder="ระบุรายได้"
                                     className="w-full text-base md:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors disabled:text-slate-500" />
                             </div>
                         </div>
@@ -927,7 +1028,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                         value={addressFields.district}
                                         options={districts.map(d => ({ label: d.name, value: d.name }))}
                                         onChange={(val) => handleAddressChange('district', val)}
-                                        disabled={readOnly || districts.length === 0}
+                                        disabled={effectiveReadOnly || districts.length === 0}
                                         required
                                         accentColor="slate"
                                     />
@@ -943,7 +1044,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                         value={addressFields.subDistrict}
                                         options={subDistricts.map(s => ({ label: s.name, value: s.name }))}
                                         onChange={(val) => handleAddressChange('subDistrict', val)}
-                                        disabled={readOnly || !addressFields.district}
+                                        disabled={effectiveReadOnly || !addressFields.district}
                                         required
                                         accentColor="slate"
                                     />
@@ -965,7 +1066,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                     value={addressFields.detail}
                                     onChange={(e) => handleAddressChange('detail', e.target.value)}
                                     rows={2}
-                                    disabled={readOnly}
+                                    disabled={effectiveReadOnly}
                                     required
                                     placeholder="เช่น 123/4 หมู่ 5 ซอยสุขุมวิท 1..."
                                     className="w-full text-sm md:text-lg font-medium text-slate-900 border-2 border-slate-100 focus:border-indigo-500 rounded-xl md:rounded-2xl p-3.5 md:p-4 outline-none bg-white resize-y placeholder:text-slate-300 transition-colors disabled:text-slate-500 disabled:bg-slate-50"
@@ -987,7 +1088,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                         { label: 'คลองลาดพร้าว', value: 'ลาดพร้าว' }
                                     ]}
                                     onChange={(val) => setFormData(prev => ({ ...prev, canal_zone: val }))}
-                                    disabled={readOnly || !!searchParams.get('canal') || (isEditMode && !!initialData?.canal_zone)}
+                                    disabled={effectiveReadOnly || !!searchParams.get('canal') || (isEditMode && !!initialData?.canal_zone)}
                                     required
                                     accentColor="indigo"
                                 />
@@ -1000,7 +1101,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                 <div className="space-y-1 md:space-y-2">
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                                         <label htmlFor="residency_years" className="sr-only">ปีที่อาศัย</label>
-                                        <input id="residency_years" name="residency_years" value={formData.residency_years} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="0" min="0"
+                                        <input id="residency_years" name="residency_years" value={formData.residency_years} onChange={handleInputChange} type="number" disabled={effectiveReadOnly} placeholder="0" min="0"
                                             className="w-full text-base md:text-xl font-medium text-slate-900 border-b-2 border-slate-200 focus:border-indigo-500 py-1.5 md:py-2 outline-none bg-transparent text-center transition-colors disabled:text-slate-500" />
                                         <span className="text-xs md:text-base font-bold text-slate-400 text-center">ปี</span>
                                     </div>
@@ -1008,7 +1109,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                 <div className="space-y-1 md:space-y-2">
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                                         <label htmlFor="residency_months" className="sr-only">เดือนที่อาศัย</label>
-                                        <input id="residency_months" name="residency_months" value={formData.residency_months} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="0" min="0" max="11"
+                                        <input id="residency_months" name="residency_months" value={formData.residency_months} onChange={handleInputChange} type="number" disabled={effectiveReadOnly} placeholder="0" min="0" max="11"
                                             className="w-full text-base md:text-xl font-medium text-slate-900 border-b-2 border-slate-200 focus:border-indigo-500 py-1.5 md:py-2 outline-none bg-transparent text-center transition-colors disabled:text-slate-500" />
                                         <span className="text-xs md:text-base font-bold text-slate-400 text-center">เดือน</span>
                                     </div>
@@ -1016,7 +1117,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                 <div className="space-y-1 md:space-y-2">
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                                         <label htmlFor="residency_days" className="sr-only">วันที่อาศัย</label>
-                                        <input id="residency_days" name="residency_days" value={formData.residency_days} onChange={handleInputChange} type="number" disabled={readOnly} placeholder="0" min="0" max="31"
+                                        <input id="residency_days" name="residency_days" value={formData.residency_days} onChange={handleInputChange} type="number" disabled={effectiveReadOnly} placeholder="0" min="0" max="31"
                                             className="w-full text-base md:text-xl font-medium text-slate-900 border-b-2 border-slate-200 focus:border-indigo-500 py-1.5 md:py-2 outline-none bg-transparent text-center transition-colors disabled:text-slate-500" />
                                         <span className="text-xs md:text-base font-bold text-slate-400 text-center">วัน</span>
                                     </div>
@@ -1027,12 +1128,12 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pt-6 border-t border-slate-100">
                             <div className="space-y-1.5 md:space-y-2">
                                 <label htmlFor="phone" className="text-sm md:text-base font-medium text-slate-900 uppercase flex items-center gap-2">เบอร์โทรศัพท์ <span className="text-red-500">*</span></label>
-                                <input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} type="tel" disabled={readOnly} required placeholder="เช่น 08x-xxx-xxxx" autoComplete="tel"
+                                <input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} type="tel" disabled={effectiveReadOnly} required placeholder="เช่น 08x-xxx-xxxx" autoComplete="tel"
                                     className="w-full text-base md:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors disabled:text-slate-500" />
                             </div>
                             <div className="space-y-1.5 md:space-y-2">
                                 <label htmlFor="social_media" className="text-sm md:text-base font-medium text-slate-900 uppercase flex items-center gap-2">ช่องทางติดต่ออื่นๆ (โซเชียล)</label>
-                                <input id="social_media" name="social_media" value={formData.social_media} onChange={handleInputChange} type="text" disabled={readOnly} placeholder="เช่น Facebook, Line ID..."
+                                <input id="social_media" name="social_media" value={formData.social_media} onChange={handleInputChange} type="text" disabled={effectiveReadOnly} placeholder="เช่น Facebook, Line ID..."
                                     className="w-full text-base md:text-lg font-medium text-slate-900 border-b-2 border-slate-100 focus:border-indigo-500 py-2 outline-none bg-transparent placeholder:text-slate-300 transition-colors disabled:text-slate-500" />
                             </div>
                         </div>
@@ -1052,7 +1153,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                             </div>
                         </div>
                         <div className="flex flex-row gap-2 md:gap-4 w-full md:w-auto">
-                            {!readOnly && (
+                            {!effectiveReadOnly && (
                                 <>
                                     <button
                                         type="button"
@@ -1141,62 +1242,100 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                         </div>
                     </div>
 
-                    {consentDocUrl ? (
-                        <div className="flex flex-col gap-6 md:gap-8">
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl md:rounded-2xl p-3 md:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                <div className="flex items-center gap-3 md:gap-4 w-full sm:w-auto flex-1">
-                                    <div className="w-12 h-12 md:w-16 md:h-16 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 shrink-0">
-                                        <Icon icon="solar:file-check-bold" className="text-2xl md:text-3xl" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-slate-800 text-sm md:text-base">เอกสารที่แนบไว้</h4>
-                                        <p className="text-[10px] md:text-xs text-slate-500 truncate mt-1">
-                                            {pendingConsentFile ? pendingConsentFile.name : consentDocUrl.split('/').pop()}
-                                        </p>
-                                        {pendingConsentFile && (
-                                            <span className="inline-block mt-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-[9px] md:text-[10px] font-bold rounded-full">ยังไม่ได้บันทึกขึ้นระบบ</span>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="flex gap-2 w-full sm:w-auto">
-                                    {!pendingConsentFile && (
-                                        <button type="button" onClick={() => handleDownload(consentDocUrl)} className="flex-1 sm:flex-none py-3 md:py-4 px-4 md:px-8 bg-white border border-slate-200 rounded-xl text-slate-700 hover:text-indigo-600 hover:border-indigo-300 transition-all shadow-sm font-bold text-xs md:text-sm flex items-center justify-center gap-2">
-                                            <Icon icon="solar:download-bold" className="text-lg md:text-xl" /> ดาวน์โหลด
-                                        </button>
-                                    )}
-                                    {!readOnly && (
-                                        <button type="button" onClick={() => { setConsentDocUrl(''); setPendingConsentFile(null); }} className="py-3 md:py-4 px-4 text-red-500 bg-white border border-red-100 rounded-xl hover:bg-red-50 transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none">
-                                            <Icon icon="solar:trash-bin-minimalistic-bold" className="text-lg md:text-xl" />
-                                            <span className="sm:hidden text-xs font-bold ml-1">ลบไฟล์</span>
-                                        </button>
-                                    )}
-                                </div>
+                    {/* Multi-image grid */}
+                    {consentDocUrls.length > 0 && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                                {consentDocUrls.map((url, index) => {
+                                    const isPending = url.startsWith('blob:')
+                                    return (
+                                        <div key={`${url}-${index}`} className="relative group rounded-xl md:rounded-2xl overflow-hidden border-2 border-slate-100 bg-slate-50 aspect-[4/3] hover:border-indigo-200 transition-all shadow-sm hover:shadow-md">
+                                            {/* Image */}
+                                            <img
+                                                src={url}
+                                                alt={`PDPA consent ${index + 1}`}
+                                                className="w-full h-full object-cover cursor-pointer"
+                                                onClick={() => setLightboxIndex(index)}
+                                            />
+
+                                            {/* Pending badge */}
+                                            {isPending && (
+                                                <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500 text-white text-[9px] md:text-[10px] font-bold rounded-lg shadow">
+                                                    รอบันทึก
+                                                </div>
+                                            )}
+
+                                            {/* Hover overlay with actions */}
+                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setLightboxIndex(index)}
+                                                    className="w-10 h-10 bg-white/90 rounded-xl flex items-center justify-center text-slate-700 hover:bg-white transition-all shadow-lg active:scale-95"
+                                                    title="ดูรูปขยาย"
+                                                >
+                                                    <Icon icon="solar:eye-bold" className="text-lg" />
+                                                </button>
+                                                {!isPending && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDownload(url)}
+                                                        className="w-10 h-10 bg-white/90 rounded-xl flex items-center justify-center text-slate-700 hover:bg-white transition-all shadow-lg active:scale-95"
+                                                        title="ดาวน์โหลด"
+                                                    >
+                                                        <Icon icon="solar:download-bold" className="text-lg" />
+                                                    </button>
+                                                )}
+                                                {!effectiveReadOnly && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveConsentImage(index)}
+                                                        className="w-10 h-10 bg-red-500/90 rounded-xl flex items-center justify-center text-white hover:bg-red-600 transition-all shadow-lg active:scale-95"
+                                                        title="ลบรูป"
+                                                    >
+                                                        <Icon icon="solar:trash-bin-minimalistic-bold" className="text-lg" />
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Image number badge */}
+                                            <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/50 text-white text-[9px] font-bold rounded-lg backdrop-blur-sm">
+                                                {index + 1}/{consentDocUrls.length}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </div>
-                    ) : (
-                        !readOnly ? (
-                            <label htmlFor="consent_upload" className={`flex flex-col items-center justify-center gap-3 md:gap-4 py-12 md:py-24 border-2 border-dashed rounded-2xl md:rounded-3xl cursor-pointer transition-all
-                                    ${uploadingConsent ? 'border-slate-200 bg-slate-50 opacity-50 pointer-events-none' : 'border-amber-300 bg-amber-50/50 hover:bg-amber-100/50 hover:border-amber-400'}`}
-                            >
-                                <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-white shadow-sm flex items-center justify-center">
-                                    <Icon icon={uploadingConsent ? 'solar:refresh-bold' : 'solar:camera-add-bold-duotone'} className={`text-2xl md:text-3xl text-amber-500 ${uploadingConsent ? 'animate-spin' : ''}`} />
-                                </div>
-                                <div className="text-center px-4">
-                                    <p className="text-base md:text-lg font-bold text-slate-700">{uploadingConsent ? 'กำลังเตรียมไฟล์...' : 'แตะเพื่อถ่ายรูป / แนบไฟล์ใบยินยอม'}</p>
-                                    <p className="text-[11px] md:text-sm font-medium text-slate-400 mt-2 md:mt-3">รองรับไฟล์รูปภาพ (JPG, PNG) หรือ PDF</p>
-                                </div>
-                                <input id="consent_upload" type="file" className="hidden" accept="image/*,.pdf" onChange={handleFileChange} disabled={uploadingConsent} />
-                            </label>
-                        ) : (
-                            <div className="py-12 md:py-16 bg-slate-50 border border-dashed border-slate-200 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center text-slate-400">
-                                <Icon icon="solar:file-not-found-bold-duotone" className="text-3xl md:text-4xl mb-3 md:mb-4" />
-                                <p className="font-medium text-xs md:text-sm">ไม่มีไฟล์เอกสารแนบ</p>
+                    )}
+
+                    {/* Upload button area */}
+                    {!effectiveReadOnly && (
+                        <label htmlFor="consent_upload" className={`flex flex-col items-center justify-center gap-3 md:gap-4 ${consentDocUrls.length > 0 ? 'py-6 md:py-8 mt-4' : 'py-12 md:py-24'} border-2 border-dashed rounded-2xl md:rounded-3xl cursor-pointer transition-all
+                                ${uploadingConsent ? 'border-slate-200 bg-slate-50 opacity-50 pointer-events-none' : 'border-amber-300 bg-amber-50/50 hover:bg-amber-100/50 hover:border-amber-400'}`}
+                        >
+                            <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-white shadow-sm flex items-center justify-center">
+                                <Icon icon={uploadingConsent ? 'solar:refresh-bold' : 'solar:camera-add-bold-duotone'} className={`text-2xl md:text-3xl text-amber-500 ${uploadingConsent ? 'animate-spin' : ''}`} />
                             </div>
-                        )
+                            <div className="text-center px-4">
+                                <p className="text-base md:text-lg font-bold text-slate-700">
+                                    {uploadingConsent ? 'กำลังเตรียมไฟล์...' : consentDocUrls.length > 0 ? 'เพิ่มรูปภาพ' : 'แตะเพื่อถ่ายรูป / แนบไฟล์ใบยินยอม'}
+                                </p>
+                                <p className="text-[11px] md:text-sm font-medium text-slate-400 mt-2 md:mt-3">รองรับไฟล์รูปภาพ (JPG, PNG) หลายไฟล์</p>
+                            </div>
+                            <input id="consent_upload" type="file" className="hidden" accept="image/*" multiple onChange={handleFileChange} disabled={uploadingConsent} />
+                        </label>
+                    )}
+
+                    {/* Empty state for read-only */}
+                    {effectiveReadOnly && consentDocUrls.length === 0 && (
+                        <div className="py-12 md:py-16 bg-slate-50 border border-dashed border-slate-200 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center text-slate-400">
+                            <Icon icon="solar:file-not-found-bold-duotone" className="text-3xl md:text-4xl mb-3 md:mb-4" />
+                            <p className="font-medium text-xs md:text-sm">ไม่มีไฟล์เอกสารแนบ</p>
+                        </div>
                     )}
                 </section>
 
-                {!readOnly && (
+                {!effectiveReadOnly && (
                     <div className="fixed sm:static bottom-0 left-0 right-0 p-4 sm:p-0 bg-white/95 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none border-t sm:border-0 border-slate-200 z-40 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0 flex justify-end mt-8 shadow-[0_-10px_40px_rgba(0,0,0,0.08)] sm:shadow-none">
                         <button type="submit" disabled={loading}
                             className="bg-gradient-to-r from-slate-800 to-slate-900 text-white px-6 md:px-8 py-4 md:py-4 rounded-xl md:rounded-2xl text-base md:text-lg font-bold hover:from-black hover:to-black md:hover:scale-[1.02] transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-2 md:gap-3 disabled:opacity-50 w-full sm:w-auto active:scale-[0.98]">
@@ -1348,5 +1487,55 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                 )
             }
         </div >
+            {/* Lightbox Modal */}
+            {lightboxIndex !== null && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+                    <button
+                        onClick={() => setLightboxIndex(null)}
+                        className="absolute top-4 right-4 md:top-6 md:right-6 w-10 h-10 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-all z-[110]"
+                    >
+                        <Icon icon="solar:close-circle-bold" className="text-2xl md:text-3xl" />
+                    </button>
+
+                    <div className="relative w-full max-w-5xl h-[80vh] md:h-[90vh] flex items-center justify-center">
+                    {lightboxIndex !== null && (
+                        <img
+                            src={consentDocUrls[lightboxIndex]}
+                            alt={`PDPA - ${lightboxIndex + 1}`}
+                            className="max-w-full max-h-full object-contain drop-shadow-2xl"
+                        />
+                    )}
+
+                    {/* Navigation Buttons */}
+                    {consentDocUrls.length > 1 && (
+                        <>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    setLightboxIndex((prev) => (prev === null || prev === 0 ? consentDocUrls.length - 1 : prev - 1))
+                                }}
+                                className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-14 md:h-14 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all"
+                            >
+                                <Icon icon="solar:alt-arrow-left-line-duotone" className="text-2xl md:text-3xl" />
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    setLightboxIndex((prev) => (prev === null || prev === consentDocUrls.length - 1 ? 0 : prev + 1))
+                                }}
+                                className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-14 md:h-14 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-all"
+                            >
+                                <Icon icon="solar:alt-arrow-right-line-duotone" className="text-2xl md:text-3xl" />
+                            </button>
+                        </>
+                    )}
+
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 py-2 px-4 bg-black/60 text-white rounded-full font-bold text-sm backdrop-blur-md">
+                        {lightboxIndex !== null ? lightboxIndex + 1 : 0} / {consentDocUrls.length}
+                    </div>
+                    </div>
+                </div>
+            )}
+        </>
     )
 }
