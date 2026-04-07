@@ -62,11 +62,19 @@ const CANAL_FILTERS = [
     { id: 'ลาดพร้าว', label: 'คลองลาดพร้าว', icon: 'solar:city-linear' },
 ]
 
-// Category filter config
-const CATEGORY_FILTERS = [
-    { id: 'all', label: 'ทั้งหมด' },
-    { id: '36', label: 'เมนูแนะนำ' },
-    { id: 'ซิกเนเจอร์', label: 'เมนู Signature' },
+// Featured filters (Top row buttons)
+const FEATURED_FILTERS = [
+    { id: 'all', label: 'ทั้งหมด', icon: 'solar:layers-linear' },
+    { id: '36', label: 'เมนูแนะนำ', icon: 'solar:star-bold' },
+    { id: 'ซิกเนเจอร์', label: 'เมนู Signature', icon: 'solar:medal-star-bold' },
+]
+
+// Category options (Dropdown)
+const CATEGORY_OPTIONS = [
+    { id: 'all', label: 'ทุกประเภทอาหาร' },
+    { id: 'อาหารคาว', label: 'อาหารคาว' },
+    { id: 'อาหารหวาน', label: 'อาหารหวาน' },
+    { id: 'อาหารว่าง/เครื่องดื่ม', label: 'อาหารว่าง/เครื่องดื่ม' },
 ]
 
 const ITEMS_PER_PAGE = 12
@@ -75,8 +83,12 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
     const [menus, setMenus] = useState<MenuItem[]>([])
     const [loading, setLoading] = useState(true)
     const [activeCanal, setActiveCanal] = useState('all')
+    const [activeFeatured, setActiveFeatured] = useState('all')
     const [activeCategory, setActiveCategory] = useState('all')
+    const [isCatOpen, setIsCatOpen] = useState(false)
     const [currentPage, setCurrentPage] = useState(1)
+    const [search, setSearch] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
     const [popupMenu, setPopupMenu] = useState<MenuItem | null>(null)
     const [popupVisible, setPopupVisible] = useState(false)
     const [showMap, setShowMap] = useState(true)
@@ -99,17 +111,35 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
         fetchMenus()
     }, [])
 
+    // Debounce search
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(search), 500)
+        return () => clearTimeout(timer)
+    }, [search])
+
     // Reset page on filter change
-    useEffect(() => { setCurrentPage(1) }, [activeCanal, activeCategory])
+    useEffect(() => { setCurrentPage(1) }, [activeCanal, activeFeatured, activeCategory, debouncedSearch])
 
     // Filtered menus
     const filtered = useMemo(() => {
         return menus.filter(m => {
             const matchCanal = activeCanal === 'all' || m.canal_zone === activeCanal
-            const matchCategory = activeCategory === 'all' || m.selection_status.includes(activeCategory)
-            return matchCanal && matchCategory
+            
+            // Match Featured (Top Row)
+            const matchFeatured = activeFeatured === 'all' || m.selection_status.includes(activeFeatured)
+            
+            // Match Category (Dropdown)
+            const matchCategory = activeCategory === 'all' || m.category === activeCategory
+
+            // Match Search
+            const matchSearch = !debouncedSearch || 
+                m.menu_name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                m.category.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                m.canal_zone.toLowerCase().includes(debouncedSearch.toLowerCase())
+
+            return matchCanal && matchFeatured && matchCategory && matchSearch
         })
-    }, [menus, activeCanal, activeCategory])
+    }, [menus, activeCanal, activeFeatured, activeCategory, debouncedSearch])
 
     // Pagination
     const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
@@ -320,24 +350,87 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                             </p>
                         </div>
 
-                        {/* Category Filters */}
-                        <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                            {CATEGORY_FILTERS.map(cat => (
-                                <button
-                                    key={cat.id}
-                                    onClick={() => setActiveCategory(cat.id)}
-                                    className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-semibold shadow-sm transition-all ${activeCategory === cat.id
-                                        ? (cat.id === 'ซิกเนเจอร์'
-                                            ? 'bg-orange-50 border border-orange-200 text-orange-600'
-                                            : 'bg-slate-900 text-white')
-                                        : (cat.id === 'ซิกเนเจอร์'
-                                            ? 'bg-orange-50 border border-orange-200 text-orange-600 opacity-60 hover:opacity-100'
-                                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50')
-                                        }`}
-                                >
-                                    {cat.label}
-                                </button>
-                            ))}
+                        <div className="flex flex-col gap-4 w-full lg:w-auto md:items-end">
+                            {/* Row 1: Featured Buttons */}
+                            <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar md:justify-end w-full">
+                                {FEATURED_FILTERS.map(f => (
+                                    <button
+                                        key={f.id}
+                                        onClick={() => setActiveFeatured(f.id)}
+                                        className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold shadow-sm transition-all flex items-center gap-2 ${activeFeatured === f.id
+                                            ? (f.id === 'ซิกเนเจอร์'
+                                                ? 'bg-orange-500 text-white shadow-orange-100'
+                                                : 'bg-slate-900 text-white')
+                                            : (f.id === 'ซิกเนเจอร์'
+                                                ? 'bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-100'
+                                                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50')
+                                            }`}
+                                    >
+                                        <Icon icon={f.icon} width={16} />
+                                        {f.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Row 2: Dropdown + Search */}
+                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:justify-end">
+                                {/* Category Dropdown */}
+                                <div className="relative w-full sm:w-64">
+                                    <button
+                                        onClick={() => setIsCatOpen(!isCatOpen)}
+                                        className="w-full flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:border-slate-300 transition-all shadow-sm group"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <Icon icon="solar:menu-dots-square-bold-duotone" className="text-blue-500" />
+                                            <span>{CATEGORY_OPTIONS.find(c => c.id === activeCategory)?.label}</span>
+                                        </div>
+                                        <Icon icon="solar:alt-arrow-down-linear" className={`transition-transform duration-300 ${isCatOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    
+                                    {isCatOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-10" onClick={() => setIsCatOpen(false)} />
+                                            <div className="absolute top-full mt-2 w-full bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                {CATEGORY_OPTIONS.map(opt => (
+                                                    <button
+                                                        key={opt.id}
+                                                        onClick={() => {
+                                                            setActiveCategory(opt.id)
+                                                            setIsCatOpen(false)
+                                                        }}
+                                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors hover:bg-blue-50 ${activeCategory === opt.id ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'}`}
+                                                    >
+                                                        {opt.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Search Bar */}
+                                <div className="relative flex-1 w-full group">
+                                    <Icon 
+                                        icon="solar:magnifer-linear" 
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-blue-500 transition-colors" 
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="ค้นหาชื่อเมนู, หมวดหมู่..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        className="w-full pl-11 pr-11 py-3 bg-white border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 rounded-2xl outline-none text-sm font-bold transition-all text-slate-700 placeholder-slate-400 shadow-sm"
+                                    />
+                                    {search && (
+                                        <button 
+                                            onClick={() => setSearch('')}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
+                                        >
+                                            <Icon icon="solar:close-circle-bold" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
