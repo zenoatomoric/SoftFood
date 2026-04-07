@@ -17,6 +17,7 @@
     "bcryptjs": "^3.0.3",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.564.0",
+    "maplibre-gl": "^5.22.0",
     "next": "16.1.6",
     "next-auth": "^5.0.0-beta.30",
     "react": "19.2.3",

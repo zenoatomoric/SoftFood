@@ -245,8 +245,9 @@ export default function MenusClient({ userRole, userId }: Props) {
                     'ชื่อผู้ให้ข้อมูล': inf.full_name || item.informant_name || '',
                     'ชุมชน': inf.community || '',
                     'คลอง': inf.canal_zone || item.canal_zone || '',
+                    'ที่อยู่': inf.address_full || '',
                     'GPS ละติจูด': inf.gps_lat || '',
-                    'GPS ลองจิจูด': inf.gps_lng || '',
+                    'GPS ลองจิจูด': inf.gps_long || '',
 
                     // 🔵 ส่วนที่ 3: ข้อมูลอัตลักษณ์เมนู
                     'ชื่อเมนูอาหาร (ชื่อทางการ)': item.menu_name || '',
@@ -397,7 +398,6 @@ export default function MenusClient({ userRole, userId }: Props) {
                             options={[
                                 { label: 'อาหารคาว', value: 'อาหารคาว' },
                                 { label: 'อาหารหวาน', value: 'อาหารหวาน' },
-                                { label: 'อาหารว่าง', value: 'อาหารว่าง' },
                                 { label: 'อาหารว่าง/เครื่องดื่ม', value: 'อาหารว่าง/เครื่องดื่ม' }
                             ]}
                         />

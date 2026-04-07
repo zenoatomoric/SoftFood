@@ -1,14 +1,9 @@
 import { auth } from '@/auth'
-import { redirect } from 'next/navigation'
+import LandingPage from './components/LandingPage'
 
 export default async function RootPage() {
   const session = await auth()
+  const isLoggedIn = !!session?.user
 
-  // ถ้า login แล้ว ให้ไปหน้า home
-  if (session?.user) {
-    redirect('/home')
-  }
-
-  // ถ้ายังไม่ login ให้ไปหน้า login
-  redirect('/login')
+  return <LandingPage isLoggedIn={isLoggedIn} />
 }

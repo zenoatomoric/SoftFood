@@ -167,6 +167,12 @@ export async function GET(request: Request) {
                 q = q.eq('ref_sv_code', svCode || 'NONE')
             }
 
+            // Canal Filter
+            const canal = searchParams.get('canal')
+            if (canal) {
+                q = q.eq('canal_zone', canal)
+            }
+
             // Search filtering
             if (search) {
                 q = q.or(`friendly_id.ilike.%${search}%,full_name.ilike.%${search}%,phone.ilike.%${search}%`)

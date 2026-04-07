@@ -39,7 +39,7 @@ export async function GET(request: Request) {
         // Base Query
         let query = supabase.from('menus').select(full ? `
             *,
-            informants (*),
+            informants!inner (*),
             users (*),
             menu_ingredients (
                 *,
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
             promo_video_url,
             selection_image_url,
             selection_metadata,
-            informants (full_name, canal_zone),
+            informants!inner (full_name, canal_zone),
             users (collector_name),
             menu_photos:menu_photos (photo_url)
         `, { count: 'exact' })
@@ -123,8 +123,12 @@ export async function GET(request: Request) {
         // Transform Data for Frontend
         const formatted = (data || []).map((item: any) => {
             // Handle cases where join might return data in different formats (object or array)
-            const inf = Array.isArray(item.informants) ? item.informants[0] : item.informants
-            const usr = Array.isArray(item.users) ? item.users[0] : item.users
+            // Some PostgREST versions return plural table name, some singular, some array even if 1:1
+            const rawInf = item.informants || item.informant
+            const inf = Array.isArray(rawInf) ? rawInf[0] : rawInf
+            
+            const rawUsr = item.users || item.user
+            const usr = Array.isArray(rawUsr) ? rawUsr[0] : rawUsr
 
             return {
                 ...item,

@@ -106,6 +106,7 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
     const [myInformants, setMyInformants] = useState<any[]>([])
     const [loadingMyInformants, setLoadingMyInformants] = useState(false)
     const [myInformantsSearch, setMyInformantsSearch] = useState('')
+    const [idCanalFilter, setIdCanalFilter] = useState('')
     const [showVerifyEdit, setShowVerifyEdit] = useState(false)
     const [isDraftLoaded, setIsDraftLoaded] = useState(false)
 
@@ -531,10 +532,16 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
         }
     }
 
-    const fetchMyInformants = async () => {
+    const fetchMyInformants = async (canal?: string) => {
         setLoadingMyInformants(true)
         try {
-            const res = await fetch(`/api/survey/informant?limit=100${userRole !== 'admin' ? '&mine=true' : ''}`)
+            const params = new URLSearchParams()
+            params.set('limit', '100')
+            if (userRole !== 'admin') params.set('mine', 'true')
+            const activeCanal = canal !== undefined ? canal : idCanalFilter
+            if (activeCanal) params.set('canal', activeCanal)
+
+            const res = await fetch(`/api/survey/informant?${params.toString()}`)
             const json = await res.json()
             setMyInformants(json.data || [])
         } catch (err) {
@@ -543,6 +550,13 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
             setLoadingMyInformants(false)
         }
     }
+
+    // Auto-refresh when canal filter changes
+    useEffect(() => {
+        if (showMyInformants) {
+            fetchMyInformants()
+        }
+    }, [idCanalFilter])
 
     const selectInformant = (inf: any) => {
         setConfirmConfig({
@@ -1390,8 +1404,8 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                 </button>
                             </div>
 
-                            {/* Search Bar in Drawer */}
-                            <div className="p-4 bg-slate-50/50 border-b border-slate-100">
+                            {/* Search & Canal Filter in Drawer */}
+                            <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col gap-3">
                                 <div className="relative">
                                     <Icon icon="solar:magnifer-linear" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
                                     <label htmlFor="drawer_search" className="sr-only">ค้นหาชื่อ หรือ รหัส</label>
@@ -1408,6 +1422,22 @@ export default function SurveyPart1Client({ initialData, isEditMode = false, rea
                                             <Icon icon="solar:close-circle-bold" className="text-base" />
                                         </button>
                                     )}
+                                </div>
+                                <div className="grid grid-cols-1">
+                                    <CustomSelect
+                                        id="drawer_canal"
+                                        label="กรองตามพื้นที่"
+                                        placeholder="ทุกพื้นที่ (ทั้งหมด)"
+                                        value={idCanalFilter}
+                                        options={[
+                                            { label: 'ทุกพื้นที่', value: '' },
+                                            { label: 'คลองบางเขน', value: 'บางเขน' },
+                                            { label: 'คลองเปรมประชากร', value: 'เปรมประชากร' },
+                                            { label: 'คลองลาดพร้าว', value: 'ลาดพร้าว' }
+                                        ]}
+                                        onChange={(val) => setIdCanalFilter(val)}
+                                        accentColor="indigo"
+                                    />
                                 </div>
                             </div>
 

@@ -36,23 +36,26 @@ export default function InformantsClient({ userRole, userId }: Props) {
     const [search, setSearch] = useState('')
     const [debouncedSearch, setDebouncedSearch] = useState('')
     const [mineFilter, setMineFilter] = useState(false)
+    const [canalFilter, setCanalFilter] = useState('')
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null)
 
     // SWR Data Fetching
     const fetchUrl = useMemo(() => {
         const params = new URLSearchParams()
         if (debouncedSearch) params.set('search', debouncedSearch)
         if (mineFilter) params.set('mine', 'true')
+        if (canalFilter) params.set('canal', canalFilter)
         params.set('page', page.toString())
         params.set('limit', limit.toString())
         return `/api/survey/informant?${params.toString()}`
-    }, [debouncedSearch, mineFilter, page, limit])
+    }, [debouncedSearch, mineFilter, canalFilter, page, limit])
 
     const { data: swrData, error, isLoading, mutate } = useSWR(fetchUrl)
 
     // Reset to page 1 when filters change
     useEffect(() => {
         setPage(1)
-    }, [debouncedSearch, mineFilter])
+    }, [debouncedSearch, mineFilter, canalFilter])
 
     const informants = swrData?.data || []
     const total = swrData?.total || 0
@@ -110,6 +113,78 @@ export default function InformantsClient({ userRole, userId }: Props) {
         router.push(`/informants/${info.info_id}`)
     }
 
+    const CustomDropdown = ({
+        label,
+        value,
+        onChange,
+        options,
+        icon,
+        id
+    }: {
+        label: string,
+        value: string,
+        onChange: (val: string) => void,
+        options: { label: string, value: string }[],
+        icon: string,
+        id: string
+    }) => {
+        const isOpen = openDropdown === id
+
+        return (
+            <div className="relative">
+                <div
+                    id={id}
+                    onClick={() => setOpenDropdown(isOpen ? null : id)}
+                    role="combobox"
+                    aria-expanded={isOpen}
+                    aria-haspopup="listbox"
+                    aria-controls={`${id}-listbox`}
+                    className={`w-full pl-10 pr-10 py-2 text-sm rounded-xl border outline-none text-slate-600 bg-white cursor-pointer hover:bg-slate-50 transition-all flex items-center justify-between
+                    ${isOpen ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-200'}`}
+                >
+                    <Icon icon={icon} className={`absolute left-3 text-lg ${isOpen ? 'text-indigo-500' : 'text-slate-400'}`} />
+                    <span className={value ? 'text-slate-700 font-medium' : 'text-slate-400'}>
+                        {value ? options.find(o => o.value === value)?.label : label}
+                    </span>
+                    <Icon icon="solar:alt-arrow-down-linear" className={`absolute right-3 text-slate-400 transition-transform duration-300 ${isOpen ? 'rotate-180 text-indigo-500' : ''}`} />
+                </div>
+
+                {isOpen && (
+                    <>
+                        <div className="fixed inset-0 z-10" onClick={() => setOpenDropdown(null)}></div>
+                        <div id={`${id}-listbox`} role="listbox" className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="max-h-60 overflow-y-auto py-1">
+                                <div
+                                    role="option"
+                                    aria-selected={value === ''}
+                                    onClick={() => { onChange(''); setOpenDropdown(null) }}
+                                    className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-indigo-50 transition-colors flex items-center justify-between
+                                    ${value === '' ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600'}`}
+                                >
+                                    <span>ทั้งหมด</span>
+                                    {value === '' && <Icon icon="solar:check-circle-bold" />}
+                                </div>
+                                {options.map(opt => (
+                                    <div
+                                        key={opt.value}
+                                        role="option"
+                                        aria-selected={value === opt.value}
+                                        onClick={() => { onChange(opt.value); setOpenDropdown(null) }}
+                                        className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-indigo-50 transition-colors flex items-center justify-between
+                                        ${value === opt.value ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600'}`}
+                                    >
+                                        <span>{opt.label}</span>
+                                        {value === opt.value && <Icon icon="solar:check-circle-bold" />}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <ConfirmModal {...confirmConfig} onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))} />
@@ -159,6 +234,21 @@ export default function InformantsClient({ userRole, userId }: Props) {
                             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 transition-all text-sm"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="w-full sm:w-64">
+                        <CustomDropdown
+                            id="canal"
+                            label="กรองตามพื้นที่"
+                            value={canalFilter}
+                            onChange={setCanalFilter}
+                            icon="solar:map-point-wave-linear"
+                            options={[
+                                { label: 'บางเขน', value: 'บางเขน' },
+                                { label: 'เปรมประชากร', value: 'เปรมประชากร' },
+                                { label: 'ลาดพร้าว', value: 'ลาดพร้าว' }
+                            ]}
                         />
                     </div>
                 </div>

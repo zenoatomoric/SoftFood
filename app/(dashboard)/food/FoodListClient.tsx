@@ -292,7 +292,6 @@ export default function FoodListClient({ userRole, userId, userName, mode }: Pro
                             options={[
                                 { label: 'อาหารคาว', value: 'อาหารคาว' },
                                 { label: 'อาหารหวาน', value: 'อาหารหวาน' },
-                                { label: 'อาหารว่าง', value: 'อาหารว่าง' },
                                 { label: 'อาหารว่าง/เครื่องดื่ม', value: 'อาหารว่าง/เครื่องดื่ม' }
                             ]}
                         />

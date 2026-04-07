@@ -27,7 +27,7 @@ export default function SurveyPart2Client() {
     const [formData, setFormData] = useState({
         menu_name: '',
         local_name: '',
-        category: '', // 'อาหารคาว', 'อาหารหวาน', 'อาหารว่าง'
+        category: '', // 'อาหารคาว', 'อาหารหวาน', 'อาหารว่าง/เครื่องดื่ม'
         story: '',
         nutrition: [] as string[],
         social_value: [] as string[],
@@ -202,7 +202,7 @@ export default function SurveyPart2Client() {
     }
 
     // Options
-    const CATEGORIES = ['อาหารคาว', 'อาหารหวาน', 'อาหารว่าง']
+    const CATEGORIES = ['อาหารคาว', 'อาหารหวาน', 'อาหารว่าง/เครื่องดื่ม']
     const NUTRITION_OPTS = ['โปรตีน', 'คาร์โบไฮเดรต', 'ไขมัน', 'วิตามิน', 'เกลือแร่', 'ใยอาหาร']
     const SOCIAL_VAL_OPTS = ['งานบุญ/ศาสนา', 'งานมงคล', 'รับแขก', 'ของฝาก', 'บริโภคในครัวเรือน']
 
