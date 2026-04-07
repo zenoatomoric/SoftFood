@@ -178,7 +178,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
     }
 
     return (
-        <div className="bg-white text-slate-900 antialiased overflow-x-hidden min-h-screen">
+        <div className="bg-white text-slate-900 antialiased overflow-x-hidden min-h-screen font-sans">
             {/* ─── Navbar ─── */}
             <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -193,12 +193,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                             </div>
                         </Link>
                         <div className="hidden md:flex items-center gap-6">
-                            <a href="#menu" className="text-base font-medium text-slate-500 hover:text-slate-900 transition-colors">
-                                คลังอาหารริมคลอง
-                            </a>
-                            <a href="#stats" className="text-base font-medium text-slate-500 hover:text-slate-900 transition-colors">
-                                สถิติ
-                            </a>
+                            {/* Navigation removed as requested */}
                         </div>
                     </div>
                     <Link
@@ -218,8 +213,8 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                         วิจัยและสืบสานวัฒนธรรมท้องถิ่น
                     </span>
                     <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-slate-900 mb-6 max-w-4xl mx-auto leading-tight">
-                        รื้อฟื้นรสชาติจากสายน้ำ <br className="hidden sm:block" />
-                        มรดกภูมิปัญญาคลองบางเขน-ลาดพร้าว
+                        สืบสานตำรับอาหารจากวิถีสายน้ำ <br className="hidden sm:block" />
+                        มรดกภูมิปัญญา
                     </h1>
                     <p className="text-base sm:text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed mb-10">
                         สำรวจระบบสารสนเทศ (GIS) แหล่งข้อมูลอาหารดั้งเดิม พร้อมจุดพิกัดชุมชนริมคลอง
@@ -255,7 +250,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                 <Icon icon="solar:map-point-wave-bold-duotone" className="text-blue-500 text-2xl" />
                                 แผนที่ริมคลอง
                             </h2>
-                            <p className="text-sm text-slate-500 mt-0.5">ดูตำแหน่งเมนูอาหารบนแผนที่พื้นที่คลองบางเขน-ลาดพร้าว</p>
+                            <p className="text-sm text-slate-500 mt-0.5">ดูตำแหน่งเมนูอาหารบนแผนที่พื้นที่คลองบางเขน-ลาดพร้าว-คลองเปรมประชากร</p>
                         </div>
                         <button
                             onClick={() => setShowMap(v => !v)}
@@ -500,7 +495,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
             {/* ─── Footer ─── */}
             <footer className="bg-slate-50 border-t border-slate-100 py-8 px-4 sm:px-6">
                 <div className="max-w-7xl mx-auto text-center">
-                    <p className="text-base text-slate-400">© 2026 Canal Cuisine — โครงการวิจัยวัฒนธรรมอาหารริมคลองบางเขน-ลาดพร้าว</p>
+                    <p className="text-base text-slate-400">© 2026 Canal Cuisine — โครงการวิจัยวัฒนธรรมอาหารริมคลองบางเขน-ลาดพร้าว-คลองเปรมประชากร</p>
                 </div>
             </footer>
 
