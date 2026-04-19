@@ -253,6 +253,40 @@ export default function FoodListClient({ userRole, userId, userName, mode }: Pro
                         </h1>
                         <p className="text-xs md:text-sm text-slate-500 mt-1">จัดการข้อมูลเมนูอาหารและการคัดเลือก</p>
                     </div>
+
+                    {/* Director Filters */}
+                    {(userRole === 'director' || userRole === 'admin') && (
+                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide w-full md:w-auto">
+                            <button
+                                onClick={() => setStatusFilter(statusFilter === '108' ? '' : '108')}
+                                className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-bold border transition-all flex items-center gap-1.5 whitespace-nowrap
+                                ${statusFilter === '108' ? 'bg-amber-100 text-amber-700 border-amber-200 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:border-amber-200 hover:bg-slate-50'}`}
+                            >
+                                <Icon icon="solar:star-bold" className="text-lg" /> 108 เมนู
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter(statusFilter === '93' ? '' : '93')}
+                                className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-bold border transition-all flex items-center gap-1.5 whitespace-nowrap
+                                ${statusFilter === '93' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-200 hover:bg-slate-50'}`}
+                            >
+                                <Icon icon="solar:medal-star-bold" className="text-lg" /> 93 เมนู
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter(statusFilter === '36' ? '' : '36')}
+                                className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-bold border transition-all flex items-center gap-1.5 whitespace-nowrap
+                                ${statusFilter === '36' ? 'bg-rose-100 text-rose-700 border-rose-200 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:border-rose-200 hover:bg-slate-50'}`}
+                            >
+                                <Icon icon="solar:crown-bold" className="text-lg" /> 36 เมนู
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter(statusFilter === 'ซิกเนเจอร์' ? '' : 'ซิกเนเจอร์')}
+                                className={`px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-bold border transition-all flex items-center gap-1.5 whitespace-nowrap
+                                ${statusFilter === 'ซิกเนเจอร์' ? 'bg-orange-100 text-orange-700 border-orange-200 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:border-orange-200 hover:bg-slate-50'}`}
+                            >
+                                <Icon icon="solar:medal-ribbon-star-bold" className="text-lg" /> เมนูซิกเนเจอร์
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">
@@ -297,33 +331,6 @@ export default function FoodListClient({ userRole, userId, userName, mode }: Pro
                         />
                     </div>
                 </div>
-
-                {/* Director Filters */}
-                {(userRole === 'director' || userRole === 'admin') && (
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                        <button
-                            onClick={() => setStatusFilter(statusFilter === '108' ? '' : '108')}
-                            className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold border transition-all flex items-center gap-1 whitespace-nowrap
-                            ${statusFilter === '108' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-white text-slate-500 border-slate-200 hover:border-amber-200'}`}
-                        >
-                            <Icon icon="solar:star-bold" /> 108 เมนู
-                        </button>
-                        <button
-                            onClick={() => setStatusFilter(statusFilter === '93' ? '' : '93')}
-                            className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold border transition-all flex items-center gap-1 whitespace-nowrap
-                            ${statusFilter === '93' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-200'}`}
-                        >
-                            <Icon icon="solar:medal-star-bold" /> 93 เมนู
-                        </button>
-                        <button
-                            onClick={() => setStatusFilter(statusFilter === '36' ? '' : '36')}
-                            className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold border transition-all flex items-center gap-1 whitespace-nowrap
-                            ${statusFilter === '36' ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-white text-slate-500 border-slate-200 hover:border-rose-200'}`}
-                        >
-                            <Icon icon="solar:crown-bold" /> 36 เมนู
-                        </button>
-                    </div>
-                )}
             </div>
 
             {/* Content List/Grid */}
@@ -434,7 +441,9 @@ export default function FoodListClient({ userRole, userId, userName, mode }: Pro
                                                     className={`px-1.5 py-0.5 md:px-2 md:py-1 rounded-lg text-[10px] md:text-xs font-bold border transition-all flex flex-col items-start
                                                         ${menu.selection_status.includes(tag)
                                                             ? (tag === '108' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-                                                                tag === '93' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-rose-100 text-rose-700 border-rose-200')
+                                                                tag === '93' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 
+                                                                tag === '36' ? 'bg-rose-100 text-rose-700 border-rose-200' :
+                                                                'bg-orange-100 text-orange-700 border-orange-200')
                                                             : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300'}`}
                                                 >
                                                     <div className="flex items-center gap-1">

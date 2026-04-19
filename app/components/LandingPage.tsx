@@ -1,14 +1,15 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react'
-import { Icon } from '@iconify/react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import { Icon } from '@iconify/react'
 import { MenuDetailPopup } from './MenuDetailPopup'
+import '../landing.css'
 
 const MapView = dynamic(() => import('./MapView'), {
     ssr: false,
     loading: () => (
-        <div className="w-full rounded-2xl bg-slate-100 animate-pulse border border-slate-200" style={{ height: '480px' }} />
+        <div className="w-full rounded-2xl animate-pulse" style={{ height: '480px', background: 'rgba(93,184,216,.1)', border: '1.5px solid rgba(26,107,138,.18)', borderRadius: '16px' }} />
     ),
 })
 
@@ -54,101 +55,114 @@ interface MenuItem {
     promo_video_url: string | null
 }
 
-// Canal filter config
-const CANAL_FILTERS = [
-    { id: 'all', label: 'ทุกพื้นที่', icon: 'solar:layers-linear' },
-    { id: 'บางเขน', label: 'คลองบางเขน', icon: 'solar:water-linear' },
-    { id: 'เปรมประชากร', label: 'คลองเปรมประชากร', icon: 'solar:leaf-linear' },
-    { id: 'ลาดพร้าว', label: 'คลองลาดพร้าว', icon: 'solar:city-linear' },
+// Canal zones config
+const CANALS = [
+    { id: 'บางเขน', name: 'คลองบางเขน', theme: 'dk' as const, num: '01', subtitle: 'คลองสายแรก', color: '#5db8d8', icon: 'solar:rowing-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a5a7a] via-[#0d3a5a] to-[#2d7a5e]' },
+    { id: 'เปรมประชากร', name: 'คลองเปรมประชากร', theme: 'lt' as const, num: '02', subtitle: 'คลองสายที่สอง', color: '#c8963c', icon: 'solar:compass-big-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a3a5a] via-[#2d6a4a] to-[#4a8a5a]', reversed: true },
+    { id: 'ลาดพร้าว', name: 'คลองลาดพร้าว', theme: 'wm' as const, num: '03', subtitle: 'คลองสายที่สาม', color: '#c87a3c', icon: 'solar:leaf-bold-duotone', bgClass: 'bg-gradient-to-br from-[#3a5a1a] via-[#1a4a5a] to-[#0d3a4a]' },
 ]
 
-// Featured filters (Top row buttons)
-const FEATURED_FILTERS = [
-    { id: 'all', label: 'ทั้งหมด', icon: 'solar:layers-linear' },
-    { id: '36', label: 'เมนูแนะนำ', icon: 'solar:star-bold' },
-    { id: 'ซิกเนเจอร์', label: 'เมนู Signature', icon: 'solar:medal-star-bold' },
-]
+const CANAL_DESCRIPTIONS: Record<string, { desc: string; chips: { icon: string; text: string }[]; identity: { icon: string; title: string; detail: string }[]; flavors: { icon: string; text: string }[] }> = {
+    'บางเขน': {
+        desc: 'ในอดีตพื้นที่บริเวณนี้เป็นที่รู้จักในนาม "ทุ่งบางเขน" อู่ข้าวอู่น้ำที่อุดมสมบูรณ์ด้วยท้องนาและหนองน้ำ เสน่ห์ของคลองบางเขนคือการผสมผสานวิถีชีวิตชาวบ้านที่เรียบง่ายเข้ากับความประณีตบรรจงของ "อาหารชาววัง"',
+        chips: [
+            { icon: 'solar:wheat-bold-duotone', text: 'วิถีชาวนา' },
+            { icon: 'solar:tree-bold-duotone', text: 'สวนผลไม้ริมรั้ว' },
+            { icon: 'solar:rowing-bold-duotone', text: 'จุดค้าขายทางน้ำ' },
+            { icon: 'solar:crown-minimalistic-bold-duotone', text: 'อาหารชาววัง' },
+        ],
+        identity: [
+            { icon: 'solar:wheat-bold-duotone', title: 'วิถีชาวนาและหนองน้ำ', detail: 'แหล่งปลาช่อนนา ปลาสลิด และพรรณไม้น้ำอย่างดอกโสนและบัวหลวง' },
+            { icon: 'solar:tree-bold-duotone', title: 'เสน่ห์สวนผลไม้ริมรั้ว', detail: 'การหยิบจับวัตถุดิบใกล้ตัว เช่น มะเฟืองเปรี้ยว หรือกล้วยน้ำว้าท้ายสวน' },
+            { icon: 'solar:rowing-bold-duotone', title: 'จุดเชื่อมต่อการค้าทางน้ำ', detail: 'นำสินค้าต่างถิ่น เช่น ปลาทูจากแม่น้ำเจ้าพระยา ผสมผสานกับผักพื้นบ้าน' },
+        ],
+        flavors: [
+            { icon: 'solar:fish-bold-duotone', text: 'โดดเด่นด้าน "ภูมิปัญญาการถนอมอาหาร" เช่น ปลาสลิดย่างเตาถ่าน' },
+            { icon: 'solar:leaf-bold-duotone', text: 'รสชาติกลมกล่อม ละเมียดละไม สะท้อนความอุดมสมบูรณ์ของระบบนิเวศริมคลอง' },
+        ],
+    },
+    'เปรมประชากร': {
+        desc: 'คลองเปรมประชากรเป็นคลองขุดสายสำคัญในสมัยรัชกาลที่ ๕ ที่ขุดเชื่อมแม่น้ำเจ้าพระยาไปจนถึงอยุธยา พื้นที่นี้มีชีวิตชีวาและเป็นจุดนัดพบของชุมชนหลากหลายชาติพันธุ์ ทั้งไทย ลาว มอญ และจีน',
+        chips: [
+            { icon: 'solar:rowing-bold-duotone', text: 'จุดตัดพหุวัฒนธรรม' },
+            { icon: 'solar:home-angle-bold-duotone', text: 'วิถีชาวแพและป่ากก' },
+            { icon: 'solar:buildings-bold-duotone', text: 'วัดเก่าแก่ศูนย์รวมใจ' },
+        ],
+        identity: [
+            { icon: 'solar:rowing-bold-duotone', title: 'จุดตัดพหุวัฒนธรรม', detail: 'ได้รับอิทธิพลอาหารจากชุมชนมอญ (ข้าวแช่) และชาวจีน (พะโล้ต้มเค็มเตาฟืน)' },
+            { icon: 'solar:home-angle-bold-duotone', title: 'วิถีชาวแพและป่ากก', detail: 'ภูมิปัญญาการนำพืชริมตลิ่งอย่าง "บอน" และ "ผักกูด" มาดัดแปลงเป็นอาหาร' },
+            { icon: 'solar:buildings-bold-duotone', title: 'วัดเก่าแก่ศูนย์รวมใจ', detail: 'วัดวาอารามช่วยรักษาธรรมเนียมและอาหารพื้นถิ่นของแต่ละกลุ่มชาติพันธุ์' },
+        ],
+        flavors: [
+            { icon: 'solar:donut-bold-duotone', text: 'ขนมโบราณ — ขนมหวานและของว่างตามเทศกาลสืบทอดผ่านชุมชนใกล้วัด' },
+            { icon: 'solar:chef-hat-minimalistic-bold-duotone', text: 'แกงพื้นถิ่น — แกงบอนสุพรรณิการ์ แกงเขียวหวานหน่อไม้ไผ่ตง ใช้วัตถุดิบจากริมน้ำ' },
+        ],
+    },
+    'ลาดพร้าว': {
+        desc: 'คลองลาดพร้าวพาดผ่านย่านชุมชนที่เป็นเสมือนพื้นที่รอยต่อระหว่างความเป็นเมืองใหม่กับวิถีชีวิตเก่าริมน้ำ ในอดีตพื้นที่แถบนี้คือ "ทุ่งบางกะปิ" อันกว้างใหญ่ที่อุดมสมบูรณ์ด้วยท้องนาและสวนมะพร้าว',
+        chips: [
+            { icon: 'solar:wheat-bold-duotone', text: 'ตู้กับข้าวริมรั้ว' },
+            { icon: 'solar:rowing-bold-duotone', text: 'เสบียงชาวเรือ' },
+            { icon: 'solar:buildings-bold-duotone', text: 'มรดกความหวาน' },
+        ],
+        identity: [
+            { icon: 'solar:wheat-bold-duotone', title: 'ตู้กับข้าวริมรั้วและท้องทุ่ง', detail: 'วิถีการใช้วัตถุดิบหาง่ายรอบตัว เช่น หอยขมนา ปลากด และพืชผักริมตลิ่ง' },
+            { icon: 'solar:rowing-bold-duotone', title: 'เสบียงชาวเรือ', detail: 'ภูมิปัญญาอย่าง "น้ำพริกลงเรือ" เพื่อเป็นเสบียงเดินทาง' },
+            { icon: 'solar:buildings-bold-duotone', title: 'มรดกความหวาน', detail: 'ชุมชนริมคลองยังคงรักษาธรรมเนียมทำขนมหวานโบราณแบบดั้งเดิม' },
+        ],
+        flavors: [
+            { icon: 'solar:chef-hat-bold-duotone', text: 'ข้าวแกงและแกงพื้นถิ่น — รสชาติจัดจ้าน เข้มข้นถึงเครื่องเทศ' },
+            { icon: 'solar:pallete-2-bold-duotone', text: 'ของหวานโบราณ — ความหอมหวานจากน้ำตาลมะพร้าวและกะทิสด' },
+        ],
+    },
+}
 
-// Category options (Dropdown)
-const CATEGORY_OPTIONS = [
-    { id: 'all', label: 'ทุกประเภทอาหาร' },
-    { id: 'อาหารคาว', label: 'อาหารคาว' },
-    { id: 'อาหารหวาน', label: 'อาหารหวาน' },
-    { id: 'อาหารว่าง/เครื่องดื่ม', label: 'อาหารว่าง/เครื่องดื่ม' },
-]
-
-const ITEMS_PER_PAGE = 12
+const ITEMS_PER_CANAL = 6
 
 export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
     const [menus, setMenus] = useState<MenuItem[]>([])
     const [loading, setLoading] = useState(true)
-    const [activeCanal, setActiveCanal] = useState('all')
-    const [activeFeatured, setActiveFeatured] = useState('all')
-    const [activeCategory, setActiveCategory] = useState('all')
-    const [isCatOpen, setIsCatOpen] = useState(false)
-    const [currentPage, setCurrentPage] = useState(1)
-    const [search, setSearch] = useState('')
-    const [debouncedSearch, setDebouncedSearch] = useState('')
     const [popupMenu, setPopupMenu] = useState<MenuItem | null>(null)
     const [popupVisible, setPopupVisible] = useState(false)
-    const [showMap, setShowMap] = useState(true)
+    const [heroSlide, setHeroSlide] = useState(0)
+    const [canalFilters, setCanalFilters] = useState<Record<string, string>>({
+        'บางเขน': 'sig', 'เปรมประชากร': 'sig', 'ลาดพร้าว': 'sig'
+    })
+    const [canalShowAll, setCanalShowAll] = useState<Record<string, boolean>>({})
+    const heroRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-    // Fetch data
     useEffect(() => {
         const fetchMenus = async () => {
             try {
                 const res = await fetch('/api/public/menus')
                 const json = await res.json()
-                if (res.ok) {
-                    setMenus(json.data || [])
-                }
-            } catch (err) {
-                console.error('Failed to fetch menus:', err)
-            } finally {
-                setLoading(false)
-            }
+                if (res.ok) setMenus(json.data || [])
+            } catch (err) { console.error('Failed to fetch menus:', err) }
+            finally { setLoading(false) }
         }
         fetchMenus()
     }, [])
 
-    // Debounce search
     useEffect(() => {
-        const timer = setTimeout(() => setDebouncedSearch(search), 500)
-        return () => clearTimeout(timer)
-    }, [search])
+        heroRef.current = setInterval(() => setHeroSlide(s => (s + 1) % 3), 6000)
+        return () => { if (heroRef.current) clearInterval(heroRef.current) }
+    }, [])
 
-    // Reset page on filter change
-    useEffect(() => { setCurrentPage(1) }, [activeCanal, activeFeatured, activeCategory, debouncedSearch])
+    const goSlide = (i: number) => {
+        setHeroSlide(i)
+        if (heroRef.current) clearInterval(heroRef.current)
+        heroRef.current = setInterval(() => setHeroSlide(s => (s + 1) % 3), 6000)
+    }
 
-    // Filtered menus
-    const filtered = useMemo(() => {
-        return menus.filter(m => {
-            const matchCanal = activeCanal === 'all' || m.canal_zone === activeCanal
-            
-            // Match Featured (Top Row)
-            const matchFeatured = activeFeatured === 'all' || m.selection_status.includes(activeFeatured)
-            
-            // Match Category (Dropdown)
-            const matchCategory = activeCategory === 'all' || m.category === activeCategory
+    useEffect(() => {
+        const els = document.querySelectorAll('.reveal')
+        const obs = new IntersectionObserver(entries => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('vis'); obs.unobserve(e.target) } })
+        }, { threshold: 0.15 })
+        els.forEach(el => obs.observe(el))
+        return () => obs.disconnect()
+    }, [loading])
 
-            // Match Search
-            const matchSearch = !debouncedSearch || 
-                m.menu_name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-                m.category.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-                m.canal_zone.toLowerCase().includes(debouncedSearch.toLowerCase())
-
-            return matchCanal && matchFeatured && matchCategory && matchSearch
-        })
-    }, [menus, activeCanal, activeFeatured, activeCategory, debouncedSearch])
-
-    // Pagination
-    const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
-    const paginatedMenus = useMemo(() => {
-        const start = (currentPage - 1) * ITEMS_PER_PAGE
-        return filtered.slice(start, start + ITEMS_PER_PAGE)
-    }, [filtered, currentPage])
-
-    // Stats
     const stats = useMemo(() => {
         const totalMenus = menus.length
         const totalCanals = new Set(menus.map(m => m.canal_zone).filter(c => c !== 'ไม่ระบุ')).size
@@ -157,445 +171,401 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
         return { totalMenus, totalCanals, totalSignature, totalInformants }
     }, [menus])
 
-    // Popup
+    const menusByCanal = useMemo(() => {
+        const grouped: Record<string, MenuItem[]> = {}
+        CANALS.forEach(c => { grouped[c.id] = [] })
+        menus.forEach(m => { if (grouped[m.canal_zone]) grouped[m.canal_zone].push(m) })
+        Object.keys(grouped).forEach(key => {
+            grouped[key].sort((a, b) => {
+                const aSig = a.selection_status.includes('ซิกเนเจอร์') ? 2 : a.selection_status.includes('36') ? 1 : 0
+                const bSig = b.selection_status.includes('ซิกเนเจอร์') ? 2 : b.selection_status.includes('36') ? 1 : 0
+                return bSig - aSig
+            })
+        })
+        return grouped
+    }, [menus])
+
+    const getFilteredMenus = useCallback((canalId: string) => {
+        const items = menusByCanal[canalId] || []
+        const filter = canalFilters[canalId] || 'sig'
+        if (filter === 'sig') return items.filter(m => m.selection_status.includes('ซิกเนเจอร์'))
+        if (filter === 'rec') return items.filter(m => m.selection_status.includes('36'))
+        return items
+    }, [menusByCanal, canalFilters])
+
     const openPopup = (menu: MenuItem) => {
         setPopupMenu(menu)
         setTimeout(() => setPopupVisible(true), 10)
         document.body.style.overflow = 'hidden'
     }
-
     const closePopup = () => {
         setPopupVisible(false)
-        setTimeout(() => {
-            setPopupMenu(null)
-            document.body.style.overflow = ''
-        }, 300)
+        setTimeout(() => { setPopupMenu(null); document.body.style.overflow = '' }, 300)
     }
 
-    const handlePageChange = (page: number) => {
-        if (page < 1 || page > totalPages) return
-        setCurrentPage(page)
-        document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-
-    const canalLabel = activeCanal === 'all' ? 'ทั้งหมด' : CANAL_FILTERS.find(c => c.id === activeCanal)?.label || activeCanal
-
-    // Pagination page numbers with ellipsis
-    const getPageNumbers = (): (number | string)[] => {
-        const pages: (number | string)[] = []
-        if (totalPages <= 7) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i)
-        } else {
-            pages.push(1)
-            if (currentPage > 4) pages.push('...')
-            const start = Math.max(2, currentPage - 1)
-            const end = Math.min(totalPages - 1, currentPage + 1)
-            if (currentPage <= 4) {
-                for (let i = 2; i <= 5; i++) pages.push(i)
-            } else if (currentPage >= totalPages - 3) {
-                for (let i = totalPages - 4; i <= totalPages - 1; i++) {
-                    if (!pages.includes(i)) pages.push(i)
-                }
-            } else {
-                for (let i = start; i <= end; i++) {
-                    if (!pages.includes(i)) pages.push(i)
-                }
-            }
-            if (currentPage < totalPages - 3) pages.push('...')
-            if (!pages.includes(totalPages)) pages.push(totalPages)
-        }
-        return pages
-    }
+    const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    const setFilter = (canal: string, f: string) => setCanalFilters(prev => ({ ...prev, [canal]: f }))
 
     return (
-        <div className="bg-white text-slate-900 antialiased overflow-x-hidden min-h-screen font-sans">
-            {/* ─── Navbar ─── */}
-            <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-4 sm:gap-8">
-                        <Link href="/" className="flex items-center gap-3 group">
-                            <div className="bg-slate-900 text-white p-1.5 rounded-lg transition-transform group-hover:scale-105">
-                                <Icon icon="solar:command-bold" width="20" />
-                            </div>
-                            <div className="leading-tight">
-                                <h1 className="font-black text-lg tracking-tight text-slate-900 leading-none">SOFT POWER</h1>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">Food Data System</p>
-                            </div>
-                        </Link>
-                        <div className="hidden md:flex items-center gap-6">
-                            {/* Navigation removed as requested */}
-                        </div>
+        <div className="landing-root">
+            {/* ─── NAVBAR ─── */}
+            <nav className="lp-navbar" id="navbar">
+                <div className="pstrip">
+                    <span>โครงการวิจัยและพัฒนา · มหาวิทยาลัยราชภัฏจันทรเกษม</span>
+                    <div className="plogos">
+                        <span className="ppill"><Icon icon="solar:square-academic-cap-bold" width={11} style={{ marginRight: 3 }} />CRU</span>
+                        <span className="ppill"><Icon icon="solar:city-bold" width={11} style={{ marginRight: 3 }} />เขตจตุจักร</span>
+                        <span className="ppill"><Icon icon="solar:city-bold" width={11} style={{ marginRight: 3 }} />เขตหลักสี่</span>
+                        <span className="ppill"><Icon icon="solar:mask-happly-bold" width={11} style={{ marginRight: 3 }} />กรมส่งเสริมวัฒนธรรม</span>
+                        <span className="ppill"><Icon icon="solar:buildings-bold" width={11} style={{ marginRight: 3 }} />วัดทางหลวง</span>
                     </div>
-                    <Link
-                        href={isLoggedIn ? '/home' : '/login'}
-                        className="bg-slate-900 text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-slate-800 transition-all flex items-center gap-2"
-                    >
-                        <Icon icon={isLoggedIn ? 'solar:widget-bold' : 'solar:lock-keyhole-linear'} />
-                        {isLoggedIn ? 'แดชบอร์ด' : 'สำหรับเจ้าหน้าที่'}
+                </div>
+                <div className="nav-main">
+                    <Link href="/" className="nav-logo">
+                        <div className="nav-logo-icon"><Icon icon="solar:water-sun-bold" width={18} /></div>
+                        <div><div className="nl-th">อาหารไทยริมคลอง</div><div className="nl-en">Thai Canal Heritage</div></div>
                     </Link>
+                    <ul className="nav-links">
+                        <li><a href="#story" onClick={e => { e.preventDefault(); scrollTo('story') }}>หน้าหลัก</a></li>
+                        <li><a href="#mapSec" onClick={e => { e.preventDefault(); scrollTo('mapSec') }}>แผนที่</a></li>
+                        <li><a href="#canalSec" onClick={e => { e.preventDefault(); scrollTo('canalSec') }}>สามคลอง</a></li>
+                        <li><a href="#partners" onClick={e => { e.preventDefault(); scrollTo('partners') }}>พันธมิตร</a></li>
+                        <li>
+                            <Link href={isLoggedIn ? '/home' : '/login'} className="nav-cta">
+                                <Icon icon={isLoggedIn ? 'solar:chart-square-bold' : 'solar:chef-hat-minimalistic-bold'} width={14} style={{ marginRight: 4 }} />
+                                {isLoggedIn ? 'แดชบอร์ด' : 'สำหรับเจ้าหน้าที่'}
+                            </Link>
+                        </li>
+                    </ul>
                 </div>
             </nav>
 
-            {/* ─── Hero Section ─── */}
-            <section className="pt-16 sm:pt-20 pb-12 sm:pb-16 px-4 sm:px-6">
-                <div className="max-w-7xl mx-auto text-center">
-                    <span className="inline-block py-1.5 px-4 rounded-full bg-slate-50 text-slate-500 text-sm font-medium mb-6 border border-slate-100">
-                        วิจัยและสืบสานวัฒนธรรมท้องถิ่น
-                    </span>
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-slate-900 mb-6 max-w-4xl mx-auto leading-tight">
-                        สืบสานตำรับอาหารจากวิถีสายน้ำ <br className="hidden sm:block" />
-                        มรดกภูมิปัญญา
-                    </h1>
-                    <p className="text-base sm:text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed mb-10">
-                        สำรวจระบบสารสนเทศ (GIS) แหล่งข้อมูลอาหารดั้งเดิม พร้อมจุดพิกัดชุมชนริมคลอง
+            {/* ─── HERO ─── */}
+            <section className="lp-hero">
+                <div className={`csl cs1 ${heroSlide === 0 ? 'act' : ''}`} />
+                <div className={`csl cs2 ${heroSlide === 1 ? 'act' : ''}`} />
+                <div className={`csl cs3 ${heroSlide === 2 ? 'act' : ''}`} />
+                <div className="hdeco" />
+                {/* SVG wave animations */}
+                <div className="hero-waves">
+                    <svg className="hw hw1" viewBox="0 0 2880 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+                        <path d="M0,60 C240,120 480,0 720,60 C960,120 1200,0 1440,60 C1680,120 1920,0 2160,60 C2400,120 2640,0 2880,60 L2880,120 L0,120 Z" fill="rgba(93,184,216,.06)" />
+                    </svg>
+                    <svg className="hw hw2" viewBox="0 0 2880 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+                        <path d="M0,80 C360,20 720,100 1080,40 C1440,100 1800,20 2160,80 C2520,20 2700,100 2880,60 L2880,120 L0,120 Z" fill="rgba(200,150,60,.04)" />
+                    </svg>
+                    <svg className="hw hw3" viewBox="0 0 2880 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+                        <path d="M0,40 C180,100 540,10 720,70 C900,10 1260,100 1440,40 C1620,100 1980,10 2160,70 C2340,10 2700,100 2880,40 L2880,120 L0,120 Z" fill="rgba(93,184,216,.045)" />
+                    </svg>
+                </div>
+                <div className="hero-cnt">
+                    <div className="heb"><Icon icon="solar:star-shine-bold" width={12} style={{ marginRight: 6 }} />Soft Power · มรดกอาหารแห่งสายน้ำ<Icon icon="solar:star-shine-bold" width={12} style={{ marginLeft: 6 }} /></div>
+                    <h1 className="ht">อาหารไทยริมคลอง<span className="gline">รสชาติที่หยั่งรากในสายน้ำ</span></h1>
+                    <p className="hs">
+                        บันทึก อนุรักษ์ และยกระดับอาหารพื้นถิ่นริมคลองสามสายในกรุงเทพฯ<br />
+                        รวม <strong style={{ color: 'var(--gl)' }}>{loading ? '...' : `${stats.totalMenus} รายการ`}</strong> จาก {loading ? '...' : stats.totalInformants} ครัวเรือน
                     </p>
-
-                    {/* Stats Row */}
-                    <div id="stats" className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-                        {[
-                            { label: 'เมนูอาหาร', value: stats.totalMenus, icon: 'solar:chef-hat-bold-duotone', color: 'text-orange-500' },
-                            { label: 'พื้นที่คลอง', value: stats.totalCanals, icon: 'solar:map-point-wave-bold-duotone', color: 'text-blue-500' },
-                            { label: 'เมนู Signature', value: stats.totalSignature, icon: 'solar:star-bold-duotone', color: 'text-amber-500' },
-                            { label: 'ผู้ให้ข้อมูล', value: stats.totalInformants, icon: 'solar:users-group-rounded-bold-duotone', color: 'text-emerald-500' },
-                        ].map((stat) => (
-                            <div key={stat.label} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                                <Icon icon={stat.icon} className={`text-3xl sm:text-4xl ${stat.color} mb-2`} />
-                                <div className="text-3xl sm:text-4xl font-bold text-slate-900">
-                                    {loading ? <span className="inline-block w-10 h-8 bg-slate-100 rounded animate-pulse" /> : stat.value}
+                    <div className="hero-ctags">
+                        {CANALS.map(c => {
+                            const count = menusByCanal[c.id]?.length || 0
+                            return (
+                                <div key={c.id} className="cpill" onClick={() => scrollTo(`canal-${c.id}`)}>
+                                    <div className="dot" />{c.name} <em style={{ color: 'var(--gl)', fontStyle: 'normal', marginLeft: 4 }}>{loading ? '…' : count}</em>
                                 </div>
-                                <div className="text-xs sm:text-sm text-slate-400 font-medium mt-1">{stat.label}</div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
+                    <div className="hbtns">
+                        <button className="btn-hp" onClick={() => scrollTo('mapSec')}><Icon icon="solar:map-bold" width={16} style={{ marginRight: 6 }} />ดูแผนที่จริง</button>
+                        <button className="btn-ho" onClick={() => scrollTo('canalSec')}><Icon icon="solar:chef-hat-bold" width={16} style={{ marginRight: 6 }} />สำรวจรายคลอง</button>
+                    </div>
+                </div>
+                <div className="c-dots">
+                    {[0, 1, 2].map(i => <button key={i} className={`dot-i ${heroSlide === i ? 'act' : ''}`} onClick={() => goSlide(i)} />)}
+                </div>
+                <div className="hero-wave">
+                    <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+                        <path d="M0,30 C240,60 480,0 720,30 C960,60 1200,0 1440,30 L1440,60 L0,60 Z" fill="#f9f3e8" />
+                    </svg>
                 </div>
             </section>
 
-            {/* ─── Map Section ─── */}
-            <section className="px-4 sm:px-6 py-6 bg-white border-b border-slate-100">
-                <div className="max-w-7xl mx-auto">
-                    {/* Header + toggle */}
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                                <Icon icon="solar:map-point-wave-bold-duotone" className="text-blue-500 text-2xl" />
-                                แผนที่ริมคลอง
-                            </h2>
-                            <p className="text-sm text-slate-500 mt-0.5">ดูตำแหน่งเมนูอาหารบนแผนที่พื้นที่คลองบางเขน-ลาดพร้าว-คลองเปรมประชากร</p>
-                        </div>
-                        <button
-                            onClick={() => setShowMap(v => !v)}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm ${showMap
-                                ? 'bg-slate-900 text-white'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                            }`}
-                        >
-                            <Icon icon={showMap ? 'solar:map-arrow-up-bold' : 'solar:map-bold'} width={18} />
-                            {showMap ? 'ซ่อนแผนที่' : 'แสดงแผนที่'}
-                        </button>
-                    </div>
-
-                    {/* Map */}
-                    {showMap && (
-                        <MapView
-                            menus={menus}
-                            activeCanal={activeCanal}
-                            onMenuClick={(menuId) => {
-                                const m = menus.find(x => x.menu_id === menuId)
-                                if (m) {
-                                    setPopupMenu(m)
-                                    setPopupVisible(true)
-                                }
-                            }}
-                        />
-                    )}
-                </div>
-            </section>
-
-            {/* ─── Canal Filters ─── */}
-            <section className="py-4 px-4 sm:px-6 bg-slate-50 border-y border-slate-100">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest whitespace-nowrap mr-2">
-                            ตัวกรองคลอง
-                        </span>
-                        {CANAL_FILTERS.map(canal => (
-                            <button
-                                key={canal.id}
-                                onClick={() => setActiveCanal(canal.id)}
-                                className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${activeCanal === canal.id
-                                    ? 'bg-slate-900 text-white shadow-md'
-                                    : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                                    }`}
-                            >
-                                <Icon icon={canal.icon} width={16} />
-                                {canal.label}
-                                {activeCanal === canal.id && <Icon icon="solar:check-read-linear" width={14} />}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* ─── Menu Section ─── */}
-            <section id="menu" className="py-12 sm:py-20 px-4 sm:px-6">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 sm:gap-8 mb-8 sm:mb-12">
-                        <div className="max-w-xl">
-                            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3 sm:mb-4 text-slate-900">
-                                รายการอาหาร ({canalLabel})
-                            </h2>
-                            <p className="text-base text-slate-500 leading-relaxed">
-                                สำรวจเมนูอาหารหลากหลายที่ถูกจัดเก็บ เลือกฟิลเตอร์ย่อยเพื่อเข้าถึงตำรับเฉพาะ
-                                {!loading && <span className="ml-2 text-slate-400">({filtered.length} รายการ)</span>}
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col gap-4 w-full lg:w-auto md:items-end">
-                            {/* Row 1: Featured Buttons */}
-                            <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar md:justify-end w-full">
-                                {FEATURED_FILTERS.map(f => (
-                                    <button
-                                        key={f.id}
-                                        onClick={() => setActiveFeatured(f.id)}
-                                        className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold shadow-sm transition-all flex items-center gap-2 ${activeFeatured === f.id
-                                            ? (f.id === 'ซิกเนเจอร์'
-                                                ? 'bg-orange-500 text-white shadow-orange-100'
-                                                : 'bg-slate-900 text-white')
-                                            : (f.id === 'ซิกเนเจอร์'
-                                                ? 'bg-orange-50 border border-orange-200 text-orange-600 hover:bg-orange-100'
-                                                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50')
-                                            }`}
-                                    >
-                                        <Icon icon={f.icon} width={16} />
-                                        {f.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Row 2: Dropdown + Search */}
-                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:justify-end">
-                                {/* Category Dropdown */}
-                                <div className="relative w-full sm:w-64">
-                                    <button
-                                        onClick={() => setIsCatOpen(!isCatOpen)}
-                                        className="w-full flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:border-slate-300 transition-all shadow-sm group"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <Icon icon="solar:menu-dots-square-bold-duotone" className="text-blue-500" />
-                                            <span>{CATEGORY_OPTIONS.find(c => c.id === activeCategory)?.label}</span>
-                                        </div>
-                                        <Icon icon="solar:alt-arrow-down-linear" className={`transition-transform duration-300 ${isCatOpen ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    
-                                    {isCatOpen && (
-                                        <>
-                                            <div className="fixed inset-0 z-10" onClick={() => setIsCatOpen(false)} />
-                                            <div className="absolute top-full mt-2 w-full bg-white border border-slate-100 rounded-2xl shadow-2xl py-2 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
-                                                {CATEGORY_OPTIONS.map(opt => (
-                                                    <button
-                                                        key={opt.id}
-                                                        onClick={() => {
-                                                            setActiveCategory(opt.id)
-                                                            setIsCatOpen(false)
-                                                        }}
-                                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold transition-colors hover:bg-blue-50 ${activeCategory === opt.id ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'}`}
-                                                    >
-                                                        {opt.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Search Bar */}
-                                <div className="relative flex-1 w-full group">
-                                    <Icon 
-                                        icon="solar:magnifer-linear" 
-                                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-blue-500 transition-colors" 
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="ค้นหาชื่อเมนู, หมวดหมู่..."
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        className="w-full pl-11 pr-11 py-3 bg-white border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 rounded-2xl outline-none text-sm font-bold transition-all text-slate-700 placeholder-slate-400 shadow-sm"
-                                    />
-                                    {search && (
-                                        <button 
-                                            onClick={() => setSearch('')}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
-                                        >
-                                            <Icon icon="solar:close-circle-bold" />
-                                        </button>
-                                    )}
-                                </div>
+            {/* ─── STORY ─── */}
+            <section className="story-sec" id="story">
+                <div className="ctr">
+                    <div className="story-grid">
+                        <div className="reveal">
+                            <div className="sec-label">เรื่องราวของพื้นที่</div>
+                            <div className="bquote">เสน่ห์แห่งสายน้ำ<br /><em>รสชาติที่ยังมีลมหายใจ</em></div>
+                            <p className="sbody">วิถีชีวิตริมคลองไม่ได้มีเพียงเรื่องราวของสายน้ำ แต่ยังซ่อน &quot;รสชาติ&quot; และตำรับอาหารพื้นถิ่นที่สืบทอดและหล่อเลี้ยงผู้คนในชุมชนมาอย่างยาวนาน</p>
+                            <p className="sbody">ในพื้นที่เขตจตุจักร ไม่ว่าจะเป็น <strong>ชุมชนเคหะสถานเจริญชัย</strong> <strong>ชุมชนวัดบางบัว</strong> <strong>ชุมชนประชาร่วมใจ 2</strong> และ <strong>ชุมชนหลัง วค.จันทรเกษม</strong> ล้วนมีเสน่ห์ของอาหารพื้นถิ่นที่ซ่อนตัวอยู่</p>
+                            <p className="sbody">เพื่อไม่ให้ร่องรอยความอร่อยเหล่านี้เลือนหายไป โครงการนี้จึงอาศัยความร่วมมือของคณาจารย์ เจ้าหน้าที่ และนักศึกษา ในการลงพื้นที่สืบค้นข้อมูลอย่างใกล้ชิด เพื่อบันทึกและยกระดับรสชาติอาหารพื้นถิ่นเป็น <strong>Soft Power</strong> ที่พร้อมส่งต่อเรื่องราวและเสน่ห์ของวิถีริมคลองต่อไป</p>
+                            <div className="s-stats reveal">
+                                <div><div className="ss-num">{loading ? '…' : stats.totalMenus}</div><div className="ss-unit">รายการ</div><div className="ss-lbl">อาหารที่บันทึก</div></div>
+                                <div><div className="ss-num">{loading ? '…' : stats.totalInformants}</div><div className="ss-unit">ครัวเรือน</div><div className="ss-lbl">ผู้ให้ข้อมูล</div></div>
+                                <div><div className="ss-num">{loading ? '…' : stats.totalSignature}</div><div className="ss-unit">Signature</div><div className="ss-lbl">Soft Power ระดับสูง</div></div>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Menu Grid */}
-                    {loading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                            {[...Array(8)].map((_, i) => (
-                                <div key={i} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-                                    <div className="h-48 bg-slate-100 animate-pulse" />
-                                    <div className="p-5 space-y-3">
-                                        <div className="h-4 bg-slate-100 rounded w-3/4 animate-pulse" />
-                                        <div className="h-3 bg-slate-100 rounded w-1/2 animate-pulse" />
-                                    </div>
+                        <div className="reveal">
+                            <div className="cdiag">
+                                <div className="cdiag-title"><Icon icon="solar:compass-big-bold" width={14} style={{ marginRight: 5 }} />ผังสายน้ำ — กรุงเทพฯ ฝั่งเหนือ</div>
+                                <div className="cdiag-river">
+                                    <Icon icon="solar:waterdrops-bold-duotone" width={22} style={{ color: 'var(--cl)' }} />
+                                    <div><div className="rn">แม่น้ำเจ้าพระยา</div><div className="rd">สายน้ำหลัก · เชื่อม 3 คลองสาขา</div></div>
                                 </div>
-                            ))}
-                        </div>
-                    ) : filtered.length === 0 ? (
-                        <div className="text-center py-16">
-                            <Icon icon="solar:ghost-smile-linear" className="text-6xl text-slate-200 mb-4 mx-auto" />
-                            <p className="text-slate-500">ไม่พบเมนูในหมวดหมู่และคลองที่เลือก</p>
-                            <button
-                                onClick={() => { setActiveCanal('all'); setActiveCategory('all') }}
-                                className="mt-4 text-blue-500 text-sm font-medium hover:underline"
-                            >
-                                คลิกที่นี่เพื่อล้างตัวกรอง
-                            </button>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                                {paginatedMenus.map(menu => {
-                                    const isSignature = menu.selection_status.includes('ซิกเนเจอร์')
-                                    const badgeText = isSignature ? 'Signature' : (
-                                        menu.selection_status.includes('36') ? '36 เมนู' :
-                                            menu.selection_status.includes('93') ? '93 เมนู' :
-                                                menu.selection_status.includes('108') ? '108 เมนู' : menu.category
-                                    )
-                                    const badgeClass = isSignature
-                                        ? 'bg-orange-500/90 text-white'
-                                        : 'bg-white/90 text-slate-800'
-
+                                <div className="cdiag-arr"><Icon icon="solar:alt-arrow-down-bold" width={16} /></div>
+                                {CANALS.map(c => {
+                                    const items = menusByCanal[c.id] || []
+                                    const sigCount = items.filter(m => m.selection_status.includes('ซิกเนเจอร์')).length
+                                    const recCount = items.filter(m => m.selection_status.includes('36')).length
                                     return (
-                                        <div
-                                            key={menu.menu_id}
-                                            onClick={() => openPopup(menu)}
-                                            className="group bg-white rounded-2xl border border-slate-100 flex flex-col overflow-hidden hover:border-slate-300 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1"
-                                        >
-                                            <div className="h-48 bg-slate-100 relative overflow-hidden">
-                                                {menu.thumbnail ? (
-                                                    <img
-                                                        src={menu.thumbnail}
-                                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                        alt={menu.menu_name}
-                                                        loading="lazy"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">
-                                                        <Icon icon="solar:gallery-wide-linear" className="text-4xl" />
-                                                    </div>
-                                                )}
-                                                <div className="absolute top-3 left-3 flex gap-2">
-                                                    <span className={`px-2.5 py-1 ${badgeClass} backdrop-blur text-[10px] font-bold uppercase tracking-wider rounded-md shadow-sm`}>
-                                                        {badgeText}
-                                                    </span>
-                                                </div>
-                                                {isSignature && (menu.video_url || menu.promo_video_url) && (
-                                                    <div className="absolute top-3 right-3">
-                                                        <span className="px-2 py-1 bg-black/60 backdrop-blur text-white text-[10px] font-bold rounded-md flex items-center gap-1">
-                                                            <Icon icon="solar:play-bold" width={12} /> วิดีโอ
-                                                        </span>
-                                                    </div>
-                                                )}
+                                        <div key={c.id} className="cdi" onClick={() => scrollTo(`canal-${c.id}`)}>
+                                            <div className="cdi-bar" style={{ background: c.color }} />
+                                            <div>
+                                                <div className="cdi-cn">{c.name}</div>
+                                                <div className="cdi-cc">{items.length} รายการ · Signature {sigCount} · แนะนำ {recCount}</div>
                                             </div>
-                                            <div className="p-5 flex-1 flex flex-col">
-                                                <div className="flex items-start justify-between mb-2 gap-2">
-                                                    <h4 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">
-                                                        {menu.menu_name}
-                                                    </h4>
-                                                    <span className="text-xs bg-slate-100 font-semibold px-2 py-0.5 rounded text-slate-500 shrink-0">
-                                                        {menu.category}
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed mb-4 flex-1">
-                                                    {menu.story || menu.ingredients.filter(i => i.is_main).map(i => i.name).join(', ') || 'ตำรับอาหารดั้งเดิมจากชุมชนริมคลอง'}
-                                                </p>
-                                                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                                                    <div className="flex items-center gap-1.5 text-slate-400">
-                                                        <Icon icon="solar:map-point-wave-bold" className="text-blue-400" />
-                                                        <span className="text-xs font-semibold">คลอง{menu.canal_zone}</span>
-                                                    </div>
-                                                    <span className="text-sm font-semibold text-blue-500 group-hover:translate-x-1 transition-transform flex items-center">
-                                                        ดูรายละเอียด <Icon icon="solar:alt-arrow-right-linear" className="ml-1" />
-                                                    </span>
-                                                </div>
-                                            </div>
+                                            <div className="cdi-arr"><Icon icon="solar:alt-arrow-right-linear" width={13} /></div>
                                         </div>
                                     )
                                 })}
                             </div>
-
-                            {/* ─── Pagination ─── */}
-                            {totalPages > 1 && (
-                                <div className="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-                                    <p className="text-sm font-semibold text-slate-400">
-                                        แสดงผล หน้า {currentPage} จาก {totalPages} ({filtered.length} รายการ)
-                                    </p>
-                                    <div className="flex items-center gap-1.5">
-                                        <button
-                                            disabled={currentPage === 1}
-                                            onClick={() => handlePageChange(currentPage - 1)}
-                                            className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all disabled:opacity-40"
-                                            aria-label="หน้าก่อนหน้า"
-                                        >
-                                            <Icon icon="solar:alt-arrow-left-linear" />
-                                        </button>
-                                        {getPageNumbers().map((page, index) => {
-                                            if (page === '...') {
-                                                return (
-                                                    <span key={`ellipsis-${index}`} className="w-9 h-9 flex items-center justify-center text-slate-400 font-bold">
-                                                        ...
-                                                    </span>
-                                                )
-                                            }
-                                            const pageNum = page as number
-                                            const isActive = currentPage === pageNum
-                                            return (
-                                                <button
-                                                    key={pageNum}
-                                                    onClick={() => handlePageChange(pageNum)}
-                                                    className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${isActive
-                                                        ? 'bg-slate-900 text-white shadow-md'
-                                                        : 'border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600'
-                                                        }`}
-                                                >
-                                                    {pageNum}
-                                                </button>
-                                            )
-                                        })}
-                                        <button
-                                            disabled={currentPage === totalPages}
-                                            onClick={() => handlePageChange(currentPage + 1)}
-                                            className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all disabled:opacity-40"
-                                            aria-label="หน้าถัดไป"
-                                        >
-                                            <Icon icon="solar:alt-arrow-right-linear" />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    )}
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            {/* ─── Footer ─── */}
-            <footer className="bg-slate-50 border-t border-slate-100 py-8 px-4 sm:px-6">
-                <div className="max-w-7xl mx-auto text-center">
-                    <p className="text-base text-slate-400">© 2026 Canal Cuisine — โครงการวิจัยวัฒนธรรมอาหารริมคลองบางเขน-ลาดพร้าว-คลองเปรมประชากร</p>
+            {/* ─── MAP ─── */}
+            <section className="map-sec" id="mapSec">
+                <div className="ctr">
+                    <div className="map-hdr reveal">
+                        <div className="sec-label">พิกัดจริงจากการสำรวจ</div>
+                        <h2 className="sh">แผนที่จุดอาหารริมคลอง</h2>
+                        <p className="sub">แผนที่แสดงตำแหน่งอาหารริมคลอง จากการลงสำรวจพื้นที่จริงทั้ง 3 คลอง</p>
+                    </div>
+                    <div className="reveal">
+                        <MapView
+                            menus={menus}
+                            activeCanal="all"
+                            onMenuClick={(menuId) => {
+                                const m = menus.find(x => x.menu_id === menuId)
+                                if (m) openPopup(m)
+                            }}
+                        />
+                    </div>
+                </div>
+            </section>
+
+            {/* ─── CANAL SECTIONS ─── */}
+            <div id="canalSec">
+                {CANALS.map((canal, idx) => {
+                    const canalData = CANAL_DESCRIPTIONS[canal.id]
+                    const filteredItems = getFilteredMenus(canal.id)
+                    const currentFilter = canalFilters[canal.id] || 'sig'
+                    const showAll = canalShowAll[canal.id] || false
+                    const displayItems = showAll ? filteredItems : filteredItems.slice(0, ITEMS_PER_CANAL)
+                    const allItems = menusByCanal[canal.id] || []
+
+                    return (
+                        <div key={canal.id}>
+                            {idx > 0 && (
+                                <div className="svg-divider" style={{ background: idx === 1 ? 'var(--cd)' : 'var(--ow)' }}>
+                                    <svg viewBox="0 0 1440 50" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+                                        <path d="M0,25 C360,50 720,0 1080,25 C1260,37 1380,12 1440,25 L1440,50 L0,50 Z"
+                                            fill={idx === 1 ? 'var(--ow)' : '#f4ece0'} />
+                                    </svg>
+                                </div>
+                            )}
+
+                            <div className={`cblock ${canal.theme}`} id={`canal-${canal.id}`}>
+                                <div className="ctr">
+                                    <div className={`canal-top reveal ${canal.reversed ? 'rev' : ''}`}>
+                                        <div>
+                                            <span className="cnum">{canal.num}</span>
+                                            <div className="ctag">{canal.subtitle}</div>
+                                            <h3>{canal.name}</h3>
+                                            <div className="gold-div"><div className="d" /></div>
+                                            <p className="cdesc">{canalData?.desc}</p>
+                                            <div className="fchips">
+                                                {canalData?.chips.map((ch, i) => (
+                                                    <div key={i} className="fchip">
+                                                        <Icon icon={ch.icon} width={13} style={{ marginRight: 4, opacity: .7 }} />{ch.text}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="cphoto">
+                                            <div className={canal.bgClass} style={{ height: '100%' }}>
+                                                <div className="cp-inner">
+                                                    <Icon icon={canal.icon} width={60} style={{ opacity: .12, animation: `fl ${4 + idx * 0.5}s ease-in-out infinite ${idx * 0.5}s` }} />
+                                                </div>
+                                            </div>
+                                            <div className="cplabel">
+                                                <div className="cptag">{canal.name}</div>
+                                                <div className="cpcount">{allItems.length}<span className="cpunit">รายการอาหาร</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Food list */}
+                                    <div className="food-section reveal">
+                                        <div className="filter-row">
+                                            <span className="filter-label">เรียงลำดับ:</span>
+                                            <button className={`ff-btn ff-btn-sig ${currentFilter === 'sig' ? 'on' : ''}`} onClick={() => { setFilter(canal.id, 'sig'); setCanalShowAll(p => ({ ...p, [canal.id]: false })) }}>
+                                                <Icon icon="solar:star-bold" width={12} style={{ marginRight: 4 }} />Signature
+                                            </button>
+                                            <button className={`ff-btn ff-btn-rec ${currentFilter === 'rec' ? 'on' : ''}`} onClick={() => { setFilter(canal.id, 'rec'); setCanalShowAll(p => ({ ...p, [canal.id]: false })) }}>
+                                                <Icon icon="solar:star-shine-bold" width={12} style={{ marginRight: 4 }} />แนะนำ
+                                            </button>
+                                            <button className={`ff-btn ff-btn-all ${currentFilter === 'all' ? 'on' : ''}`} onClick={() => { setFilter(canal.id, 'all'); setCanalShowAll(p => ({ ...p, [canal.id]: false })) }}>ทั้งหมด</button>
+                                            <span className="filter-count">{filteredItems.length} รายการ</span>
+                                        </div>
+
+                                        {loading ? (
+                                            <div className="food-grid">
+                                                {[...Array(3)].map((_, i) => (
+                                                    <div key={i} className="fcard-reg" style={{ height: 120, opacity: .3 }}>
+                                                        <div style={{ height: '100%', background: 'rgba(255,255,255,.05)', borderRadius: 8 }} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : filteredItems.length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '48px 20px', borderRadius: 14, border: '1.5px dashed rgba(200,150,60,.25)', background: 'rgba(200,150,60,.04)' }}>
+                                                <Icon icon="solar:magnifer-zoom-in-bold-duotone" style={{ fontSize: 36, color: 'var(--go)', marginBottom: 10, display: 'block', margin: '0 auto 10px' }} />
+                                                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--go)' }}>ไม่พบรายการอาหารในหมวดหมู่นี้</p>
+                                                <p style={{ fontSize: 12, color: canal.theme === 'dk' ? 'rgba(255,255,255,.45)' : 'var(--tl)', marginTop: 4 }}>ลองเลือกหมวดหมู่อื่น หรือดูทั้งหมด</p>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="food-grid">
+                                                    {displayItems.map(menu => {
+                                                        const isSig = menu.selection_status.includes('ซิกเนเจอร์')
+                                                        const isRec = menu.selection_status.includes('36')
+
+                                                        if (isSig) {
+                                                            return (
+                                                                <div key={menu.menu_id} className="fcard-sig" onClick={() => openPopup(menu)}>
+                                                                    <div className="sig-img">
+                                                                        {menu.thumbnail ? (
+                                                                            <img src={menu.thumbnail} alt={menu.menu_name} loading="lazy" />
+                                                                        ) : (
+                                                                            <div className="sig-img-ph"><Icon icon="solar:chef-hat-bold-duotone" width={50} /></div>
+                                                                        )}
+                                                                        <div className="sig-star-badge"><Icon icon="solar:star-bold" width={10} style={{ marginRight: 3 }} />Signature</div>
+                                                                    </div>
+                                                                    <div className="sig-body">
+                                                                        <div className="sig-name">{menu.menu_name}</div>
+                                                                        <div className="sig-com">{menu.address || menu.canal_zone}</div>
+                                                                        <div className="sig-story">{menu.story || 'ตำรับอาหารดั้งเดิมจากชุมชนริมคลอง'}</div>
+                                                                        <div className="sig-meta">
+                                                                            <span className="sig-badge">Soft Power สูง</span>
+                                                                            <span style={{ fontSize: 9, opacity: .5 }}>{menu.category}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        }
+
+                                                        return (
+                                                            <div key={menu.menu_id} className="fcard-reg" onClick={() => openPopup(menu)}>
+                                                                {isRec && <div className="rec-badge"><Icon icon="solar:star-shine-bold" width={10} style={{ marginRight: 3 }} />แนะนำ</div>}
+                                                                <div className="fc-type">{menu.category}</div>
+                                                                <div className="fc-name">{menu.menu_name}</div>
+                                                                <div className="fc-com">{menu.address || menu.canal_zone}</div>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+
+                                                {!showAll && filteredItems.length > ITEMS_PER_CANAL && (
+                                                    <button className="show-more" onClick={() => setCanalShowAll(p => ({ ...p, [canal.id]: true }))}>
+                                                        แสดงเพิ่มเติม ({filteredItems.length - ITEMS_PER_CANAL} รายการ) <Icon icon="solar:alt-arrow-right-linear" width={13} style={{ marginLeft: 4 }} />
+                                                    </button>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+
+            {/* ─── IMPACT ─── */}
+            <section className="impact-sec">
+                <div className="ctr">
+                    <div className="impact-grid reveal">
+                        <div className="imp"><Icon icon="solar:chef-hat-bold-duotone" className="imp-icon" style={{ color: 'var(--gl)' }} /><div className="imp-num">{loading ? '…' : stats.totalMenus}</div><div className="imp-lbl">รายการอาหารที่บันทึก</div></div>
+                        <div className="imp"><Icon icon="solar:waterdrops-bold-duotone" className="imp-icon" style={{ color: 'var(--cl)' }} /><div className="imp-num">{loading ? '…' : stats.totalCanals}</div><div className="imp-lbl">คลองสายน้ำ</div></div>
+                        <div className="imp"><Icon icon="solar:star-bold-duotone" className="imp-icon" style={{ color: 'var(--gl)' }} /><div className="imp-num">{loading ? '…' : stats.totalSignature}</div><div className="imp-lbl">เมนู Soft Power สูง</div></div>
+                        <div className="imp"><Icon icon="solar:users-group-rounded-bold-duotone" className="imp-icon" style={{ color: 'var(--cl)' }} /><div className="imp-num">{loading ? '…' : stats.totalInformants}</div><div className="imp-lbl">ครัวเรือนผู้ให้ข้อมูล</div></div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ─── PARTNERS ─── */}
+            <section className="partners-sec" id="partners">
+                <div className="ctr">
+                    <div className="partners-hdr reveal"><div className="sec-label">พันธมิตรโครงการ</div><h2 className="sh" style={{ color: 'var(--cd)' }}>หน่วยงานที่ร่วมสนับสนุน</h2></div>
+                    <div className="p-grid reveal">
+                        <div className="pcard"><Icon icon="solar:square-academic-cap-bold-duotone" className="pi" style={{ color: 'var(--cm)' }} /><div className="pn">มหาวิทยาลัยราชภัฏจันทรเกษม</div><div className="pt">สถาบันการศึกษา</div></div>
+                        <div className="pcard"><Icon icon="solar:notebook-bookmark-bold-duotone" className="pi" style={{ color: 'var(--go)' }} /><div className="pn">คณะมนุษยศาสตร์และสังคมศาสตร์</div><div className="pt">คณะวิชา</div></div>
+                        <div className="pcard"><Icon icon="solar:city-bold-duotone" className="pi" style={{ color: 'var(--cl)' }} /><div className="pn">สำนักงานเขตจตุจักร</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
+                        <div className="pcard"><Icon icon="solar:city-bold-duotone" className="pi" style={{ color: 'var(--cl)' }} /><div className="pn">สำนักงานเขตหลักสี่</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
+                        <div className="pcard"><Icon icon="solar:buildings-2-bold-duotone" className="pi" style={{ color: 'var(--cm)' }} /><div className="pn">อบจ. นนทบุรี</div><div className="pt">องค์กรปกครองส่วนท้องถิ่น</div></div>
+                        <div className="pcard"><Icon icon="solar:mask-happly-bold-duotone" className="pi" style={{ color: 'var(--go)' }} /><div className="pn">กรมส่งเสริมวัฒนธรรม</div><div className="pt">หน่วยงานรัฐ</div></div>
+                        <div className="pcard" style={{ gridColumn: 'span 2' }}><Icon icon="solar:buildings-bold-duotone" className="pi" style={{ color: 'var(--go)' }} /><div className="pn">วัดทางหลวง</div><div className="pt">วัดและชุมชน · แหล่งอาหารและวัฒนธรรม</div></div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ─── FOOTER ─── */}
+            <footer className="lp-footer">
+                <div className="ctr">
+                    <div className="footer-grid">
+                        <div>
+                            <div className="fb-name"><Icon icon="solar:water-sun-bold" width={16} style={{ marginRight: 6, color: 'var(--gl)' }} />Soft Power อาหารไทยริมคลอง</div>
+                            <div className="fb-sub">Thai Canal Food Heritage</div>
+                            <p className="fb-desc">โครงการ Soft Power ยกระดับอาหารพื้นถิ่น (อาหารริมคลอง) คลองบางเขน คลองเปรมประชากร และคลองลาดพร้าว</p>
+                        </div>
+                        <div className="fc-col">
+                            <h4>สำรวจ</h4>
+                            <ul>
+                                <li><a href="#story" onClick={e => { e.preventDefault(); scrollTo('story') }}>หน้าหลักโครงการ</a></li>
+                                <li><a href="#mapSec" onClick={e => { e.preventDefault(); scrollTo('mapSec') }}>แผนที่พิกัด 372 จุด</a></li>
+                                <li><a href="#canal-บางเขน" onClick={e => { e.preventDefault(); scrollTo('canal-บางเขน') }}>สำรวจคลองบางเขน</a></li>
+                                <li><a href="#canal-เปรมประชากร" onClick={e => { e.preventDefault(); scrollTo('canal-เปรมประชากร') }}>สำรวจคลองเปรมประชากร</a></li>
+                                <li><a href="#canal-ลาดพร้าว" onClick={e => { e.preventDefault(); scrollTo('canal-ลาดพร้าว') }}>สำรวจคลองลาดพร้าว</a></li>
+                            </ul>
+                        </div>
+                        <div className="fc-col">
+                            <h4>ฐานข้อมูล</h4>
+                            <ul>
+                                <li><span className="flink" onClick={() => scrollTo('canalSec')}>เมนูอาหารทั้งหมด</span></li>
+                                <li><span className="flink" onClick={() => { CANALS.forEach(c => setFilter(c.id, 'sig')); scrollTo('canalSec') }}>รายการอาหาร Signature</span></li>
+                                <li><span className="flink" onClick={() => { CANALS.forEach(c => setFilter(c.id, 'rec')); scrollTo('canalSec') }}>รายการอาหารที่แนะนำ</span></li>
+                            </ul>
+                        </div>
+                        <div className="fc-col">
+                            <h4>ติดต่อโครงการ</h4>
+                            <ul>
+                                <li><span style={{ fontSize: 12, color: 'rgba(255,255,255,.5)' }}><Icon icon="solar:square-academic-cap-bold" width={13} style={{ marginRight: 4 }} />คณะมนุษยศาสตร์และสังคมศาสตร์ มหาวิทยาลัยราชภัฏจันทรเกษม (CRU)</span></li>
+                                <li><span style={{ fontSize: 12, color: 'rgba(255,255,255,.4)' }}><Icon icon="solar:map-point-bold" width={13} style={{ marginRight: 4 }} />39/1 ถ.รัชดาภิเษก แขวงจันทรเกษม เขตจตุจักร กรุงเทพฯ 10900</span></li>
+                                <li><span style={{ fontSize: 12, color: 'rgba(255,255,255,.4)' }}><Icon icon="solar:letter-bold" width={13} style={{ marginRight: 4 }} />research.cru@chandra.ac.th</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div className="footer-bot">
+                        <div className="cp">© 2569 โครงการ Soft Power อาหารไทยริมคลอง · มหาวิทยาลัยราชภัฏจันทรเกษม สงวนลิขสิทธิ์</div>
+                    </div>
                 </div>
             </footer>
 
-            <MenuDetailPopup 
-                menu={popupMenu} 
-                visible={popupVisible} 
-                onCloseAction={closePopup} 
+            <MenuDetailPopup
+                menu={popupMenu}
+                visible={popupVisible}
+                onCloseAction={closePopup}
             />
         </div>
     )
