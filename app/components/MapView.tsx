@@ -23,9 +23,9 @@ interface Props {
 
 // All 3 canal colors
 export const CANAL_COLORS: Record<string, string> = {
-    'บางเขน':       '#3b82f6',   // blue
+    'บางเขน': '#3b82f6',   // blue
     'เปรมประชากร': '#f59e0b',   // amber
-    'ลาดพร้าว':    '#10b981',   // green
+    'ลาดพร้าว': '#10b981',   // green
 }
 const DEFAULT_COLOR = '#64748b'
 
@@ -48,13 +48,13 @@ function buildGeoJSON(
                 type: 'Feature',
                 geometry: { type: 'Point', coordinates: [m.gps_long!, m.gps_lat!] },
                 properties: {
-                    menu_id:    m.menu_id,
-                    menu_name:  m.menu_name,
-                    category:   m.category,
+                    menu_id: m.menu_id,
+                    menu_name: m.menu_name,
+                    category: m.category,
                     canal_zone: m.canal_zone,
-                    is_sig:     m.selection_status.includes('ซิกเนเจอร์') ? 1 : 0,
-                    thumbnail:  m.thumbnail ?? '',
-                    color:      CANAL_COLORS[m.canal_zone] ?? DEFAULT_COLOR,
+                    is_sig: m.selection_status.includes('ซิกเนเจอร์') ? 1 : 0,
+                    thumbnail: m.thumbnail ?? '',
+                    color: CANAL_COLORS[m.canal_zone] ?? DEFAULT_COLOR,
                 },
             })),
     }
@@ -62,8 +62,8 @@ function buildGeoJSON(
 
 export default function MapView({ menus, activeCanal = 'all', onMenuClick }: Props) {
     const containerRef = useRef<HTMLDivElement>(null)
-    const mapRef       = useRef<maplibregl.Map | null>(null)
-    const popupRef     = useRef<maplibregl.Popup | null>(null)
+    const mapRef = useRef<maplibregl.Map | null>(null)
+    const popupRef = useRef<maplibregl.Popup | null>(null)
     // Keep a stable ref to the latest data so the one-time map init can access it
     const latestDataRef = useRef<{ menus: MapMenuItem[]; canal: string }>({ menus, canal: activeCanal })
 
@@ -233,9 +233,9 @@ export default function MapView({ menus, activeCanal = 'all', onMenuClick }: Pro
                         <span className="text-sm text-slate-700 font-medium">คลอง{zone}</span>
                     </div>
                 ))}
-                {geoMenus.length < menus.length && (
+                {/* {geoMenus.length < menus.length && (
                     <p className="text-xs text-slate-400 pt-1 border-t border-slate-100">แสดง {geoMenus.length}/{menus.length} รายการ</p>
-                )}
+                )} */}
             </div>
         </div>
     )
