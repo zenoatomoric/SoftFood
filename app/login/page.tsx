@@ -135,7 +135,7 @@ export default function LoginPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="p-3 md:p-4 bg-red-50 text-red-600 text-xs md:text-sm font-bold rounded-xl md:rounded-2xl border border-red-100 text-center animate-bounce">
+            <div className="p-3 md:p-4 bg-red-50 text-red-600 text-xs md:text-sm font-bold rounded-xl md:rounded-2xl border border-red-100 text-center">
               <Icon
                 icon="solar:danger-circle-bold-duotone"
                 className="inline mr-2"

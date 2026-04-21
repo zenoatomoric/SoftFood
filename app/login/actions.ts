@@ -21,9 +21,14 @@ export async function login(formData: FormData) {
   } catch (error) {
     // จัดการ error จาก NextAuth
     if (error instanceof AuthError) {
+      // Return custom error if thrown from authorize()
+      const cause = error.cause as any
+      if (cause?.err?.message) {
+        return { error: cause.err.message }
+      }
       switch (error.type) {
         case 'CredentialsSignin':
-          return { error: 'รหัสผ่านไม่ถูกต้อง' }
+          return { error: 'รหัสเข้าสู่ระบบไม่ถูกต้อง หรือไม่มีสิทธิ์เข้าสู่ระบบ' }
         default:
           return { error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ' }
       }

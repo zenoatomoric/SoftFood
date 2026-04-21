@@ -78,6 +78,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 if (normalizedRole === 'กรรมการ') normalizedRole = 'director'
                 if (normalizedRole === 'ผู้ดูแลระบบ') normalizedRole = 'admin'
 
+                // Block users from logging in
+                if (normalizedRole !== 'director' && normalizedRole !== 'admin') {
+                    console.log('❌ Login blocked: Role not permitted -', normalizedRole)
+                    throw new Error('บัญชีนี้ถูกระงับหรือไม่มีสิทธิ์เข้าสู่ระบบ')
+                }
+
                 return {
                     id: user.sv_code,
                     name: user.collector_name,
