@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Outfit, Prompt } from "next/font/google";
+import { Kanit, Prompt } from "next/font/google";
 import "./globals.css";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
+const kanit = Kanit({
+  variable: "--font-kanit",
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  subsets: ["thai", "latin"],
 });
 
 const prompt = Prompt({
@@ -26,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${outfit.variable} ${prompt.variable} antialiased`}
+        className={`${kanit.variable} ${prompt.variable} antialiased`}
       >
         {children}
       </body>

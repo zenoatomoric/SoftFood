@@ -70,11 +70,11 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
     const otherIngredients = menu.ingredients.filter(i => !i.is_main)
 
     const allPhotos = (() => {
-        const seen = new Set<string>()
-        const list: string[] = []
-        if (menu.thumbnail) { seen.add(menu.thumbnail); list.push(menu.thumbnail) }
-        for (const p of menu.photos) { if (p && !seen.has(p)) { seen.add(p); list.push(p) } }
-        return list
+        const isSelectedStatus = menu.selection_status.includes('ซิกเนเจอร์') || menu.selection_status.includes('36') || menu.selection_status.includes('93') || menu.selection_status.includes('108')
+        if (isSelectedStatus && menu.thumbnail) return [menu.thumbnail]
+        if (menu.category?.includes('คาว')) return ['/menu2.png']
+        if (menu.category?.includes('หวาน')) return ['/menu3.png']
+        return ['/menu1.png']
     })()
 
     const hasMultiplePhotos = allPhotos.length > 1
@@ -123,9 +123,11 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
                                 className="w-full h-full object-cover transition-opacity duration-300"
                             />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1a4a6a, #0d3348)' }}>
-                                <Icon icon="solar:gallery-wide-bold-duotone" style={{ fontSize: 48, color: 'rgba(200,150,60,.15)' }} />
-                            </div>
+                            <img
+                                src={menu.category?.includes('คาว') ? '/menu2.png' : menu.category?.includes('หวาน') ? '/menu3.png' : '/menu1.png'}
+                                alt={menu.menu_name}
+                                className="w-full h-full object-cover transition-opacity duration-300"
+                            />
                         )}
 
                         {/* Gradient overlay */}

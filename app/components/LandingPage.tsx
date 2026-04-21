@@ -210,7 +210,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
         <div className="landing-root">
             {/* ─── NAVBAR ─── */}
             <nav className="lp-navbar" id="navbar">
-                <div className="pstrip">
+                {/* <div className="pstrip">
                     <span>โครงการวิจัยและพัฒนา · มหาวิทยาลัยราชภัฏจันทรเกษม</span>
                     <div className="plogos">
                         <span className="ppill"><Icon icon="solar:square-academic-cap-bold" width={11} style={{ marginRight: 3 }} />CRU</span>
@@ -219,7 +219,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                         <span className="ppill"><Icon icon="solar:mask-happly-bold" width={11} style={{ marginRight: 3 }} />กรมส่งเสริมวัฒนธรรม</span>
                         <span className="ppill"><Icon icon="solar:buildings-bold" width={11} style={{ marginRight: 3 }} />วัดทางหลวง</span>
                     </div>
-                </div>
+                </div> */}
                 <div className="nav-main">
                     <Link href="/" className="nav-logo">
                         <div className="nav-logo-icon"><Icon icon="solar:water-sun-bold" width={18} /></div>
@@ -263,14 +263,13 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                     <h1 className="ht">อาหารไทยริมคลอง<span className="gline">รสชาติที่หยั่งรากในสายน้ำ</span></h1>
                     <p className="hs">
                         บันทึก อนุรักษ์ และยกระดับอาหารพื้นถิ่นริมคลองสามสายในกรุงเทพฯ<br />
-                        รวม <strong style={{ color: 'var(--gl)' }}>{loading ? '...' : `${stats.totalMenus} รายการ`}</strong> จาก {loading ? '...' : stats.totalInformants} ครัวเรือน
+                        {/* รวม <strong style={{ color: 'var(--gl)' }}>{loading ? '...' : `${stats.totalMenus} รายการ`}</strong> จาก {loading ? '...' : stats.totalInformants} ครัวเรือน */}
                     </p>
                     <div className="hero-ctags">
                         {CANALS.map(c => {
-                            const count = menusByCanal[c.id]?.length || 0
                             return (
                                 <div key={c.id} className="cpill" onClick={() => scrollTo(`canal-${c.id}`)}>
-                                    <div className="dot" />{c.name} <em style={{ color: 'var(--gl)', fontStyle: 'normal', marginLeft: 4 }}>{loading ? '…' : count}</em>
+                                    <div className="dot" />{c.name}
                                 </div>
                             )
                         })}
@@ -303,12 +302,12 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                             <div className="s-stats reveal">
                                 <div><div className="ss-num">{loading ? '…' : stats.totalMenus}</div><div className="ss-unit">รายการ</div><div className="ss-lbl">อาหารที่บันทึก</div></div>
                                 <div><div className="ss-num">{loading ? '…' : stats.totalInformants}</div><div className="ss-unit">ครัวเรือน</div><div className="ss-lbl">ผู้ให้ข้อมูล</div></div>
-                                <div><div className="ss-num">{loading ? '…' : stats.totalSignature}</div><div className="ss-unit">Signature</div><div className="ss-lbl">Soft Power ระดับสูง</div></div>
+                                <div><div className="ss-num">{loading ? '…' : stats.totalSignature}</div><div className="ss-unit">รายการ</div><div className="ss-lbl">เมนู Signature</div></div>
                             </div>
                         </div>
                         <div className="reveal">
                             <div className="cdiag">
-                                <div className="cdiag-title"><Icon icon="solar:compass-big-bold" width={14} style={{ marginRight: 5 }} />ผังสายน้ำ — กรุงเทพฯ ฝั่งเหนือ</div>
+                                <div className="cdiag-title"><Icon icon="solar:compass-big-bold" width={14} style={{ marginRight: 5 }} />ผังสายน้ำ  กรุงเทพฯ ฝั่งเหนือ</div>
                                 <div className="cdiag-river">
                                     <Icon icon="solar:waterdrops-bold-duotone" width={22} style={{ color: 'var(--cl)' }} />
                                     <div><div className="rn">แม่น้ำเจ้าพระยา</div><div className="rd">สายน้ำหลัก · เชื่อม 3 คลองสาขา</div></div>
@@ -323,7 +322,6 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                             <div className="cdi-bar" style={{ background: c.color }} />
                                             <div>
                                                 <div className="cdi-cn">{c.name}</div>
-                                                <div className="cdi-cc">{items.length} รายการ · Signature {sigCount} · แนะนำ {recCount}</div>
                                             </div>
                                             <div className="cdi-arr"><Icon icon="solar:alt-arrow-right-linear" width={13} /></div>
                                         </div>
@@ -401,8 +399,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                 </div>
                                             </div>
                                             <div className="cplabel">
-                                                <div className="cptag">{canal.name}</div>
-                                                <div className="cpcount">{allItems.length}<span className="cpunit">รายการอาหาร</span></div>
+                                                <div className="cptag" style={{ marginBottom: 0 }}>{canal.name}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -449,7 +446,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                                         {menu.thumbnail ? (
                                                                             <img src={menu.thumbnail} alt={menu.menu_name} loading="lazy" />
                                                                         ) : (
-                                                                            <div className="sig-img-ph"><Icon icon="solar:chef-hat-bold-duotone" width={50} /></div>
+                                                                            <img src={menu.category?.includes('คาว') ? '/menu2.png' : menu.category?.includes('หวาน') ? '/menu3.png' : '/menu1.png'} alt={menu.menu_name} loading="lazy" />
                                                                         )}
                                                                         <div className="sig-star-badge"><Icon icon="solar:star-bold" width={10} style={{ marginRight: 3 }} />Signature</div>
                                                                     </div>
@@ -458,11 +455,11 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                                         <div className="sig-com">{menu.address || menu.canal_zone}</div>
                                                                         <div className="sig-story">{menu.story || 'ตำรับอาหารดั้งเดิมจากชุมชนริมคลอง'}</div>
                                                                         <div className="sig-meta">
-                                                                            <span className="sig-badge">Soft Power สูง</span>
+                                                                            <span className="sig-badge">Signature</span>
                                                                             <span style={{ fontSize: 9, opacity: .5 }}>{menu.category}</span>
                                                                         </div>
                                                                     </div>
-                                                                </div>
+                                                                </div> 
                                                             )
                                                         }
 
@@ -498,7 +495,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                     <div className="impact-grid reveal">
                         <div className="imp"><Icon icon="solar:chef-hat-bold-duotone" className="imp-icon" style={{ color: 'var(--gl)' }} /><div className="imp-num">{loading ? '…' : stats.totalMenus}</div><div className="imp-lbl">รายการอาหารที่บันทึก</div></div>
                         <div className="imp"><Icon icon="solar:waterdrops-bold-duotone" className="imp-icon" style={{ color: 'var(--cl)' }} /><div className="imp-num">{loading ? '…' : stats.totalCanals}</div><div className="imp-lbl">คลองสายน้ำ</div></div>
-                        <div className="imp"><Icon icon="solar:star-bold-duotone" className="imp-icon" style={{ color: 'var(--gl)' }} /><div className="imp-num">{loading ? '…' : stats.totalSignature}</div><div className="imp-lbl">เมนู Soft Power สูง</div></div>
+                        <div className="imp"><Icon icon="solar:star-bold-duotone" className="imp-icon" style={{ color: 'var(--gl)' }} /><div className="imp-num">{loading ? '…' : stats.totalSignature}</div><div className="imp-lbl">เมนู Signature</div></div>
                         <div className="imp"><Icon icon="solar:users-group-rounded-bold-duotone" className="imp-icon" style={{ color: 'var(--cl)' }} /><div className="imp-num">{loading ? '…' : stats.totalInformants}</div><div className="imp-lbl">ครัวเรือนผู้ให้ข้อมูล</div></div>
                     </div>
                 </div>
@@ -527,7 +524,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                         <div>
                             <div className="fb-name"><Icon icon="solar:water-sun-bold" width={16} style={{ marginRight: 6, color: 'var(--gl)' }} />Soft Power อาหารไทยริมคลอง</div>
                             <div className="fb-sub">Thai Canal Food Heritage</div>
-                            <p className="fb-desc">โครงการ Soft Power ยกระดับอาหารพื้นถิ่น (อาหารริมคลอง) คลองบางเขน คลองเปรมประชากร และคลองลาดพร้าว</p>
+                            <p className="fb-desc">ภายใต้โครงการ Soft Power ยกระดับอาหารพื้นถิ่น (อาหารริมคลอง) คลองบางเขน คลองเปรมประชากร และคลองลาดพร้าว</p>
                         </div>
                         <div className="fc-col">
                             <h4>สำรวจ</h4>

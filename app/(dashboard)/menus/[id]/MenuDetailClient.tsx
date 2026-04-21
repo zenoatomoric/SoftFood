@@ -97,10 +97,10 @@ export default function MenuDetailClient({ menu, userRole, userId, userName, isS
 
     const validateVideo = (file: File): Promise<{ valid: boolean, error?: string }> => {
         return new Promise((resolve) => {
-            // 1. Check file size (600MB limit)
-            const MAX_SIZE = 600 * 1024 * 1024; 
+            // 1. Check file size (1GB limit)
+            const MAX_SIZE = 1024 * 1024 * 1024; 
             if (file.size > MAX_SIZE) {
-                resolve({ valid: false, error: 'ไฟล์วิดีโอใหญ่เกินไป (จำกัด 600MB) กรุณาบีบอัดไฟล์ก่อนอัปโหลด' });
+                resolve({ valid: false, error: 'ไฟล์วิดีโอใหญ่เกินไป (จำกัด 1GB) กรุณาบีบอัดไฟล์ก่อนอัปโหลด' });
                 return;
             }
 
@@ -109,8 +109,8 @@ export default function MenuDetailClient({ menu, userRole, userId, userName, isS
             video.preload = 'metadata';
             video.onloadedmetadata = () => {
                 window.URL.revokeObjectURL(video.src);
-                if (video.duration > 300) { // 300 seconds = 5 minutes
-                    resolve({ valid: false, error: 'ความยาววิดีโอต้องไม่เกิน 5 นาที' });
+                if (video.duration > 600) { // 600 seconds = 10 minutes
+                    resolve({ valid: false, error: 'ความยาววิดีโอต้องไม่เกิน 10 นาที' });
                 } else {
                     resolve({ valid: true });
                 }
@@ -701,7 +701,7 @@ export default function MenuDetailClient({ menu, userRole, userId, userName, isS
                                 <div className="w-full aspect-video rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 bg-slate-50 relative">
                                     <Icon icon="solar:video-frame-linear" className="text-4xl mb-2" />
                                     <p className="text-sm font-medium mb-1 text-center">ยังไม่มีวิดีโอ<br/>วิธีการทำ</p>
-                                    <p className="text-[10px] text-slate-400 mb-4">(ไม่เกิน 5 นาที / 600MB)</p>
+                                    <p className="text-[10px] text-slate-400 mb-4">(ไม่เกิน 10 นาที / 1GB)</p>
                                     {canEdit && (
                                         <label className="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-bold cursor-pointer hover:bg-indigo-100 transition flex items-center gap-2">
                                             {isUploadingVideo ? <Icon icon="solar:refresh-bold" className="animate-spin" /> : <Icon icon="solar:upload-minimalistic-bold" />}
@@ -740,7 +740,7 @@ export default function MenuDetailClient({ menu, userRole, userId, userName, isS
                                 <div className="w-full aspect-video rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 bg-slate-50 relative">
                                     <Icon icon="solar:video-frame-linear" className="text-4xl mb-2 text-fuchsia-300" />
                                     <p className="text-sm font-medium mb-1 text-center">ยังไม่มีคลิปโปรโมท</p>
-                                    <p className="text-[10px] text-slate-400 mb-4">(ไม่เกิน 5 นาที / 600MB)</p>
+                                    <p className="text-[10px] text-slate-400 mb-4">(ไม่เกิน 10 นาที / 1GB)</p>
                                     {canEdit && (
                                         <label className="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-bold cursor-pointer hover:bg-indigo-100 transition flex items-center gap-2">
                                             {isUploadingPromoVideo ? <Icon icon="solar:refresh-bold" className="animate-spin" /> : <Icon icon="solar:upload-minimalistic-bold" />}
