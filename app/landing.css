@@ -63,8 +63,8 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
 .nav-main {
   background: rgba(13,51,72,.97); backdrop-filter: blur(16px);
   border-bottom: 1px solid rgba(200,150,60,.12);
-  padding: 0 36px; height: 60px; display: flex;
-  align-items: center; gap: 24px;
+  padding: 0 36px; height: 60px; display: grid;
+  grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px;
 }
 .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .nav-logo-icon {
@@ -74,9 +74,11 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
   justify-content: center; font-size: 20px;
   box-shadow: 0 2px 10px rgba(200,150,60,.35);
 }
+.mobile-menu-btn { display: none; background: none; border: none; color: white; cursor: pointer; transition: color .2s; }
+.mobile-menu-btn:hover { color: var(--gl); }
 .nl-th { font-size: 16px; font-weight: 700; color: #fff; line-height: 1.2; }
 .nl-en { font-size: 11px; color: var(--gl); letter-spacing: 1px; font-weight: 600; text-transform: uppercase; }
-.nav-links { display: flex; align-items: center; gap: 2px; flex: 1; justify-content: center; list-style: none; padding: 0; margin: 0; }
+.nav-links { display: flex; align-items: center; gap: 2px; justify-content: center; list-style: none; padding: 0; margin: 0; }
 .nav-links a {
   display: block; padding: 7px 13px; font-size: 15px;
   font-weight: 600; color: rgba(255,255,255,.55);
@@ -352,7 +354,21 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
   .fcard-sig { grid-template-columns: 1fr; grid-column: span 3; }
   .food-grid { grid-template-columns: 1fr 1fr; }
   .impact-grid, .p-grid { grid-template-columns: repeat(2, 1fr); }
-  .nav-links li:not(:last-child) { display: none; }
+  
+  .nav-main { grid-template-columns: 1fr auto; justify-content: space-between; }
+  .mobile-menu-btn { display: flex; align-items: center; justify-content: center; }
+  .nav-links {
+    position: absolute; top: 60px; left: 0; right: 0;
+    background: rgba(13,51,72,.98); backdrop-filter: blur(16px);
+    flex-direction: column; padding: 20px 36px; gap: 15px;
+    clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+    transition: clip-path 0.3s ease; border-bottom: 1px solid rgba(200,150,60,.12);
+  }
+  .nav-links.open { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+  .nav-links li { width: 100%; text-align: center; }
+  .nav-links a { display: block; width: 100%; padding: 12px 14px; }
+  .nav-cta { display: flex !important; justify-content: center; width: 100%; }
+
   .pstrip { display: none; }
   .lp-hero { min-height: 500px; height: auto; padding-top: 70px; padding-bottom: 60px; }
 }

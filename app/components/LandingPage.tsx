@@ -129,6 +129,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
         'บางเขน': 'sig', 'เปรมประชากร': 'sig', 'ลาดพร้าว': 'sig'
     })
     const [canalShowAll, setCanalShowAll] = useState<Record<string, boolean>>({})
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const heroRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     useEffect(() => {
@@ -225,11 +226,11 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                         <div className="nav-logo-icon"><Icon icon="solar:water-sun-bold" width={18} /></div>
                         <div><div className="nl-th">อาหารไทยริมคลอง</div><div className="nl-en">Thai Canal Heritage</div></div>
                     </Link>
-                    <ul className="nav-links">
-                        <li><a href="#story" onClick={e => { e.preventDefault(); scrollTo('story') }}>หน้าหลัก</a></li>
-                        <li><a href="#mapSec" onClick={e => { e.preventDefault(); scrollTo('mapSec') }}>แผนที่</a></li>
-                        <li><a href="#canalSec" onClick={e => { e.preventDefault(); scrollTo('canalSec') }}>สามคลอง</a></li>
-                        <li><a href="#partners" onClick={e => { e.preventDefault(); scrollTo('partners') }}>พันธมิตร</a></li>
+                    <ul className={`nav-links ${isMobileMenuOpen ? 'open' : ''}`}>
+                        <li><a href="#story" onClick={e => { e.preventDefault(); scrollTo('story'); setIsMobileMenuOpen(false) }}>หน้าหลัก</a></li>
+                        <li><a href="#mapSec" onClick={e => { e.preventDefault(); scrollTo('mapSec'); setIsMobileMenuOpen(false) }}>แผนที่</a></li>
+                        <li><a href="#canalSec" onClick={e => { e.preventDefault(); scrollTo('canalSec'); setIsMobileMenuOpen(false) }}>สามคลอง</a></li>
+                        <li><a href="#partners" onClick={e => { e.preventDefault(); scrollTo('partners'); setIsMobileMenuOpen(false) }}>พันธมิตร</a></li>
                         <li>
                             <Link href={isLoggedIn ? '/home' : '/login'} className="nav-cta">
                                 <Icon icon={isLoggedIn ? 'solar:chart-square-bold' : 'solar:chef-hat-minimalistic-bold'} width={14} style={{ marginRight: 4 }} />
@@ -237,6 +238,11 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                             </Link>
                         </li>
                     </ul>
+                    <div className="nav-right">
+                        <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                            <Icon icon={isMobileMenuOpen ? "solar:close-circle-bold-duotone" : "solar:hamburger-menu-linear"} width={28} />
+                        </button>
+                    </div>
                 </div>
             </nav>
 
