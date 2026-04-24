@@ -505,14 +505,31 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
             <section className="partners-sec" id="partners">
                 <div className="ctr">
                     <div className="partners-hdr reveal"><div className="sec-label">พันธมิตรโครงการ</div><h2 className="sh" style={{ color: 'var(--cd)' }}>หน่วยงานที่ร่วมสนับสนุน</h2></div>
-                    <div className="p-grid reveal">
-                        <div className="pcard"><Icon icon="solar:square-academic-cap-bold-duotone" className="pi" style={{ color: 'var(--cm)' }} /><div className="pn">มหาวิทยาลัยราชภัฏจันทรเกษม</div><div className="pt">สถาบันการศึกษา</div></div>
-                        <div className="pcard"><Icon icon="solar:notebook-bookmark-bold-duotone" className="pi" style={{ color: 'var(--go)' }} /><div className="pn">คณะมนุษยศาสตร์และสังคมศาสตร์</div><div className="pt">คณะวิชา</div></div>
-                        <div className="pcard"><Icon icon="solar:city-bold-duotone" className="pi" style={{ color: 'var(--cl)' }} /><div className="pn">สำนักงานเขตจตุจักร</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
-                        <div className="pcard"><Icon icon="solar:city-bold-duotone" className="pi" style={{ color: 'var(--cl)' }} /><div className="pn">สำนักงานเขตหลักสี่</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
-                        <div className="pcard"><Icon icon="solar:buildings-2-bold-duotone" className="pi" style={{ color: 'var(--cm)' }} /><div className="pn">อบจ. นนทบุรี</div><div className="pt">องค์กรปกครองส่วนท้องถิ่น</div></div>
-                        <div className="pcard"><Icon icon="solar:mask-happly-bold-duotone" className="pi" style={{ color: 'var(--go)' }} /><div className="pn">กรมส่งเสริมวัฒนธรรม</div><div className="pt">หน่วยงานรัฐ</div></div>
-                        <div className="pcard" style={{ gridColumn: 'span 2' }}><Icon icon="solar:buildings-bold-duotone" className="pi" style={{ color: 'var(--go)' }} /><div className="pn">วัดทางหลวง</div><div className="pt">วัดและชุมชน · แหล่งอาหารและวัฒนธรรม</div></div>
+                    <div className="marquee-container reveal">
+                        <div className="marquee-track">
+                            {/* Set 1 */}
+                            <div className="pcard"><img src="/มจษ..png" alt="CRU" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">มหาวิทยาลัยราชภัฏจันทรเกษม</div><div className="pt">สถาบันการศึกษา</div></div>
+                            <div className="pcard"><img src="/มส..png" alt="Humanities" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะมนุษยศาสตร์และสังคมศาสตร์</div><div className="pt">คณะวิชา</div></div>
+                            <div className="pcard"><img src="/วจก.png" alt="Management Science" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะวิทยาการจัดการ</div><div className="pt">คณะวิชา</div></div>
+                            <div className="pcard"><img src="/วท..png" alt="Science" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะวิทยาศาสตร์</div><div className="pt">คณะวิชา</div></div>
+                            <div className="pcard"><img src="/กทม..jpg" alt="BMA" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานเขตจตุจักร</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
+                            <div className="pcard"><img src="/กทม..jpg" alt="BMA" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานเขตหลักสี่</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
+                            <div className="pcard"><img src="/สำนักงานวัฒนธรรม จังหวัดนนทบุรี.jpg" alt="Nonthaburi Culture" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานวัฒนธรรม จังหวัดนนทบุรี</div><div className="pt">หน่วยงานรัฐ</div></div>
+                            <div className="pcard"><img src="/อบจ.นนทบุรี.jpg" alt="Nonthaburi PAO" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">อบจ. นนทบุรี</div><div className="pt">องค์กรปกครองส่วนท้องถิ่น</div></div>
+                            <div className="pcard"><img src="/กรมส่งเสริมวัฒนธรรม.png" alt="Department of Cultural Promotion" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">กรมส่งเสริมวัฒนธรรม</div><div className="pt">หน่วยงานรัฐ</div></div>
+                            <div className="pcard"><img src="/ศูนย์ศึกษาพระพุทธศาสนาวันอาทิตย์วัดทางหลวง.jpg" alt="Wat Thang Luang" className="w-14 h-14 md:w-16 md:h-16 object-cover rounded-full mb-4 mx-auto" /><div className="pn mt-2">วัดทางหลวง</div><div className="pt">วัดและชุมชน</div></div>
+                            {/* Set 2 (Duplicate for loop) */}
+                            <div className="pcard"><img src="/มจษ..png" alt="CRU" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">มหาวิทยาลัยราชภัฏจันทรเกษม</div><div className="pt">สถาบันการศึกษา</div></div>
+                            <div className="pcard"><img src="/มส..png" alt="Humanities" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะมนุษยศาสตร์และสังคมศาสตร์</div><div className="pt">คณะวิชา</div></div>
+                            <div className="pcard"><img src="/วจก.png" alt="Management Science" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะวิทยาการจัดการ</div><div className="pt">คณะวิชา</div></div>
+                            <div className="pcard"><img src="/วท..png" alt="Science" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะวิทยาศาสตร์</div><div className="pt">คณะวิชา</div></div>
+                            <div className="pcard"><img src="/กทม..jpg" alt="BMA" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานเขตจตุจักร</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
+                            <div className="pcard"><img src="/กทม..jpg" alt="BMA" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานเขตหลักสี่</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
+                            <div className="pcard"><img src="/สำนักงานวัฒนธรรม จังหวัดนนทบุรี.jpg" alt="Nonthaburi Culture" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานวัฒนธรรม จังหวัดนนทบุรี</div><div className="pt">หน่วยงานรัฐ</div></div>
+                            <div className="pcard"><img src="/อบจ.นนทบุรี.jpg" alt="Nonthaburi PAO" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">อบจ. นนทบุรี</div><div className="pt">องค์กรปกครองส่วนท้องถิ่น</div></div>
+                            <div className="pcard"><img src="/กรมส่งเสริมวัฒนธรรม.png" alt="Department of Cultural Promotion" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">กรมส่งเสริมวัฒนธรรม</div><div className="pt">หน่วยงานรัฐ</div></div>
+                            <div className="pcard"><img src="/ศูนย์ศึกษาพระพุทธศาสนาวันอาทิตย์วัดทางหลวง.jpg" alt="Wat Thang Luang" className="w-14 h-14 md:w-16 md:h-16 object-cover rounded-full mb-4 mx-auto" /><div className="pn mt-2">วัดทางหลวง</div><div className="pt">วัดและชุมชน</div></div>
+                        </div>
                     </div>
                 </div>
             </section>
