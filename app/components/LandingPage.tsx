@@ -223,7 +223,11 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                 </div> */}
                 <div className="nav-main">
                     <Link href="/" className="nav-logo">
-                        <div className="nav-logo-icon"><Icon icon="solar:water-sun-bold" width={18} /></div>
+                        <div ><img
+                            src="/Logoapp1.png"    // ใส่ชื่อไฟล์รูปภาพของคุณตรงนี้
+                            alt="Logo"
+                            style={{ width: '40px', height: 'auto' }} // กำหนดขนาดเท่าไอคอนเดิม
+                        /></div>
                         <div><div className="nl-th">อาหารไทยริมคลอง</div><div className="nl-en">Thai Canal Heritage</div></div>
                     </Link>
                     <ul className={`nav-links ${isMobileMenuOpen ? 'open' : ''}`}>
@@ -465,7 +469,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                                             <span style={{ fontSize: 9, opacity: .5 }}>{menu.category}</span>
                                                                         </div>
                                                                     </div>
-                                                                </div> 
+                                                                </div>
                                                             )
                                                         }
 
