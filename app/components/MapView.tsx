@@ -53,7 +53,7 @@ function buildGeoJSON(
                     category: m.category,
                     canal_zone: m.canal_zone,
                     is_sig: m.selection_status.includes('ซิกเนเจอร์') ? 1 : 0,
-                    thumbnail: m.thumbnail ?? '',
+                    thumbnail: (m.selection_status.includes('ซิกเนเจอร์') || m.selection_status.includes('36')) ? (m.thumbnail ?? '') : '',
                     color: CANAL_COLORS[m.canal_zone] ?? DEFAULT_COLOR,
                 },
             })),

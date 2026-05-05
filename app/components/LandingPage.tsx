@@ -129,6 +129,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
         'บางเขน': 'sig', 'เปรมประชากร': 'sig', 'ลาดพร้าว': 'sig'
     })
     const [canalShowAll, setCanalShowAll] = useState<Record<string, boolean>>({})
+    const [canalSearch, setCanalSearch] = useState<Record<string, string>>({})
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const heroRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -187,12 +188,17 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
     }, [menus])
 
     const getFilteredMenus = useCallback((canalId: string) => {
-        const items = menusByCanal[canalId] || []
+        let items = menusByCanal[canalId] || []
         const filter = canalFilters[canalId] || 'sig'
-        if (filter === 'sig') return items.filter(m => m.selection_status.includes('ซิกเนเจอร์'))
-        if (filter === 'rec') return items.filter(m => m.selection_status.includes('36'))
+        if (filter === 'sig') items = items.filter(m => m.selection_status.includes('ซิกเนเจอร์'))
+        else if (filter === 'rec') items = items.filter(m => m.selection_status.includes('36'))
+        
+        const q = canalSearch[canalId]?.trim().toLowerCase()
+        if (q) {
+            items = items.filter(m => m.menu_name.toLowerCase().includes(q))
+        }
         return items
-    }, [menusByCanal, canalFilters])
+    }, [menusByCanal, canalFilters, canalSearch])
 
     const openPopup = (menu: MenuItem) => {
         setPopupMenu(menu)
@@ -416,16 +422,28 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
 
                                     {/* Food list */}
                                     <div className="food-section reveal">
-                                        <div className="filter-row">
-                                            <span className="filter-label">เรียงลำดับ:</span>
-                                            <button className={`ff-btn ff-btn-sig ${currentFilter === 'sig' ? 'on' : ''}`} onClick={() => { setFilter(canal.id, 'sig'); setCanalShowAll(p => ({ ...p, [canal.id]: false })) }}>
-                                                <Icon icon="solar:star-bold" width={12} style={{ marginRight: 4 }} />Signature
-                                            </button>
-                                            <button className={`ff-btn ff-btn-rec ${currentFilter === 'rec' ? 'on' : ''}`} onClick={() => { setFilter(canal.id, 'rec'); setCanalShowAll(p => ({ ...p, [canal.id]: false })) }}>
-                                                <Icon icon="solar:star-shine-bold" width={12} style={{ marginRight: 4 }} />แนะนำ
-                                            </button>
-                                            <button className={`ff-btn ff-btn-all ${currentFilter === 'all' ? 'on' : ''}`} onClick={() => { setFilter(canal.id, 'all'); setCanalShowAll(p => ({ ...p, [canal.id]: false })) }}>ทั้งหมด</button>
-                                            <span className="filter-count">{filteredItems.length} รายการ</span>
+                                        <div className="filter-row" style={{ justifyContent: 'space-between' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                                <span className="filter-label">เรียงลำดับ:</span>
+                                                <button className={`ff-btn ff-btn-sig ${currentFilter === 'sig' ? 'on' : ''}`} onClick={() => { setFilter(canal.id, 'sig'); setCanalShowAll(p => ({ ...p, [canal.id]: false })) }}>
+                                                    <Icon icon="solar:star-bold" width={12} style={{ marginRight: 4 }} />Signature
+                                                </button>
+                                                <button className={`ff-btn ff-btn-rec ${currentFilter === 'rec' ? 'on' : ''}`} onClick={() => { setFilter(canal.id, 'rec'); setCanalShowAll(p => ({ ...p, [canal.id]: false })) }}>
+                                                    <Icon icon="solar:star-shine-bold" width={12} style={{ marginRight: 4 }} />แนะนำ
+                                                </button>
+                                                <button className={`ff-btn ff-btn-all ${currentFilter === 'all' ? 'on' : ''}`} onClick={() => { setFilter(canal.id, 'all'); setCanalShowAll(p => ({ ...p, [canal.id]: false })) }}>ทั้งหมด</button>
+                                                <span className="filter-count">{filteredItems.length} รายการ</span>
+                                            </div>
+                                            <div style={{ position: 'relative', width: '100%', flex: '1 1 200px', maxWidth: '280px' }}>
+                                                <Icon icon="solar:magnifer-linear" width={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6b6b6b' }} />
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="ค้นหาชื่ออาหาร..." 
+                                                    value={canalSearch[canal.id] || ''}
+                                                    onChange={e => setCanalSearch(p => ({ ...p, [canal.id]: e.target.value }))}
+                                                    style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '20px', border: '1px solid rgba(200,150,60,.3)', fontSize: '13px', outline: 'none', background: '#fff', color: '#333' }}
+                                                />
+                                            </div>
                                         </div>
 
                                         {loading ? (

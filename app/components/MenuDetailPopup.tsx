@@ -70,7 +70,7 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
     const otherIngredients = menu.ingredients.filter(i => !i.is_main)
 
     const allPhotos = (() => {
-        const isSelectedStatus = menu.selection_status.includes('ซิกเนเจอร์') || menu.selection_status.includes('36') || menu.selection_status.includes('93') || menu.selection_status.includes('108')
+        const isSelectedStatus = menu.selection_status.includes('ซิกเนเจอร์') || menu.selection_status.includes('36')
         if (isSelectedStatus && menu.thumbnail) return [menu.thumbnail]
         if (menu.category?.includes('คาว')) return ['/menu2.png']
         if (menu.category?.includes('หวาน')) return ['/menu3.png']
