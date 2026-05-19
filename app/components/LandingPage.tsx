@@ -57,9 +57,9 @@ interface MenuItem {
 
 // Canal zones config
 const CANALS = [
-    { id: 'บางเขน', name: 'คลองบางเขน', theme: 'dk' as const, num: '01', subtitle: 'คลองสายแรก', color: '#5db8d8', icon: 'solar:rowing-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a5a7a] via-[#0d3a5a] to-[#2d7a5e]' },
-    { id: 'เปรมประชากร', name: 'คลองเปรมประชากร', theme: 'lt' as const, num: '02', subtitle: 'คลองสายที่สอง', color: '#c8963c', icon: 'solar:compass-big-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a3a5a] via-[#2d6a4a] to-[#4a8a5a]', reversed: true },
-    { id: 'ลาดพร้าว', name: 'คลองลาดพร้าว', theme: 'wm' as const, num: '03', subtitle: 'คลองสายที่สาม', color: '#c87a3c', icon: 'solar:leaf-bold-duotone', bgClass: 'bg-gradient-to-br from-[#3a5a1a] via-[#1a4a5a] to-[#0d3a4a]' },
+    { id: 'บางเขน', name: 'คลองบางเขน', image: '/Bangken.png', theme: 'dk' as const, num: '01', subtitle: 'คลองสายแรก', color: '#5db8d8', icon: 'solar:rowing-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a5a7a] via-[#0d3a5a] to-[#2d7a5e]' },
+    { id: 'เปรมประชากร', name: 'คลองเปรมประชากร', image: '/pamepacha.png', theme: 'lt' as const, num: '02', subtitle: 'คลองสายที่สอง', color: '#c8963c', icon: 'solar:compass-big-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a3a5a] via-[#2d6a4a] to-[#4a8a5a]', reversed: true },
+    { id: 'ลาดพร้าว', name: 'คลองลาดพร้าว', image: '/ladpaw.png', theme: 'wm' as const, num: '03', subtitle: 'คลองสายที่สาม', color: '#c87a3c', icon: 'solar:leaf-bold-duotone', bgClass: 'bg-gradient-to-br from-[#3a5a1a] via-[#1a4a5a] to-[#0d3a4a]' },
 ]
 
 const CANAL_DESCRIPTIONS: Record<string, { desc: string; chips: { icon: string; text: string }[]; identity: { icon: string; title: string; detail: string }[]; flavors: { icon: string; text: string }[] }> = {
@@ -119,6 +119,13 @@ const CANAL_DESCRIPTIONS: Record<string, { desc: string; chips: { icon: string; 
 
 const ITEMS_PER_CANAL = 6
 
+const getPaginationGroup = (currentPage: number, totalPages: number) => {
+    if (totalPages <= 6) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    if (currentPage <= 3) return [1, 2, 3, 4, '...', totalPages];
+    if (currentPage >= totalPages - 2) return [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+};
+
 export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
     const [menus, setMenus] = useState<MenuItem[]>([])
     const [loading, setLoading] = useState(true)
@@ -128,7 +135,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
     const [canalFilters, setCanalFilters] = useState<Record<string, string>>({
         'บางเขน': 'sig', 'เปรมประชากร': 'sig', 'ลาดพร้าว': 'sig'
     })
-    const [canalShowAll, setCanalShowAll] = useState<Record<string, boolean>>({})
+    const [canalPage, setCanalPage] = useState<Record<string, number>>({})
     const [canalSearch, setCanalSearch] = useState<Record<string, string>>({})
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
     const heroRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -211,7 +218,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
     }
 
     const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-    const setFilter = (canal: string, f: string) => setCanalFilters(prev => ({ ...prev, [canal]: f }))
+    const setFilter = (canal: string, f: string) => { setCanalFilters(prev => ({ ...prev, [canal]: f })); setCanalPage(p => ({ ...p, [canal]: 1 })) }
 
     return (
         <div className="landing-root">
@@ -376,8 +383,9 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                     const canalData = CANAL_DESCRIPTIONS[canal.id]
                     const filteredItems = getFilteredMenus(canal.id)
                     const currentFilter = canalFilters[canal.id] || 'sig'
-                    const showAll = canalShowAll[canal.id] || false
-                    const displayItems = showAll ? filteredItems : filteredItems.slice(0, ITEMS_PER_CANAL)
+                    const currentPage = canalPage[canal.id] || 1
+                    const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_CANAL)
+                    const displayItems = filteredItems.slice((currentPage - 1) * ITEMS_PER_CANAL, currentPage * ITEMS_PER_CANAL)
                     const allItems = menusByCanal[canal.id] || []
 
                     return (
@@ -409,10 +417,9 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                             </div>
                                         </div>
                                         <div className="cphoto">
-                                            <div className={canal.bgClass} style={{ height: '100%' }}>
-                                                <div className="cp-inner">
-                                                    <Icon icon={canal.icon} width={60} style={{ opacity: .12, animation: `fl ${4 + idx * 0.5}s ease-in-out infinite ${idx * 0.5}s` }} />
-                                                </div>
+                                            <img src={canal.image} alt={canal.name} style={{ width: '100%', display: 'block', objectFit: 'cover' }} loading="lazy" />
+                                            <div className="cp-inner">
+                                                <Icon icon={canal.icon} width={60} style={{ opacity: .5, color: '#fff', animation: `fl ${4 + idx * 0.5}s ease-in-out infinite ${idx * 0.5}s` }} />
                                             </div>
                                             <div className="cplabel">
                                                 <div className="cptag" style={{ marginBottom: 0 }}>{canal.name}</div>
@@ -425,13 +432,13 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                         <div className="filter-row" style={{ justifyContent: 'space-between' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                                 <span className="filter-label">เรียงลำดับ:</span>
-                                                <button className={`ff-btn ff-btn-sig ${currentFilter === 'sig' ? 'on' : ''}`} onClick={() => { setFilter(canal.id, 'sig'); setCanalShowAll(p => ({ ...p, [canal.id]: false })) }}>
+                                                <button className={`ff-btn ff-btn-sig ${currentFilter === 'sig' ? 'on' : ''}`} onClick={() => setFilter(canal.id, 'sig')}>
                                                     <Icon icon="solar:star-bold" width={12} style={{ marginRight: 4 }} />Signature
                                                 </button>
-                                                <button className={`ff-btn ff-btn-rec ${currentFilter === 'rec' ? 'on' : ''}`} onClick={() => { setFilter(canal.id, 'rec'); setCanalShowAll(p => ({ ...p, [canal.id]: false })) }}>
+                                                <button className={`ff-btn ff-btn-rec ${currentFilter === 'rec' ? 'on' : ''}`} onClick={() => setFilter(canal.id, 'rec')}>
                                                     <Icon icon="solar:star-shine-bold" width={12} style={{ marginRight: 4 }} />แนะนำ
                                                 </button>
-                                                <button className={`ff-btn ff-btn-all ${currentFilter === 'all' ? 'on' : ''}`} onClick={() => { setFilter(canal.id, 'all'); setCanalShowAll(p => ({ ...p, [canal.id]: false })) }}>ทั้งหมด</button>
+                                                <button className={`ff-btn ff-btn-all ${currentFilter === 'all' ? 'on' : ''}`} onClick={() => setFilter(canal.id, 'all')}>ทั้งหมด</button>
                                                 <span className="filter-count">{filteredItems.length} รายการ</span>
                                             </div>
                                             <div style={{ position: 'relative', width: '100%', flex: '1 1 200px', maxWidth: '280px' }}>
@@ -440,7 +447,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                     type="text" 
                                                     placeholder="ค้นหาชื่ออาหาร..." 
                                                     value={canalSearch[canal.id] || ''}
-                                                    onChange={e => setCanalSearch(p => ({ ...p, [canal.id]: e.target.value }))}
+                                                    onChange={e => { setCanalSearch(p => ({ ...p, [canal.id]: e.target.value })); setCanalPage(p => ({ ...p, [canal.id]: 1 })) }}
                                                     style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '20px', border: '1px solid rgba(200,150,60,.3)', fontSize: '13px', outline: 'none', background: '#fff', color: '#333' }}
                                                 />
                                             </div>
@@ -474,7 +481,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                                         {menu.thumbnail ? (
                                                                             <img src={menu.thumbnail} alt={menu.menu_name} loading="lazy" />
                                                                         ) : (
-                                                                            <img src={menu.category?.includes('คาว') ? '/menu2.png' : menu.category?.includes('หวาน') ? '/menu3.png' : '/menu1.png'} alt={menu.menu_name} loading="lazy" />
+                                                                            <img src={canal.image} alt={menu.menu_name} loading="lazy" />
                                                                         )}
                                                                         <div className="sig-star-badge"><Icon icon="solar:star-bold" width={10} style={{ marginRight: 3 }} />Signature</div>
                                                                     </div>
@@ -494,6 +501,9 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                         return (
                                                             <div key={menu.menu_id} className="fcard-reg" onClick={() => openPopup(menu)}>
                                                                 {isRec && <div className="rec-badge"><Icon icon="solar:star-shine-bold" width={10} style={{ marginRight: 3 }} />แนะนำ</div>}
+                                                                <div className="reg-img-container" style={{ height: '140px', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px' }}>
+                                                                    <img src={menu.thumbnail || canal.image} alt={menu.menu_name} loading="lazy" />
+                                                                </div>
                                                                 <div className="fc-type">{menu.category}</div>
                                                                 <div className="fc-name">{menu.menu_name}</div>
                                                                 <div className="fc-com">{menu.address || menu.canal_zone}</div>
@@ -502,10 +512,41 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                     })}
                                                 </div>
 
-                                                {!showAll && filteredItems.length > ITEMS_PER_CANAL && (
-                                                    <button className="show-more" onClick={() => setCanalShowAll(p => ({ ...p, [canal.id]: true }))}>
-                                                        แสดงเพิ่มเติม ({filteredItems.length - ITEMS_PER_CANAL} รายการ) <Icon icon="solar:alt-arrow-right-linear" width={13} style={{ marginLeft: 4 }} />
-                                                    </button>
+                                                {totalPages > 1 && (
+                                                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '32px' }}>
+                                                        <button 
+                                                            onClick={() => { setCanalPage(p => ({ ...p, [canal.id]: Math.max(1, currentPage - 1) })); document.getElementById(`canal-${canal.id}`)?.scrollIntoView({ behavior: 'smooth' }) }} 
+                                                            disabled={currentPage === 1}
+                                                            className="pg-btn"
+                                                        >
+                                                            <Icon icon="solar:alt-arrow-left-linear" width={16} />
+                                                        </button>
+                                                        
+                                                        {getPaginationGroup(currentPage, totalPages).map((item, i) => (
+                                                            <button 
+                                                                key={i} 
+                                                                className={`pg-num ${currentPage === item ? 'act' : ''}`}
+                                                                onClick={() => { 
+                                                                    if (typeof item === 'number') {
+                                                                        setCanalPage(p => ({ ...p, [canal.id]: item })); 
+                                                                        document.getElementById(`canal-${canal.id}`)?.scrollIntoView({ behavior: 'smooth' });
+                                                                    }
+                                                                }}
+                                                                disabled={item === '...'}
+                                                                style={{ cursor: item === '...' ? 'default' : 'pointer' }}
+                                                            >
+                                                                {item}
+                                                            </button>
+                                                        ))}
+                                                        
+                                                        <button 
+                                                            onClick={() => { setCanalPage(p => ({ ...p, [canal.id]: Math.min(totalPages, currentPage + 1) })); document.getElementById(`canal-${canal.id}`)?.scrollIntoView({ behavior: 'smooth' }) }} 
+                                                            disabled={currentPage === totalPages}
+                                                            className="pg-btn"
+                                                        >
+                                                            <Icon icon="solar:alt-arrow-right-linear" width={16} />
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </>
                                         )}

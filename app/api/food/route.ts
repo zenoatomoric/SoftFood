@@ -172,7 +172,7 @@ export async function PATCH(request: Request) {
         const session = await auth()
         const userRole = (session?.user?.role || '').toLowerCase().trim()
 
-        if (userRole !== 'director' && userRole !== 'admin') {
+        if (userRole !== 'director' && userRole !== 'admin' && userRole !== 'กรรมการ') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 

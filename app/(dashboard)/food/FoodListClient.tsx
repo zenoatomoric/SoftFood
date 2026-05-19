@@ -255,7 +255,7 @@ export default function FoodListClient({ userRole, userId, userName, mode }: Pro
                     </div>
 
                     {/* Director Filters */}
-                    {(userRole === 'director' || userRole === 'admin') && (
+                    {(userRole === 'director' || userRole === 'admin' || userRole === 'Director' || userRole === 'กรรมการ') && (
                         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide w-full md:w-auto">
                             <button
                                 onClick={() => setStatusFilter(statusFilter === '108' ? '' : '108')}
@@ -432,7 +432,7 @@ export default function FoodListClient({ userRole, userId, userName, mode }: Pro
 
                                 {/* Status Tags & Action Buttons */}
                                 <div className="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-slate-50">
-                                    {(userRole === 'director' || userRole === 'admin') && (
+                                    {(userRole === 'director' || userRole === 'admin' || userRole === 'Director' || userRole === 'กรรมการ') && (
                                         <div className="flex flex-wrap gap-1.5 mb-2">
                                             {['108', '93', '36', 'ซิกเนเจอร์'].map(tag => (
                                                 <button

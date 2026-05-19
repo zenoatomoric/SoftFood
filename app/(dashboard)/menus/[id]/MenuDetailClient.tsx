@@ -606,7 +606,7 @@ export default function MenuDetailClient({ menu, userRole, userId, userName, isS
                         );
                     })()}
                     
-                    {isSelectionMode && (userRole === 'admin' || userRole === 'director') && menu.selection_status?.length > 0 && ( /* Only allow uploading selection image in selection mode and if voted */
+                    {isSelectionMode && (userRole === 'admin' || userRole === 'director' || userRole === 'Director' || userRole === 'กรรมการ') && menu.selection_status?.length > 0 && ( /* Only allow uploading selection image in selection mode and if voted */
                         <div className="absolute bottom-3 inset-x-0 flex justify-center z-10 transition-all">
                             <label className={`backdrop-blur shadow-lg px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition flex items-center gap-1.5 ${menu.selection_image_url ? 'bg-black/50 text-white hover:bg-black/70' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
                                 {isUploadingSelectionImage ? <Icon icon="solar:refresh-bold" className="animate-spin" /> : <Icon icon="solar:camera-add-bold" />}
@@ -636,7 +636,7 @@ export default function MenuDetailClient({ menu, userRole, userId, userName, isS
                         <Field label="ปริมาณที่เสิร์ฟ" value={menu.serving_size === 'อื่นๆ' ? menu.other_serving_size : menu.serving_size} />
                         <Field label="สถานะคัดเลือก" value={menu.selection_status?.length ? menu.selection_status.join(', ') : 'รอการคัดเลือก'} />
 
-                        {isSelectionMode && (userRole === 'admin' || userRole === 'director') && (
+                        {isSelectionMode && (userRole === 'admin' || userRole === 'director' || userRole === 'Director' || userRole === 'กรรมการ') && (
                             <div className="col-span-full pt-4 mt-2 border-t border-slate-50">
                                 <label className="text-xs font-bold text-slate-400 uppercase block mb-2">การคัดเลือก (สำหรับกรรมการ)</label>
                                 <div className="flex flex-wrap gap-2">

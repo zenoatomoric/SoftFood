@@ -98,9 +98,9 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
 }
 .csl { position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s ease; }
 .csl.act { opacity: 1; }
-.cs1 { background: linear-gradient(160deg, rgba(13,51,72,.88), rgba(13,51,72,.38) 60%, rgba(13,51,72,.72)), linear-gradient(200deg, #1a6b8a, #0d3348 40%, #2d7a5e); }
-.cs2 { background: linear-gradient(160deg, rgba(13,51,72,.82), rgba(92,51,23,.3) 60%, rgba(13,51,72,.78)), linear-gradient(120deg, #2d5a3d, #1a4a6a 50%, #0d3348); }
-.cs3 { background: linear-gradient(160deg, rgba(13,51,72,.84), rgba(13,51,72,.28) 70%, rgba(92,51,23,.6)), linear-gradient(180deg, #3a6b4a, #1a5a7a 40%, #5c3317); }
+.cs1 { background: linear-gradient(160deg, rgba(13,51,72,.88), rgba(13,51,72,.38) 60%, rgba(13,51,72,.72)), url('/Bangken.png') center 30%/cover no-repeat; }
+.cs2 { background: linear-gradient(160deg, rgba(13,51,72,.82), rgba(92,51,23,.3) 60%, rgba(13,51,72,.78)), url('/pamepacha.png') center 30%/cover no-repeat; }
+.cs3 { background: linear-gradient(160deg, rgba(13,51,72,.84), rgba(13,51,72,.28) 70%, rgba(92,51,23,.6)), url('/ladpaw.png') center 30%/cover no-repeat; }
 /* Water ambient layer */
 .hdeco {
   position: absolute; inset: 0; pointer-events: none; z-index: 2;
@@ -199,9 +199,9 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
 .fchip { display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 30px; font-size: 11px; font-weight: 600; cursor: default; }
 .cblock.dk .fchip { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: rgba(255,255,255,.65); }
 .cblock.lt .fchip, .cblock.wm .fchip { background: #fff; border: 1.5px solid rgba(26,107,138,.15); color: var(--cm); box-shadow: 0 1px 5px rgba(13,51,72,.04); }
-.cphoto { border-radius: 16px; overflow: hidden; aspect-ratio: 4/3; box-shadow: var(--shd); position: relative; }
-.cp-inner { height: 100%; display: flex; align-items: center; justify-content: center; }
-.cplabel { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(13,51,72,.88), transparent); padding: 24px 16px 12px; }
+.cphoto { border-radius: 16px; overflow: hidden; box-shadow: var(--shd); position: relative; }
+.cp-inner { position: absolute; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; }
+.cplabel { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(13,51,72,.88), transparent); padding: 24px 16px 12px; pointer-events: none; }
 .cptag { font-size: 22px; font-weight: 700; letter-spacing: 1px; color: var(--gl); margin-bottom: 3px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
 .cpcount { font-size: 18px; font-weight: 700; color: #fff; }
 .cpunit { font-size: 11px; color: rgba(255,255,255,.5); margin-left: 3px; }
@@ -234,7 +234,7 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
 .cblock.lt .fcard-sig, .cblock.wm .fcard-sig { background: #fff; border-color: rgba(200,150,60,.25); box-shadow: var(--shc); }
 .fcard-sig:hover { transform: translateY(-3px); box-shadow: var(--shg); }
 .sig-img { position: relative; overflow: hidden; background: linear-gradient(135deg, #1a4a6a, #0d3348); }
-.sig-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sig-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: all 0.3s ease; }
 .sig-img-ph { width: 100%; height: 100%; min-height: 200px; display: flex; align-items: center; justify-content: center; font-size: 50px; opacity: .15; }
 .sig-star-badge { display: inline-flex; align-items: center; position: absolute; top: 10px; left: 10px; background: linear-gradient(135deg, var(--go), var(--gl)); color: var(--cd); font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 20px; letter-spacing: .3px; }
 .sig-body { padding: 18px; display: flex; flex-direction: column; gap: 10px; }
@@ -261,6 +261,7 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
 .cblock.dk .fcard-reg:hover { border-color: rgba(200,150,60,.3); box-shadow: 0 8px 24px rgba(0,0,0,.2); }
 .cblock.lt .fcard-reg:hover, .cblock.wm .fcard-reg:hover { border-color: var(--go); box-shadow: var(--shg); }
 .fc-type { font-size: 11.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--go); margin-bottom: 4px; }
+.reg-img-container img { width: 100%; height: 100%; object-fit: cover; transition: all 0.3s ease; }
 .cblock.dk .fc-type { color: var(--gl); }
 .fc-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; line-height: 1.3; }
 .cblock.dk .fc-name { color: #fff; }
@@ -278,6 +279,20 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
 .cblock.dk .show-more { background: rgba(255,255,255,.05); color: rgba(255,255,255,.45); border: 1px solid rgba(255,255,255,.07); }
 .cblock.lt .show-more, .cblock.wm .show-more { background: #fff; color: var(--cm); border: 1.5px solid rgba(26,107,138,.18); }
 .show-more:hover { opacity: .75; }
+
+/* Pagination Controls */
+.pg-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; transition: all .2s; }
+.pg-num { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s; border: 1px solid transparent; }
+.pg-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.pg-num:disabled { cursor: default; background: transparent !important; border-color: transparent !important; opacity: 0.5; }
+
+.cblock.dk .pg-btn, .cblock.dk .pg-num { background: rgba(255,255,255,.05); color: rgba(255,255,255,.6); border-color: rgba(255,255,255,.07); }
+.cblock.dk .pg-btn:not(:disabled):hover, .cblock.dk .pg-num:hover { background: rgba(255,255,255,.1); color: #fff; }
+.cblock.dk .pg-num.act { background: var(--gl); color: var(--cd); border-color: var(--gl); }
+
+.cblock.lt .pg-btn, .cblock.wm .pg-btn, .cblock.lt .pg-num, .cblock.wm .pg-num { background: #fff; color: var(--cm); border-color: rgba(26,107,138,.15); }
+.cblock.lt .pg-btn:not(:disabled):hover, .cblock.wm .pg-btn:not(:disabled):hover, .cblock.lt .pg-num:hover, .cblock.wm .pg-num:hover { border-color: var(--go); color: var(--go); }
+.cblock.lt .pg-num.act, .cblock.wm .pg-num.act { background: linear-gradient(135deg, var(--go), var(--gl)); color: #fff; border-color: transparent; }
 
 /* ─── IMPACT ─── */
 .impact-sec { background: var(--cd); padding: 52px 0; }

@@ -51,7 +51,7 @@ export default function Sidebar({ role, isCollapsed, isOpen, onCloseAction }: Si
       name: 'คัดเลือกรายการอาหาร',
       icon: 'solar:medal-star-bold-duotone',
       href: '/food',
-      roles: ['admin']
+      roles: ['admin', 'director', 'Director', 'กรรมการ']
     },
     {
       name: 'ข้อมูลผู้ให้ข้อมูล',
