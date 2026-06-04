@@ -380,9 +380,11 @@ export default function FoodListClient({ userRole, userId, userName, mode }: Pro
                                     return displayImg ? (
                                         <img src={displayImg} alt={menu.menu_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">
-                                            <Icon icon="solar:gallery-wide-linear" className="text-4xl" />
-                                        </div>
+                                        <img
+                                            src={menu.category?.includes('คาว') ? '/menu2.png' : menu.category?.includes('หวาน') ? '/menu3.png' : '/menu1.png'}
+                                            alt={menu.menu_name}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
                                     );
                                 })()}
 

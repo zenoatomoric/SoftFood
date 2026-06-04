@@ -575,11 +575,13 @@ export default function MenuDetailClient({ menu, userRole, userId, userName, isS
                             : (menu.menu_photos?.[0]?.photo_url ? (menu.menu_photos[0].photo_url.startsWith('http') ? menu.menu_photos[0].photo_url : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${menu.menu_photos[0].photo_url}`) : null);
 
                         if (!displayUrl) {
+                            const fallbackUrl = menu.category?.includes('คาว') ? '/menu2.png' : menu.category?.includes('หวาน') ? '/menu3.png' : '/menu1.png';
                             return (
-                                <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2">
-                                    <Icon icon="solar:gallery-wide-linear" className="text-5xl" />
-                                    <span className="text-xs font-bold uppercase tracking-widest opacity-50">No Image</span>
-                                </div>
+                                <img
+                                    src={fallbackUrl}
+                                    alt={menu.menu_name}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                />
                             );
                         }
 

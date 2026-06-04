@@ -70,14 +70,15 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
     const otherIngredients = menu.ingredients.filter(i => !i.is_main)
 
     const allPhotos = (() => {
-        const isSelectedStatus = menu.selection_status.includes('ซิกเนเจอร์') || menu.selection_status.includes('36')
-        if (isSelectedStatus && menu.thumbnail) return [menu.thumbnail]
+        const isSigOrRec = menu.selection_status.includes('ซิกเนเจอร์') || menu.selection_status.includes('36')
+        if (isSigOrRec && menu.thumbnail) return [menu.thumbnail]
+        if (isSigOrRec && menu.photos && menu.photos.length > 0) return menu.photos
         if (menu.category?.includes('คาว')) return ['/menu2.png']
         if (menu.category?.includes('หวาน')) return ['/menu3.png']
         return ['/menu1.png']
     })()
 
-    const hasMultiplePhotos = allPhotos.length > 1
+    const hasMultiplePhotos = allPhotos.filter(Boolean).length > 1
     const hasVideo = !!(menu.video_url || menu.promo_video_url)
 
     const badgeLabel = isSignature ? 'Signature' :

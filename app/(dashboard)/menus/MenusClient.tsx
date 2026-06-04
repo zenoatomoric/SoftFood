@@ -444,9 +444,12 @@ export default function MenusClient({ userRole, userId }: Props) {
                                                 loading="lazy"
                                             />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                                <Icon icon="solar:gallery-wide-linear" className="text-xl opacity-50" />
-                                            </div>
+                                            <img
+                                                src={menu.category?.includes('คาว') ? '/menu2.png' : menu.category?.includes('หวาน') ? '/menu3.png' : '/menu1.png'}
+                                                alt={menu.menu_name}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                loading="lazy"
+                                            />
                                         )}
                                     </div>
                                 </div>

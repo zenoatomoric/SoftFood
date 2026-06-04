@@ -139,9 +139,11 @@ export default function DashboardTable({ svCode }: { svCode?: string }) {
                                         {item.thumbnail ? (
                                             <img src={item.thumbnail} alt="" className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-200">
-                                                <Icon icon="solar:gallery-wide-linear" className="text-2xl" />
-                                            </div>
+                                            <img
+                                                src={item.category?.includes('คาว') ? '/menu2.png' : item.category?.includes('หวาน') ? '/menu3.png' : '/menu1.png'}
+                                                alt=""
+                                                className="w-full h-full object-cover"
+                                            />
                                         )}
                                     </div>
 
@@ -205,9 +207,11 @@ export default function DashboardTable({ svCode }: { svCode?: string }) {
                                                     {item.thumbnail ? (
                                                         <img src={item.thumbnail} alt="" className="w-full h-full object-cover" />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-slate-200">
-                                                            <Icon icon="solar:gallery-wide-linear" className="text-xl" />
-                                                        </div>
+                                                        <img
+                                                            src={item.category?.includes('คาว') ? '/menu2.png' : item.category?.includes('หวาน') ? '/menu3.png' : '/menu1.png'}
+                                                            alt=""
+                                                            className="w-full h-full object-cover"
+                                                        />
                                                     )}
                                                 </div>
                                             </td>

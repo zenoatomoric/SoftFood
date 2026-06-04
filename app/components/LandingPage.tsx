@@ -473,6 +473,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                     {displayItems.map(menu => {
                                                         const isSig = menu.selection_status.includes('ซิกเนเจอร์')
                                                         const isRec = menu.selection_status.includes('36')
+                                                        const fallbackImg = menu.category?.includes('คาว') ? '/menu2.png' : menu.category?.includes('หวาน') ? '/menu3.png' : '/menu1.png'
 
                                                         if (isSig) {
                                                             return (
@@ -481,7 +482,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                                         {menu.thumbnail ? (
                                                                             <img src={menu.thumbnail} alt={menu.menu_name} loading="lazy" />
                                                                         ) : (
-                                                                            <img src={canal.image} alt={menu.menu_name} loading="lazy" />
+                                                                            <img src={fallbackImg} alt={menu.menu_name} loading="lazy" />
                                                                         )}
                                                                         <div className="sig-star-badge"><Icon icon="solar:star-bold" width={10} style={{ marginRight: 3 }} />Signature</div>
                                                                     </div>
@@ -501,9 +502,9 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                         return (
                                                             <div key={menu.menu_id} className="fcard-reg" onClick={() => openPopup(menu)}>
                                                                 {isRec && <div className="rec-badge"><Icon icon="solar:star-shine-bold" width={10} style={{ marginRight: 3 }} />แนะนำ</div>}
-                                                                <div className="reg-img-container" style={{ height: '140px', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px' }}>
-                                                                    <img src={menu.thumbnail || canal.image} alt={menu.menu_name} loading="lazy" />
-                                                                </div>
+                                                                 <div className="reg-img-container" style={{ height: '140px', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px' }}>
+                                                                     <img src={(isRec && menu.thumbnail) ? menu.thumbnail : fallbackImg} alt={menu.menu_name} loading="lazy" />
+                                                                 </div>
                                                                 <div className="fc-type">{menu.category}</div>
                                                                 <div className="fc-name">{menu.menu_name}</div>
                                                                 <div className="fc-com">{menu.address || menu.canal_zone}</div>
