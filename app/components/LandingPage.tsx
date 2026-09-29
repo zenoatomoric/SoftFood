@@ -53,13 +53,17 @@ interface MenuItem {
     steps: string[]
     video_url: string | null
     promo_video_url: string | null
+    social_value?: string
+    awards_references?: string
+    consumption_freq?: string[] | string
+    complexity?: string[] | string
 }
 
 // Canal zones config
 const CANALS = [
-    { id: 'บางเขน', name: 'คลองบางเขน', image: '/Bangken.png', theme: 'dk' as const, num: '01', subtitle: 'คลองสายแรก', color: '#5db8d8', icon: 'solar:rowing-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a5a7a] via-[#0d3a5a] to-[#2d7a5e]' },
+    { id: 'บางเขน', name: 'คลองบางเขน', image: '/Bangken.png', theme: 'lt' as const, num: '01', subtitle: 'คลองสายแรก', color: '#5db8d8', icon: 'solar:rowing-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a5a7a] via-[#0d3a5a] to-[#2d7a5e]' },
     { id: 'เปรมประชากร', name: 'คลองเปรมประชากร', image: '/pamepacha.png', theme: 'lt' as const, num: '02', subtitle: 'คลองสายที่สอง', color: '#c8963c', icon: 'solar:compass-big-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a3a5a] via-[#2d6a4a] to-[#4a8a5a]', reversed: true },
-    { id: 'ลาดพร้าว', name: 'คลองลาดพร้าว', image: '/ladpaw.png', theme: 'wm' as const, num: '03', subtitle: 'คลองสายที่สาม', color: '#c87a3c', icon: 'solar:leaf-bold-duotone', bgClass: 'bg-gradient-to-br from-[#3a5a1a] via-[#1a4a5a] to-[#0d3a4a]' },
+    { id: 'ลาดพร้าว', name: 'คลองลาดพร้าว', image: '/ladpaw.png', theme: 'lt' as const, num: '03', subtitle: 'คลองสายที่สาม', color: '#c87a3c', icon: 'solar:leaf-bold-duotone', bgClass: 'bg-gradient-to-br from-[#3a5a1a] via-[#1a4a5a] to-[#0d3a4a]' },
 ]
 
 const CANAL_DESCRIPTIONS: Record<string, { desc: string; chips: { icon: string; text: string }[]; identity: { icon: string; title: string; detail: string }[]; flavors: { icon: string; text: string }[] }> = {
@@ -126,6 +130,8 @@ const getPaginationGroup = (currentPage: number, totalPages: number) => {
     return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
 };
 
+const STORY_VIDEO_MS = 12000   // สลับวิดีโอแนะนำใน Story ทุก 12 วินาที (สุ่ม)
+
 export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
     const [menus, setMenus] = useState<MenuItem[]>([])
     const [loading, setLoading] = useState(true)
@@ -133,11 +139,13 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
     const [popupVisible, setPopupVisible] = useState(false)
     const [heroSlide, setHeroSlide] = useState(0)
     const [canalFilters, setCanalFilters] = useState<Record<string, string>>({
-        'บางเขน': 'sig', 'เปรมประชากร': 'sig', 'ลาดพร้าว': 'sig'
+        'บางเขน': 'all', 'เปรมประชากร': 'all', 'ลาดพร้าว': 'all'
     })
     const [canalPage, setCanalPage] = useState<Record<string, number>>({})
     const [canalSearch, setCanalSearch] = useState<Record<string, string>>({})
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+    const [storyVidIdx, setStoryVidIdx] = useState(0)
+    const [storyMuted, setStoryMuted] = useState(true)
     const heroRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     useEffect(() => {
@@ -180,6 +188,27 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
         return { totalMenus, totalCanals, totalSignature, totalInformants }
     }, [menus])
 
+    // วิดีโอแนะนำ (promo) จากเมนูที่มีวิดีโอ — ใช้สุ่มเล่นในสปอต "วิถีริมคลอง" (Story)
+    const videoMenus = useMemo(
+        () => menus.filter(m => m.promo_video_url || m.video_url),
+        [menus]
+    )
+    useEffect(() => {
+        if (videoMenus.length) setStoryVidIdx(Math.floor(Math.random() * videoMenus.length))
+    }, [videoMenus.length])
+    // สุ่มสลับวิดีโอทุก STORY_VIDEO_MS วินาที (แทนการรอคลิปจบ) — เลี่ยงสุ่มซ้ำตัวเดิม
+    useEffect(() => {
+        if (videoMenus.length <= 1) return
+        const t = setInterval(() => {
+            setStoryVidIdx(prev => {
+                let n = prev
+                while (n === prev) n = Math.floor(Math.random() * videoMenus.length)
+                return n
+            })
+        }, STORY_VIDEO_MS)
+        return () => clearInterval(t)
+    }, [videoMenus.length])
+
     const menusByCanal = useMemo(() => {
         const grouped: Record<string, MenuItem[]> = {}
         CANALS.forEach(c => { grouped[c.id] = [] })
@@ -219,6 +248,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
 
     const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
     const setFilter = (canal: string, f: string) => { setCanalFilters(prev => ({ ...prev, [canal]: f })); setCanalPage(p => ({ ...p, [canal]: 1 })) }
+    const storyVideo = videoMenus[storyVidIdx] ?? videoMenus[0]
 
     return (
         <div className="landing-root">
@@ -243,11 +273,11 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                         /></div>
                         <div><div className="nl-th">อาหารไทยริมคลอง</div><div className="nl-en">Thai Canal Heritage</div></div>
                     </Link>
-                    <ul className={`nav-links ${isMobileMenuOpen ? 'open' : ''}`}>
+                    <ul id="nav-links-menu" className={`nav-links ${isMobileMenuOpen ? 'open' : ''}`}>
                         <li><a href="#story" onClick={e => { e.preventDefault(); scrollTo('story'); setIsMobileMenuOpen(false) }}>หน้าหลัก</a></li>
                         <li><a href="#mapSec" onClick={e => { e.preventDefault(); scrollTo('mapSec'); setIsMobileMenuOpen(false) }}>แผนที่</a></li>
                         <li><a href="#canalSec" onClick={e => { e.preventDefault(); scrollTo('canalSec'); setIsMobileMenuOpen(false) }}>สามคลอง</a></li>
-                        <li><a href="#partners" onClick={e => { e.preventDefault(); scrollTo('partners'); setIsMobileMenuOpen(false) }}>พันธมิตร</a></li>
+                        <li><a href="#partners" onClick={e => { e.preventDefault(); scrollTo('partners'); setIsMobileMenuOpen(false) }}>ภาคีเครือข่าย</a></li>
                         <li>
                             <Link href={isLoggedIn ? '/home' : '/login'} className="nav-cta">
                                 <Icon icon={isLoggedIn ? 'solar:chart-square-bold' : 'solar:chef-hat-minimalistic-bold'} width={14} style={{ marginRight: 4 }} />
@@ -256,7 +286,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                         </li>
                     </ul>
                     <div className="nav-right">
-                        <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                        <button className="mobile-menu-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label={isMobileMenuOpen ? 'ปิดเมนู' : 'เปิดเมนู'} aria-expanded={isMobileMenuOpen} aria-controls="nav-links-menu">
                             <Icon icon={isMobileMenuOpen ? "solar:close-circle-bold-duotone" : "solar:hamburger-menu-linear"} width={28} />
                         </button>
                     </div>
@@ -282,7 +312,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                     </svg>
                 </div>
                 <div className="hero-cnt">
-                    <div className="heb"><Icon icon="solar:star-shine-bold" width={12} style={{ marginRight: 6 }} />Soft Power · มรดกอาหารแห่งสายน้ำ<Icon icon="solar:star-shine-bold" width={12} style={{ marginLeft: 6 }} /></div>
+                    <div className="heb">Soft Power · มรดกอาหารแห่งสายน้ำ</div>
                     <h1 className="ht">อาหารไทยริมคลอง<span className="gline">รสชาติที่หยั่งรากในสายน้ำ</span></h1>
                     <p className="hs">
                         บันทึก อนุรักษ์ และยกระดับอาหารพื้นถิ่นริมคลองสามสายในกรุงเทพฯ<br />
@@ -303,7 +333,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                     </div>
                 </div>
                 <div className="c-dots">
-                    {[0, 1, 2].map(i => <button key={i} className={`dot-i ${heroSlide === i ? 'act' : ''}`} onClick={() => goSlide(i)} />)}
+                    {[0, 1, 2].map(i => <button key={i} className={`dot-i ${heroSlide === i ? 'act' : ''}`} onClick={() => goSlide(i)} aria-label={`สไลด์ภาพที่ ${i + 1}`} />)}
                 </div>
                 <div className="hero-wave">
                     <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
@@ -329,28 +359,42 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                             </div>
                         </div>
                         <div className="reveal">
-                            <div className="cdiag">
-                                <div className="cdiag-title"><Icon icon="solar:compass-big-bold" width={14} style={{ marginRight: 5 }} />ผังสายน้ำ  กรุงเทพฯ ฝั่งเหนือ</div>
-                                <div className="cdiag-river">
-                                    <Icon icon="solar:waterdrops-bold-duotone" width={22} style={{ color: 'var(--cl)' }} />
-                                    <div><div className="rn">แม่น้ำเจ้าพระยา</div><div className="rd">สายน้ำหลัก · เชื่อม 3 คลองสาขา</div></div>
-                                </div>
-                                <div className="cdiag-arr"><Icon icon="solar:alt-arrow-down-bold" width={16} /></div>
-                                {CANALS.map(c => {
-                                    const items = menusByCanal[c.id] || []
-                                    const sigCount = items.filter(m => m.selection_status.includes('ซิกเนเจอร์')).length
-                                    const recCount = items.filter(m => m.selection_status.includes('36')).length
-                                    return (
-                                        <div key={c.id} className="cdi" onClick={() => scrollTo(`canal-${c.id}`)}>
-                                            <div className="cdi-bar" style={{ background: c.color }} />
-                                            <div>
-                                                <div className="cdi-cn">{c.name}</div>
-                                            </div>
-                                            <div className="cdi-arr"><Icon icon="solar:alt-arrow-right-linear" width={13} /></div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
+                            {/* วิถีริมคลอง — สุ่มเล่นวิดีโอแนะนำจากเมนู (Signature) ถ้ามี data · ไม่มีวิดีโอ → รูปคลองจริง — Athen 2026-06-28 */}
+                            <figure className="story-photo">
+                                {storyVideo ? (
+                                    <>
+                                        <video
+                                            key={storyVideo.menu_id}
+                                            src={(storyVideo.promo_video_url || storyVideo.video_url) ?? undefined}
+                                            poster={storyVideo.thumbnail ?? undefined}
+                                            autoPlay
+                                            muted={storyMuted}
+                                            playsInline
+                                            loop
+                                        />
+                                        <button
+                                            type="button"
+                                            className="sp-mute"
+                                            onClick={() => setStoryMuted(m => !m)}
+                                            aria-label={storyMuted ? 'เปิดเสียง' : 'ปิดเสียง'}
+                                        >
+                                            <Icon icon={storyMuted ? 'solar:muted-bold' : 'solar:volume-loud-bold'} width={18} />
+                                        </button>
+                                        <figcaption>
+                                            <span className="sp-k">วิดีโอแนะนำ · คลอง{storyVideo.canal_zone}</span>
+                                            <span className="sp-t">{storyVideo.menu_name}</span>
+                                        </figcaption>
+                                    </>
+                                ) : (
+                                    <>
+                                        <img src="/Bangken.png" alt="วิถีชีวิตและอาหารพื้นถิ่นริมคลอง กรุงเทพฯ ฝั่งเหนือ" loading="lazy" />
+                                        <figcaption>
+                                            <span className="sp-k">วิถีริมคลอง</span>
+                                            <span className="sp-t">อาหารพื้นถิ่นแห่งสายน้ำ กรุงเทพฯ ฝั่งเหนือ</span>
+                                        </figcaption>
+                                    </>
+                                )}
+                            </figure>
                         </div>
                     </div>
                 </div>
@@ -465,7 +509,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                             <div style={{ textAlign: 'center', padding: '48px 20px', borderRadius: 14, border: '1.5px dashed rgba(200,150,60,.25)', background: 'rgba(200,150,60,.04)' }}>
                                                 <Icon icon="solar:magnifer-zoom-in-bold-duotone" style={{ fontSize: 36, color: 'var(--go)', marginBottom: 10, display: 'block', margin: '0 auto 10px' }} />
                                                 <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--go)' }}>ไม่พบรายการอาหารในหมวดหมู่นี้</p>
-                                                <p style={{ fontSize: 12, color: canal.theme === 'dk' ? 'rgba(255,255,255,.45)' : 'var(--tl)', marginTop: 4 }}>ลองเลือกหมวดหมู่อื่น หรือดูทั้งหมด</p>
+                                                <p style={{ fontSize: 12, color: 'var(--tl)', marginTop: 4 }}>ลองเลือกหมวดหมู่อื่น หรือดูทั้งหมด</p>
                                             </div>
                                         ) : (
                                             <>
@@ -559,47 +603,23 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                 })}
             </div>
 
-            {/* ─── IMPACT ─── */}
-            <section className="impact-sec">
-                <div className="ctr">
-                    <div className="impact-grid reveal">
-                        <div className="imp"><Icon icon="solar:chef-hat-bold-duotone" className="imp-icon" style={{ color: 'var(--gl)' }} /><div className="imp-num">{loading ? '…' : stats.totalMenus}</div><div className="imp-lbl">รายการอาหารที่บันทึก</div></div>
-                        <div className="imp"><Icon icon="solar:waterdrops-bold-duotone" className="imp-icon" style={{ color: 'var(--cl)' }} /><div className="imp-num">{loading ? '…' : stats.totalCanals}</div><div className="imp-lbl">คลองสายน้ำ</div></div>
-                        <div className="imp"><Icon icon="solar:star-bold-duotone" className="imp-icon" style={{ color: 'var(--gl)' }} /><div className="imp-num">{loading ? '…' : stats.totalSignature}</div><div className="imp-lbl">เมนู Signature</div></div>
-                        <div className="imp"><Icon icon="solar:users-group-rounded-bold-duotone" className="imp-icon" style={{ color: 'var(--cl)' }} /><div className="imp-num">{loading ? '…' : stats.totalInformants}</div><div className="imp-lbl">ครัวเรือนผู้ให้ข้อมูล</div></div>
-                    </div>
-                </div>
-            </section>
+            {/* ─── IMPACT (ตัดออก 2026-06-28: สถิติซ้ำกับ Story 3/4 ตัว = AI filler tell · Athen อนุมัติตัด · ดีไซน์เดิมยังเก็บใน mockup_A_full.html ถ้าต้องการกู้คืน) ─── */}
 
             {/* ─── PARTNERS ─── */}
             <section className="partners-sec" id="partners">
                 <div className="ctr">
-                    <div className="partners-hdr reveal"><div className="sec-label">พันธมิตรโครงการ</div><h2 className="sh" style={{ color: 'var(--cd)' }}>หน่วยงานที่ร่วมสนับสนุน</h2></div>
-                    <div className="marquee-container reveal">
-                        <div className="marquee-track">
-                            {/* Set 1 */}
-                            <div className="pcard"><img src="/มจษ..png" alt="CRU" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">มหาวิทยาลัยราชภัฏจันทรเกษม</div><div className="pt">สถาบันการศึกษา</div></div>
-                            <div className="pcard"><img src="/มส..png" alt="Humanities" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะมนุษยศาสตร์และสังคมศาสตร์</div><div className="pt">คณะวิชา</div></div>
-                            <div className="pcard"><img src="/วจก.png" alt="Management Science" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะวิทยาการจัดการ</div><div className="pt">คณะวิชา</div></div>
-                            <div className="pcard"><img src="/วท..png" alt="Science" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะวิทยาศาสตร์</div><div className="pt">คณะวิชา</div></div>
-                            <div className="pcard"><img src="/กทม..jpg" alt="BMA" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานเขตจตุจักร</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
-                            <div className="pcard"><img src="/กทม..jpg" alt="BMA" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานเขตหลักสี่</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
-                            <div className="pcard"><img src="/สำนักงานวัฒนธรรม จังหวัดนนทบุรี.jpg" alt="Nonthaburi Culture" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานวัฒนธรรม จังหวัดนนทบุรี</div><div className="pt">หน่วยงานรัฐ</div></div>
-                            <div className="pcard"><img src="/อบจ.นนทบุรี.jpg" alt="Nonthaburi PAO" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">อบจ. นนทบุรี</div><div className="pt">องค์กรปกครองส่วนท้องถิ่น</div></div>
-                            <div className="pcard"><img src="/กรมส่งเสริมวัฒนธรรม.png" alt="Department of Cultural Promotion" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">กรมส่งเสริมวัฒนธรรม</div><div className="pt">หน่วยงานรัฐ</div></div>
-                            <div className="pcard"><img src="/ศูนย์ศึกษาพระพุทธศาสนาวันอาทิตย์วัดทางหลวง.jpg" alt="Wat Thang Luang" className="w-14 h-14 md:w-16 md:h-16 object-cover rounded-full mb-4 mx-auto" /><div className="pn mt-2">วัดทางหลวง</div><div className="pt">วัดและชุมชน</div></div>
-                            {/* Set 2 (Duplicate for loop) */}
-                            <div className="pcard"><img src="/มจษ..png" alt="CRU" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">มหาวิทยาลัยราชภัฏจันทรเกษม</div><div className="pt">สถาบันการศึกษา</div></div>
-                            <div className="pcard"><img src="/มส..png" alt="Humanities" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะมนุษยศาสตร์และสังคมศาสตร์</div><div className="pt">คณะวิชา</div></div>
-                            <div className="pcard"><img src="/วจก.png" alt="Management Science" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะวิทยาการจัดการ</div><div className="pt">คณะวิชา</div></div>
-                            <div className="pcard"><img src="/วท..png" alt="Science" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะวิทยาศาสตร์</div><div className="pt">คณะวิชา</div></div>
-                            <div className="pcard"><img src="/กทม..jpg" alt="BMA" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานเขตจตุจักร</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
-                            <div className="pcard"><img src="/กทม..jpg" alt="BMA" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานเขตหลักสี่</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
-                            <div className="pcard"><img src="/สำนักงานวัฒนธรรม จังหวัดนนทบุรี.jpg" alt="Nonthaburi Culture" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานวัฒนธรรม จังหวัดนนทบุรี</div><div className="pt">หน่วยงานรัฐ</div></div>
-                            <div className="pcard"><img src="/อบจ.นนทบุรี.jpg" alt="Nonthaburi PAO" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">อบจ. นนทบุรี</div><div className="pt">องค์กรปกครองส่วนท้องถิ่น</div></div>
-                            <div className="pcard"><img src="/กรมส่งเสริมวัฒนธรรม.png" alt="Department of Cultural Promotion" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">กรมส่งเสริมวัฒนธรรม</div><div className="pt">หน่วยงานรัฐ</div></div>
-                            <div className="pcard"><img src="/ศูนย์ศึกษาพระพุทธศาสนาวันอาทิตย์วัดทางหลวง.jpg" alt="Wat Thang Luang" className="w-14 h-14 md:w-16 md:h-16 object-cover rounded-full mb-4 mx-auto" /><div className="pn mt-2">วัดทางหลวง</div><div className="pt">วัดและชุมชน</div></div>
-                        </div>
+                    <div className="partners-hdr reveal"><div className="sec-label">ภาคีเครือข่าย</div><h2 className="sh" style={{ color: 'var(--cd)' }}>หน่วยงานที่ร่วมสนับสนุน</h2></div>
+                    <div className="p-grid reveal">
+                        <div className="pcard"><img src="/มจษ..png" alt="CRU" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">มหาวิทยาลัยราชภัฏจันทรเกษม</div><div className="pt">สถาบันการศึกษา</div></div>
+                        <div className="pcard"><img src="/มส..png" alt="Humanities" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะมนุษยศาสตร์และสังคมศาสตร์</div><div className="pt">คณะวิชา</div></div>
+                        <div className="pcard"><img src="/วจก.png" alt="Management Science" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะวิทยาการจัดการ</div><div className="pt">คณะวิชา</div></div>
+                        <div className="pcard"><img src="/วท..png" alt="Science" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">คณะวิทยาศาสตร์</div><div className="pt">คณะวิชา</div></div>
+                        <div className="pcard"><img src="/กทม..jpg" alt="BMA" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานเขตจตุจักร</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
+                        <div className="pcard"><img src="/กทม..jpg" alt="BMA" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานเขตหลักสี่</div><div className="pt">หน่วยงานท้องถิ่น</div></div>
+                        <div className="pcard"><img src="/สำนักงานวัฒนธรรม จังหวัดนนทบุรี.jpg" alt="Nonthaburi Culture" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">สำนักงานวัฒนธรรม จังหวัดนนทบุรี</div><div className="pt">หน่วยงานรัฐ</div></div>
+                        <div className="pcard"><img src="/อบจ.นนทบุรี.jpg" alt="Nonthaburi PAO" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto mix-blend-multiply" /><div className="pn">อบจ. นนทบุรี</div><div className="pt">องค์กรปกครองส่วนท้องถิ่น</div></div>
+                        <div className="pcard"><img src="/กรมส่งเสริมวัฒนธรรม.png" alt="Department of Cultural Promotion" className="w-14 h-14 md:w-16 md:h-16 object-contain mb-4 mx-auto" /><div className="pn">กรมส่งเสริมวัฒนธรรม</div><div className="pt">หน่วยงานรัฐ</div></div>
+                        <div className="pcard"><img src="/ศูนย์ศึกษาพระพุทธศาสนาวันอาทิตย์วัดทางหลวง.jpg" alt="Wat Thang Luang" className="w-14 h-14 md:w-16 md:h-16 object-cover rounded-full mb-4 mx-auto" /><div className="pn mt-2">วัดทางหลวง</div><div className="pt">วัดและชุมชน</div></div>
                     </div>
                 </div>
             </section>

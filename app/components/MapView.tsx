@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useMemo } from 'react'
+import { useEffect, useRef, useMemo, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { Icon } from '@iconify/react'
 
 interface MapMenuItem {
     menu_id: string
@@ -29,7 +30,24 @@ export const CANAL_COLORS: Record<string, string> = {
 }
 const DEFAULT_COLOR = '#64748b'
 
+const MAP_STYLES = {
+    bright: 'https://tiles.openfreemap.org/styles/bright',
+    min: 'https://tiles.openfreemap.org/styles/positron',
+    sat: {
+        version: 8,
+        sources: {
+            sat: {
+                type: 'raster',
+                tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+                tileSize: 256,
+                attribution: 'Esri World Imagery'
+            }
+        },
+        layers: [{ id: 'sat', type: 'raster', source: 'sat' }]
+    }
+} as const
 
+type MapStyleKey = keyof typeof MAP_STYLES
 
 /** Build a GeoJSON FeatureCollection from menus, with canal-zone color pre-baked in. */
 function buildGeoJSON(
@@ -64,6 +82,9 @@ export default function MapView({ menus, activeCanal = 'all', onMenuClick }: Pro
     const containerRef = useRef<HTMLDivElement>(null)
     const mapRef = useRef<maplibregl.Map | null>(null)
     const popupRef = useRef<maplibregl.Popup | null>(null)
+    const [mapStyle, setMapStyle] = useState<MapStyleKey>('bright')
+    const [mapLoaded, setMapLoaded] = useState(false)
+    
     // Keep a stable ref to the latest data so the one-time map init can access it
     const latestDataRef = useRef<{ menus: MapMenuItem[]; canal: string }>({ menus, canal: activeCanal })
 
@@ -83,26 +104,25 @@ export default function MapView({ menus, activeCanal = 'all', onMenuClick }: Pro
 
         const map = new maplibregl.Map({
             container: containerRef.current,
-            style: 'https://tiles.openfreemap.org/styles/bright',
+            style: MAP_STYLES.bright,
             center: [100.595, 13.862],
             zoom: 11.5,
             attributionControl: false,
-            scrollZoom: false,
+            scrollZoom: true,
+            cooperativeGestures: true, // แก้ zoom สัมผัสติดขัด
             fadeDuration: 300,
         })
 
         map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right')
-        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
 
-        // Ctrl+scroll-to-zoom
-        map.getCanvas().addEventListener('wheel', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                e.preventDefault()
-                map.zoomTo(map.getZoom() + (e.deltaY > 0 ? -0.5 : 0.5), { duration: 300 })
-            }
-        }, { passive: false })
+        // Apply smooth zoom settings (as requested in mockup)
+        map.touchZoomRotate.disableRotation()
+        map.dragRotate.disable()
+        map.touchPitch.disable()
+        map.scrollZoom.setWheelZoomRate(1 / 250)
 
-        map.on('load', () => {
+        const addLayers = () => {
+            if (map.getSource('menus')) return
             const { menus: initMenus, canal: initCanal } = latestDataRef.current
 
             /* ── GeoJSON source (no clustering) ── */
@@ -138,8 +158,14 @@ export default function MapView({ menus, activeCanal = 'all', onMenuClick }: Pro
                 },
             })
 
-            /* ── Click: point → popup ── */
-            map.on('click', 'point', (e) => {
+        }
+
+        /* ── Event handlers: registered ONCE so they survive style switches.
+           setStyle() re-adds layers (via 'styledata') but does NOT clear these
+           delegated listeners — registering them inside addLayers() would stack
+           duplicates on every style switch. ── */
+        /* ── Click: point → popup ── */
+        map.on('click', 'point', (e) => {
                 const feat = e.features?.[0]
                 if (!feat) return
                 const p = feat.properties as Record<string, string>
@@ -180,10 +206,21 @@ export default function MapView({ menus, activeCanal = 'all', onMenuClick }: Pro
                     .addTo(map)
             })
 
-            /* ── Cursor feedback ── */
-            const setCursor = (cursor: string) => () => { map.getCanvas().style.cursor = cursor }
-            map.on('mouseenter', 'point', setCursor('pointer'))
-            map.on('mouseleave', 'point', setCursor(''))
+        /* ── Cursor feedback ── */
+        const setCursor = (cursor: string) => () => { map.getCanvas().style.cursor = cursor }
+        map.on('mouseenter', 'point', setCursor('pointer'))
+        map.on('mouseleave', 'point', setCursor(''))
+
+        map.on('load', () => {
+            addLayers()
+            // The map lives inside an animated `.reveal` wrapper; force a resize once
+            // it's ready so the canvas matches its final box (fixes blank/half-drawn map).
+            map.resize()
+            setMapLoaded(true)
+        })
+        map.on('styledata', () => {
+            // After setStyle(), wait until the new style is fully loaded before re-adding.
+            if (map.isStyleLoaded() && !map.getSource('menus')) addLayers()
         })
 
         mapRef.current = map
@@ -193,6 +230,19 @@ export default function MapView({ menus, activeCanal = 'all', onMenuClick }: Pro
             mapRef.current = null
         }
     }, []) // run once
+
+    /* ── Handle Style Switcher ── */
+    const didMountStyle = useRef(false)
+    useEffect(() => {
+        const map = mapRef.current
+        if (!map) return
+        // Skip the first run: the map is already created with the 'bright' style,
+        // so re-calling setStyle on mount only triggers a redundant reload/flash.
+        if (!didMountStyle.current) { didMountStyle.current = true; return }
+
+        // This will trigger 'styledata' event, which will re-add our custom layers
+        map.setStyle(MAP_STYLES[mapStyle] as any)
+    }, [mapStyle])
 
     /* ── Update data when canal filter or menus change (no map move) ── */
     useEffect(() => {
@@ -218,12 +268,64 @@ export default function MapView({ menus, activeCanal = 'all', onMenuClick }: Pro
         return () => { delete (window as any).__mapMenuClick }
     }, [onMenuClick])
 
+    const handleZoomIn = () => mapRef.current?.zoomIn({ duration: 300 })
+    const handleZoomOut = () => mapRef.current?.zoomOut({ duration: 300 })
+
     return (
         <div
-            className="relative w-full rounded-2xl overflow-hidden border border-slate-200 shadow-lg"
+            className="relative w-full rounded-[10px] overflow-hidden border border-slate-200 shadow-lg"
             style={{ height: '500px' }}
         >
             <div ref={containerRef} className="w-full h-full" />
+
+            {/* Loading overlay — shown until the basemap finishes its first paint
+                so the user sees feedback instead of a blank white box. */}
+            {!mapLoaded && (
+                <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 pointer-events-none" style={{ background: '#fbf9f4' }}>
+                    <Icon icon="solar:map-arrow-square-bold-duotone" className="text-4xl animate-pulse" style={{ color: '#c8963c' }} />
+                    <span className="text-sm font-medium" style={{ color: '#0d3348' }}>กำลังโหลดแผนที่…</span>
+                </div>
+            )}
+
+            {/* Base-style Switcher */}
+            <div className="absolute top-4 left-4 z-20 flex gap-1.5 bg-white/92 backdrop-blur-md p-1.5 rounded-xl shadow-[0_4px_16px_rgba(13,51,72,0.15)]">
+                {[
+                    { key: 'bright', icon: 'solar:map-bold', label: 'สว่าง' },
+                    { key: 'min', icon: 'solar:map-point-wave-bold', label: 'มินิมอล' },
+                    { key: 'sat', icon: 'solar:planet-bold', label: 'ดาวเทียม' }
+                ].map(({ key, icon, label }) => (
+                    <button
+                        key={key}
+                        onClick={() => setMapStyle(key as MapStyleKey)}
+                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-colors duration-200 min-h-[40px]
+                            ${mapStyle === key 
+                                ? 'bg-gradient-to-br from-[#c8963c] to-[#e8b84b] text-[#0d3348]' 
+                                : 'bg-transparent text-slate-500 hover:bg-[#c8963c]/10 hover:text-[#c8963c]'
+                            }`}
+                    >
+                        <Icon icon={icon} className="text-lg" />
+                        <span className="hidden sm:inline">{label}</span>
+                    </button>
+                ))}
+            </div>
+
+            {/* Large +/- Zoom Controls */}
+            <div className="absolute top-4 right-4 z-20 flex flex-col bg-white/95 rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(13,51,72,0.18)]">
+                <button 
+                    onClick={handleZoomIn} 
+                    aria-label="ซูมเข้า"
+                    className="w-12 h-12 flex items-center justify-center border-b border-[#efe9dd] text-[#0d3348] text-2xl font-semibold bg-white hover:bg-[#fbf9f4] hover:text-[#c8963c] transition-colors"
+                >
+                    +
+                </button>
+                <button 
+                    onClick={handleZoomOut} 
+                    aria-label="ซูมออก"
+                    className="w-12 h-12 flex items-center justify-center text-[#0d3348] text-2xl font-semibold bg-white hover:bg-[#fbf9f4] hover:text-[#c8963c] transition-colors"
+                >
+                    −
+                </button>
+            </div>
 
             {/* Legend */}
             <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl px-4 py-3 shadow-md border border-slate-100 space-y-1.5">

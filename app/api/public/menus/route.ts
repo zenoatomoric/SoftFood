@@ -105,6 +105,11 @@ export async function GET() {
                 steps,
                 video_url: item.video_url || null,
                 promo_video_url: item.promo_video_url || null,
+                // ── เพิ่มใหม่ (แนว A: popup ข้อมูลครบ) ──
+                social_value: item.social_value || '',
+                awards_references: item.awards_references || '',
+                consumption_freq: item.consumption_freq || [],
+                complexity: item.complexity || [],
             }
         })
 

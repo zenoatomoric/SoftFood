@@ -11,9 +11,9 @@
   --gd: #9a6f22;
   --br: #5c3317;
   --bm: #7a4a28;
-  --cr: #f9f3e8;
-  --cd2: #f0e8d5;
-  --ow: #fefcf7;
+  --cr: #fcfcfa;   /* แนว A: ลดเหลืองทั้งหน้า (เดิม #fbf9f4 เหลืองเกิน) → เกือบขาว วอร์มเศษเสี้ยว — Athen 2026-06-28 */
+  --cd2: #eceae3;
+  --ow: #ffffff;
   --tx: #1a1a2e;
   --tm: #3d3d3d;
   --tl: #6b6b6b;
@@ -43,8 +43,10 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
   background: linear-gradient(90deg, transparent, var(--go), transparent);
 }
 .gold-div .d { width: 7px; height: 7px; background: var(--go); transform: rotate(45deg); }
-.reveal { opacity: 0; transform: translateY(20px); transition: opacity .6s ease, transform .6s ease; }
-.reveal.vis { opacity: 1; transform: translateY(0); }
+/* แนว A: visible-first — เนื้อหาโชว์ทันที (กัน section ว่างถ้า observer ไม่ยิง) */
+.reveal { opacity: 1; transform: none; transition: opacity .6s ease, transform .6s ease; }
+.reveal.vis { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { transition: none; } }
 
 /* ─── NAVBAR ─── */
 .lp-navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; transition: transform .3s ease; }
@@ -393,3 +395,63 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
   .fcard-sig { grid-column: span 1; }
   .ctr { padding: 0 16px; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   VARIANT A OVERRIDES — โปร่ง/ขาว/ทองน้อย/พื้นที่หายใจมากขึ้น
+   (ทับสไตล์เดิม คงชื่อ class/JS hook ทั้งหมด)
+   ═══════════════════════════════════════════════════════════ */
+
+/* 1) พื้นที่หายใจมากขึ้น (whitespace) */
+.story-sec   { padding: 88px 0 76px; }
+.map-sec     { padding: 88px 0; }
+.cblock      { padding: 88px 0; }
+.impact-sec  { padding: 76px 0; }
+.partners-sec{ padding: 84px 0; }
+.story-grid  { gap: 72px; }
+.canal-top   { gap: 60px; margin-bottom: 56px; }
+.food-grid   { gap: 18px; }
+
+/* 2) ลดของรก hero — คลื่น SVG เบาลง, gold glow เบาลง */
+.hw1 { opacity: .6; }
+.hw2, .hw3 { display: none; }              /* เหลือคลื่นชั้นเดียว ไม่ให้แข่งกับข้อความ */
+.hdeco { opacity: .5; }
+
+/* 3) คลองทุกสายพื้นขาว (theme=lt อยู่แล้ว) — ขอบบางคั่นให้เป็นจังหวะ */
+.cblock.lt { background: var(--ow); border-top: 1px solid var(--cd2); }
+.cblock.lt:first-of-type { border-top: none; }
+
+/* 4) ทอง = accent: ลดเลข cnum ที่จัดจ้าน + เส้น sec-label บางลง */
+.cnum { color: rgba(200,150,60,.07); }
+.sec-label { font-weight: 600; letter-spacing: 2.5px; }
+
+/* 5) ภาคีเครือข่าย — grid นิ่ง โลโก้พื้นขาวสม่ำเสมอ ดูเป็นทางการ */
+.p-grid { gap: 16px; max-width: 1000px; margin: 0 auto; }
+.pcard { min-height: 150px; display: flex; flex-direction: column; justify-content: center; }
+
+/* 6) การ์ดอาหาร — เงานุ่ม ขอบสม่ำเสมอ (โทนพรีเมียมเรียบ) */
+.fcard-reg, .fcard-sig { box-shadow: var(--shc); }
+.cblock.lt .fcard-reg:hover, .cblock.lt .fcard-sig:hover { box-shadow: var(--shg); }
+
+/* ═══════════════════════════════════════════════════════════
+   7) แก้ตามฟีดแบ็ก Athen (2026-06-28 — ตรวจหน้าจริง)
+   ═══════════════════════════════════════════════════════════ */
+
+/* 7a) ภาคีเครือข่าย — 2 แถว (5 คอลัมน์) + การ์ดเล็กลง/เบาลง (Athen: ดูใหญ่ไปในภาพรวม) */
+.p-grid { grid-template-columns: repeat(5, 1fr); max-width: 980px; gap: 12px; }
+.pcard { min-height: 112px; padding: 14px 10px; border-radius: 10px; }
+.pcard img { width: 42px !important; height: 42px !important; margin-bottom: 8px; }
+.pcard .pn { font-size: 11px; margin-bottom: 2px; }
+.pcard .pt { font-size: 9px; }
+
+/* 7b) ผังสายน้ำ (diagram) ถูกแทนด้วยรูปคลองจริง .story-photo (Athen 2026-06-28) */
+.story-photo { position: relative; margin: 0; border-radius: 18px; overflow: hidden; box-shadow: var(--shc); aspect-ratio: 4 / 5; background: var(--cd2); }
+.story-photo img, .story-photo video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.story-photo figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 24px 20px; background: linear-gradient(to top, rgba(7,33,47,.85), rgba(7,33,47,.32) 55%, transparent); }
+.story-photo .sp-mute { position: absolute; top: 14px; right: 14px; width: 38px; height: 38px; display: grid; place-items: center; border: none; border-radius: 50%; background: rgba(7,33,47,.55); color: #fff; cursor: pointer; backdrop-filter: blur(4px); transition: background .2s; }
+.story-photo .sp-mute:hover { background: rgba(200,150,60,.9); color: var(--cd); }
+.story-photo .sp-k { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gl); margin-bottom: 5px; }
+.story-photo .sp-t { display: block; font-size: 16.5px; font-weight: 600; line-height: 1.45; color: #fff; }
+
+/* responsive: ภาคีเครือข่ายบนจอเล็ก 2 คอลัมน์ (มี media เดิม 2 อยู่แล้ว แต่ override ที่นี่ให้ชนะ repeat(5)) */
+@media (max-width: 640px) { .p-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 641px) and (max-width: 1024px) { .p-grid { grid-template-columns: repeat(3, 1fr); } }
