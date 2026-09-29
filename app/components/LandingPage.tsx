@@ -339,7 +339,17 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                             </div>
                         </div>
                         <div className="reveal">
-                            {/* วิดีโอหลักของเว็บ (YouTube) — Athen 2026-09-29 */}
+                            <figure className="story-photo">
+                                <img src="/Bangken.png" alt="วิถีชีวิตและอาหารพื้นถิ่นริมคลอง กรุงเทพฯ ฝั่งเหนือ" loading="lazy" />
+                                <figcaption>
+                                    <span className="sp-k">วิถีริมคลอง</span>
+                                    <span className="sp-t">อาหารพื้นถิ่นแห่งสายน้ำ กรุงเทพฯ ฝั่งเหนือ</span>
+                                </figcaption>
+                            </figure>
+                        </div>
+                    </div>
+                    {/* วิดีโอหลักของเว็บ (YouTube) — เต็มความกว้างใต้ Story (Athen 2026-09-29: คอลัมน์ขวาเล็กไป) */}
+                    <div className="reveal story-video-wrap">
                             <figure className="story-video">
                                 <div className="sv-frame">
                                     <iframe
@@ -355,7 +365,6 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                     <span className="sp-t">เสน่ห์แห่งสายน้ำ รสชาติที่ยังมีลมหายใจ</span>
                                 </figcaption>
                             </figure>
-                        </div>
                     </div>
                 </div>
             </section>

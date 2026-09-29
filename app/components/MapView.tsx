@@ -218,9 +218,11 @@ export default function MapView({ menus, activeCanal = 'all', onMenuClick }: Pro
             map.resize()
             setMapLoaded(true)
         })
-        map.on('styledata', () => {
-            // After setStyle(), wait until the new style is fully loaded before re-adding.
-            if (map.isStyleLoaded() && !map.getSource('menus')) addLayers()
+        map.on('style.load', () => {
+            // setStyle() wipes custom sources/layers; 'style.load' fires once the new
+            // style is ready. ('styledata' + isStyleLoaded() raced and could miss it,
+            // leaving the map with no pins after switching base style.)
+            if (!map.getSource('menus')) addLayers()
         })
 
         mapRef.current = map

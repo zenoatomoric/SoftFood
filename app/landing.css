@@ -477,3 +477,9 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
   .ebook-sec { padding: 56px 0; }
   .ebook-frame { aspect-ratio: 3 / 4; max-height: none; }
 }
+
+/* 8b) วิดีโอหลักเต็มความกว้างใต้ Story (Athen 2026-09-29) */
+.story-video-wrap { max-width: 1100px; margin: 56px auto 0; }
+.story-video figcaption { padding: 18px 24px 20px; }
+.story-video .sp-t { font-size: 19px; }
+@media (max-width: 640px) { .story-video-wrap { margin-top: 36px; } }
