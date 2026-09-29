@@ -483,3 +483,25 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
 .story-video figcaption { padding: 18px 24px 20px; }
 .story-video .sp-t { font-size: 19px; }
 @media (max-width: 640px) { .story-video-wrap { margin-top: 36px; } }
+
+/* 8c) Story ไม่มีกล่องรูป: ซ้าย = หัวเรื่อง + ตัวเลข · ขวา = เนื้อความ (Athen 2026-09-29) */
+.story-grid--text { grid-template-columns: 1fr 1.3fr; align-items: start; }
+.story-grid--text .bquote { margin-bottom: 8px; }
+.story-body { padding-top: 34px; }
+.story-body .sbody { font-size: 17px; margin-bottom: 18px; }
+.story-body .sbody:last-child { margin-bottom: 0; }
+@media (max-width: 900px) {
+  .story-grid--text { grid-template-columns: 1fr; gap: 28px; }
+  .story-body { padding-top: 0; }
+}
+
+/* 8d) การ์ด Signature กะทัดรัด: ขนาดเท่าการ์ดปกติในกริด เด่นด้วยกรอบทอง + ป้าย (Athen 2026-09-29: เดิมกินเต็มแถว) */
+.fcard-sig { grid-column: span 1; display: flex; flex-direction: column; border: 1.5px solid rgba(200,150,60,.55); border-radius: 12px; }
+.cblock.lt .fcard-sig, .cblock.wm .fcard-sig { border-color: rgba(200,150,60,.55); }
+.fcard-sig .sig-img { height: 180px; flex-shrink: 0; }
+.fcard-sig .sig-body { padding: 14px 14px 16px; gap: 6px; flex: 1; }
+.fcard-sig .sig-name { font-size: 18px; line-height: 1.35; }
+.fcard-sig .sig-com { font-size: 13px; }
+.fcard-sig .sig-story { font-size: 14px; line-height: 1.65; -webkit-line-clamp: 2; }
+.fcard-sig .sig-meta { font-size: 11.5px; color: var(--tl); padding-top: 8px; margin-top: auto; }
+@media (max-width: 900px) { .fcard-sig { grid-column: span 1; } }

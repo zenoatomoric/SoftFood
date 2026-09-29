@@ -325,27 +325,20 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
             {/* ─── STORY ─── */}
             <section className="story-sec" id="story">
                 <div className="ctr">
-                    <div className="story-grid">
+                    <div className="story-grid story-grid--text">
                         <div className="reveal">
                             <div className="sec-label">เรื่องราวของพื้นที่</div>
                             <div className="bquote">เสน่ห์แห่งสายน้ำ<br /><em>รสชาติที่ยังมีลมหายใจ</em></div>
-                            <p className="sbody">วิถีชีวิตริมคลองไม่ได้มีเพียงเรื่องราวของสายน้ำ แต่ยังซ่อน &quot;รสชาติ&quot; และตำรับอาหารพื้นถิ่นที่สืบทอดและหล่อเลี้ยงผู้คนในชุมชนมาอย่างยาวนาน</p>
-                            <p className="sbody">ในพื้นที่เขตจตุจักร ไม่ว่าจะเป็น <strong>ชุมชนเคหะสถานเจริญชัย</strong> <strong>ชุมชนวัดบางบัว</strong> <strong>ชุมชนประชาร่วมใจ 2</strong> และ <strong>ชุมชนหลัง วค.จันทรเกษม</strong> ล้วนมีเสน่ห์ของอาหารพื้นถิ่นที่ซ่อนตัวอยู่</p>
-                            <p className="sbody">เพื่อไม่ให้ร่องรอยความอร่อยเหล่านี้เลือนหายไป โครงการนี้จึงอาศัยความร่วมมือของคณาจารย์ เจ้าหน้าที่ และนักศึกษา ในการลงพื้นที่สืบค้นข้อมูลอย่างใกล้ชิด เพื่อบันทึกและยกระดับรสชาติอาหารพื้นถิ่นเป็น <strong>Soft Power</strong> ที่พร้อมส่งต่อเรื่องราวและเสน่ห์ของวิถีริมคลองต่อไป</p>
-                            <div className="s-stats reveal">
+                            <div className="s-stats">
                                 <div><div className="ss-num">{loading ? '…' : stats.totalMenus}</div><div className="ss-unit">รายการ</div><div className="ss-lbl">อาหารที่บันทึก</div></div>
                                 <div><div className="ss-num">{loading ? '…' : stats.totalInformants}</div><div className="ss-unit">ครัวเรือน</div><div className="ss-lbl">ผู้ให้ข้อมูล</div></div>
                                 <div><div className="ss-num">{loading ? '…' : stats.totalSignature}</div><div className="ss-unit">รายการ</div><div className="ss-lbl">เมนู Signature</div></div>
                             </div>
                         </div>
-                        <div className="reveal">
-                            <figure className="story-photo">
-                                <img src="/Bangken.png" alt="วิถีชีวิตและอาหารพื้นถิ่นริมคลอง กรุงเทพฯ ฝั่งเหนือ" loading="lazy" />
-                                <figcaption>
-                                    <span className="sp-k">วิถีริมคลอง</span>
-                                    <span className="sp-t">อาหารพื้นถิ่นแห่งสายน้ำ กรุงเทพฯ ฝั่งเหนือ</span>
-                                </figcaption>
-                            </figure>
+                        <div className="reveal story-body">
+                            <p className="sbody">วิถีชีวิตริมคลองไม่ได้มีเพียงเรื่องราวของสายน้ำ แต่ยังซ่อน &quot;รสชาติ&quot; และตำรับอาหารพื้นถิ่นที่สืบทอดและหล่อเลี้ยงผู้คนในชุมชนมาอย่างยาวนาน</p>
+                            <p className="sbody">ในพื้นที่เขตจตุจักร ไม่ว่าจะเป็น <strong>ชุมชนเคหะสถานเจริญชัย</strong> <strong>ชุมชนวัดบางบัว</strong> <strong>ชุมชนประชาร่วมใจ 2</strong> และ <strong>ชุมชนหลัง วค.จันทรเกษม</strong> ล้วนมีเสน่ห์ของอาหารพื้นถิ่นที่ซ่อนตัวอยู่</p>
+                            <p className="sbody">เพื่อไม่ให้ร่องรอยความอร่อยเหล่านี้เลือนหายไป โครงการนี้จึงอาศัยความร่วมมือของคณาจารย์ เจ้าหน้าที่ และนักศึกษา ในการลงพื้นที่สืบค้นข้อมูลอย่างใกล้ชิด เพื่อบันทึกและยกระดับรสชาติอาหารพื้นถิ่นเป็น <strong>Soft Power</strong> ที่พร้อมส่งต่อเรื่องราวและเสน่ห์ของวิถีริมคลองต่อไป</p>
                         </div>
                     </div>
                     {/* วิดีโอหลักของเว็บ (YouTube) — เต็มความกว้างใต้ Story (Athen 2026-09-29: คอลัมน์ขวาเล็กไป) */}
@@ -503,10 +496,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                                         <div className="sig-name">{menu.menu_name}</div>
                                                                         <div className="sig-com">คลอง{menu.canal_zone}</div>
                                                                         <div className="sig-story">{menu.story || 'ตำรับอาหารดั้งเดิมจากชุมชนริมคลอง'}</div>
-                                                                        <div className="sig-meta">
-                                                                            <span className="sig-badge">Signature</span>
-                                                                            <span style={{ fontSize: 9, opacity: .5 }}>{menu.category}</span>
-                                                                        </div>
+                                                                        <div className="sig-meta">{menu.category}</div>
                                                                     </div>
                                                                 </div>
                                                             )
