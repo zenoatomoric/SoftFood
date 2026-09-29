@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { Icon } from '@iconify/react'
-import { MenuDetailPopup } from './MenuDetailPopup'
+import { MenuDetailPopup, youTubeEmbedUrl } from './MenuDetailPopup'
 import '../landing.css'
 
 const MapView = dynamic(() => import('./MapView'), {
@@ -31,7 +31,6 @@ interface MenuItem {
     selection_status: string[]
     canal_zone: string
     informant_name: string
-    address: string
     gps_lat: number | null
     gps_long: number | null
     thumbnail: string | null
@@ -130,7 +129,10 @@ const getPaginationGroup = (currentPage: number, totalPages: number) => {
     return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
 };
 
-const STORY_VIDEO_MS = 12000   // สลับวิดีโอแนะนำใน Story ทุก 12 วินาที (สุ่ม)
+// วิดีโอหลักของเว็บ (YouTube) — แสดงในส่วน Story "เสน่ห์แห่งสายน้ำ" · เปลี่ยนคลิป = แก้ลิงก์ตรงนี้ (Athen 2026-09-29)
+const MAIN_VIDEO_URL = 'https://www.youtube.com/watch?v=aTaPfeCg0LI'
+// e-book "สำรับ สายน้ำ สามคลอง" (Cloudflare Pages) — ฝังเล่มในส่วน E-BOOK
+const EBOOK_URL = 'https://samrab-samklong.pages.dev/'
 
 export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
     const [menus, setMenus] = useState<MenuItem[]>([])
@@ -144,8 +146,6 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
     const [canalPage, setCanalPage] = useState<Record<string, number>>({})
     const [canalSearch, setCanalSearch] = useState<Record<string, string>>({})
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-    const [storyVidIdx, setStoryVidIdx] = useState(0)
-    const [storyMuted, setStoryMuted] = useState(true)
     const heroRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     useEffect(() => {
@@ -188,26 +188,6 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
         return { totalMenus, totalCanals, totalSignature, totalInformants }
     }, [menus])
 
-    // วิดีโอแนะนำ (promo) จากเมนูที่มีวิดีโอ — ใช้สุ่มเล่นในสปอต "วิถีริมคลอง" (Story)
-    const videoMenus = useMemo(
-        () => menus.filter(m => m.promo_video_url || m.video_url),
-        [menus]
-    )
-    useEffect(() => {
-        if (videoMenus.length) setStoryVidIdx(Math.floor(Math.random() * videoMenus.length))
-    }, [videoMenus.length])
-    // สุ่มสลับวิดีโอทุก STORY_VIDEO_MS วินาที (แทนการรอคลิปจบ) — เลี่ยงสุ่มซ้ำตัวเดิม
-    useEffect(() => {
-        if (videoMenus.length <= 1) return
-        const t = setInterval(() => {
-            setStoryVidIdx(prev => {
-                let n = prev
-                while (n === prev) n = Math.floor(Math.random() * videoMenus.length)
-                return n
-            })
-        }, STORY_VIDEO_MS)
-        return () => clearInterval(t)
-    }, [videoMenus.length])
 
     const menusByCanal = useMemo(() => {
         const grouped: Record<string, MenuItem[]> = {}
@@ -248,7 +228,6 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
 
     const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
     const setFilter = (canal: string, f: string) => { setCanalFilters(prev => ({ ...prev, [canal]: f })); setCanalPage(p => ({ ...p, [canal]: 1 })) }
-    const storyVideo = videoMenus[storyVidIdx] ?? videoMenus[0]
 
     return (
         <div className="landing-root">
@@ -277,6 +256,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                         <li><a href="#story" onClick={e => { e.preventDefault(); scrollTo('story'); setIsMobileMenuOpen(false) }}>หน้าหลัก</a></li>
                         <li><a href="#mapSec" onClick={e => { e.preventDefault(); scrollTo('mapSec'); setIsMobileMenuOpen(false) }}>แผนที่</a></li>
                         <li><a href="#canalSec" onClick={e => { e.preventDefault(); scrollTo('canalSec'); setIsMobileMenuOpen(false) }}>สามคลอง</a></li>
+                        <li><a href="#ebook" onClick={e => { e.preventDefault(); scrollTo('ebook'); setIsMobileMenuOpen(false) }}>อีบุ๊ก</a></li>
                         <li><a href="#partners" onClick={e => { e.preventDefault(); scrollTo('partners'); setIsMobileMenuOpen(false) }}>ภาคีเครือข่าย</a></li>
                         <li>
                             <Link href={isLoggedIn ? '/home' : '/login'} className="nav-cta">
@@ -359,41 +339,21 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                             </div>
                         </div>
                         <div className="reveal">
-                            {/* วิถีริมคลอง — สุ่มเล่นวิดีโอแนะนำจากเมนู (Signature) ถ้ามี data · ไม่มีวิดีโอ → รูปคลองจริง — Athen 2026-06-28 */}
-                            <figure className="story-photo">
-                                {storyVideo ? (
-                                    <>
-                                        <video
-                                            key={storyVideo.menu_id}
-                                            src={(storyVideo.promo_video_url || storyVideo.video_url) ?? undefined}
-                                            poster={storyVideo.thumbnail ?? undefined}
-                                            autoPlay
-                                            muted={storyMuted}
-                                            playsInline
-                                            loop
-                                        />
-                                        <button
-                                            type="button"
-                                            className="sp-mute"
-                                            onClick={() => setStoryMuted(m => !m)}
-                                            aria-label={storyMuted ? 'เปิดเสียง' : 'ปิดเสียง'}
-                                        >
-                                            <Icon icon={storyMuted ? 'solar:muted-bold' : 'solar:volume-loud-bold'} width={18} />
-                                        </button>
-                                        <figcaption>
-                                            <span className="sp-k">วิดีโอแนะนำ · คลอง{storyVideo.canal_zone}</span>
-                                            <span className="sp-t">{storyVideo.menu_name}</span>
-                                        </figcaption>
-                                    </>
-                                ) : (
-                                    <>
-                                        <img src="/Bangken.png" alt="วิถีชีวิตและอาหารพื้นถิ่นริมคลอง กรุงเทพฯ ฝั่งเหนือ" loading="lazy" />
-                                        <figcaption>
-                                            <span className="sp-k">วิถีริมคลอง</span>
-                                            <span className="sp-t">อาหารพื้นถิ่นแห่งสายน้ำ กรุงเทพฯ ฝั่งเหนือ</span>
-                                        </figcaption>
-                                    </>
-                                )}
+                            {/* วิดีโอหลักของเว็บ (YouTube) — Athen 2026-09-29 */}
+                            <figure className="story-video">
+                                <div className="sv-frame">
+                                    <iframe
+                                        src={youTubeEmbedUrl(MAIN_VIDEO_URL) ?? undefined}
+                                        title="เสน่ห์แห่งสายน้ำ รสชาติที่ยังมีลมหายใจ | อาหารพื้นถิ่นริมคลอง"
+                                        allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        loading="lazy"
+                                    />
+                                </div>
+                                <figcaption>
+                                    <span className="sp-k">วิดีโอแนะนำโครงการ</span>
+                                    <span className="sp-t">เสน่ห์แห่งสายน้ำ รสชาติที่ยังมีลมหายใจ</span>
+                                </figcaption>
                             </figure>
                         </div>
                     </div>
@@ -532,7 +492,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                                     </div>
                                                                     <div className="sig-body">
                                                                         <div className="sig-name">{menu.menu_name}</div>
-                                                                        <div className="sig-com">{menu.address || menu.canal_zone}</div>
+                                                                        <div className="sig-com">คลอง{menu.canal_zone}</div>
                                                                         <div className="sig-story">{menu.story || 'ตำรับอาหารดั้งเดิมจากชุมชนริมคลอง'}</div>
                                                                         <div className="sig-meta">
                                                                             <span className="sig-badge">Signature</span>
@@ -551,7 +511,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                                  </div>
                                                                 <div className="fc-type">{menu.category}</div>
                                                                 <div className="fc-name">{menu.menu_name}</div>
-                                                                <div className="fc-com">{menu.address || menu.canal_zone}</div>
+                                                                <div className="fc-com">คลอง{menu.canal_zone}</div>
                                                             </div>
                                                         )
                                                     })}
@@ -605,6 +565,23 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
 
             {/* ─── IMPACT (ตัดออก 2026-06-28: สถิติซ้ำกับ Story 3/4 ตัว = AI filler tell · Athen อนุมัติตัด · ดีไซน์เดิมยังเก็บใน mockup_A_full.html ถ้าต้องการกู้คืน) ─── */}
 
+            {/* ─── E-BOOK ─── ฝังเล่ม "สำรับ สายน้ำ สามคลอง" จาก Cloudflare Pages (Athen 2026-09-29) */}
+            <section className="ebook-sec" id="ebook">
+                <div className="ctr">
+                    <div className="ebook-hdr reveal">
+                        <div className="sec-label">หนังสืออิเล็กทรอนิกส์</div>
+                        <h2 className="sh">สำรับ สายน้ำ สามคลอง</h2>
+                        <p className="sub">บันทึกรสชาติและตำรับอร่อยจากวิถีชีวิตริมคลอง คลองบางเขน คลองเปรมประชากร และคลองลาดพร้าว</p>
+                    </div>
+                    <div className="ebook-frame">
+                        <iframe src={EBOOK_URL} title="E-book สำรับ สายน้ำ สามคลอง" loading="lazy" allowFullScreen />
+                    </div>
+                    <div className="ebook-actions">
+                        <a href={EBOOK_URL} target="_blank" rel="noopener noreferrer" className="ebook-btn">เปิดอ่านแบบเต็มจอ</a>
+                    </div>
+                </div>
+            </section>
+
             {/* ─── PARTNERS ─── */}
             <section className="partners-sec" id="partners">
                 <div className="ctr">
@@ -655,7 +632,6 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                             <h4>ติดต่อโครงการ</h4>
                             <ul>
                                 <li><span style={{ fontSize: 12, color: 'rgba(255,255,255,.5)' }}><Icon icon="solar:square-academic-cap-bold" width={13} style={{ marginRight: 4 }} />คณะมนุษยศาสตร์และสังคมศาสตร์ มหาวิทยาลัยราชภัฏจันทรเกษม (CRU)</span></li>
-                                <li><span style={{ fontSize: 12, color: 'rgba(255,255,255,.4)' }}><Icon icon="solar:map-point-bold" width={13} style={{ marginRight: 4 }} />39/1 ถ.รัชดาภิเษก แขวงจันทรเกษม เขตจตุจักร กรุงเทพฯ 10900</span></li>
                                 <li><span style={{ fontSize: 12, color: 'rgba(255,255,255,.4)' }}><Icon icon="solar:letter-bold" width={13} style={{ marginRight: 4 }} />research.cru@chandra.ac.th</span></li>
                             </ul>
                         </div>

@@ -4,7 +4,6 @@
  * MenuDetailPopup — Canal-themed, compact, z-index above everything
  */
 
-import { Icon } from '@iconify/react'
 import { useEffect, useState } from 'react'
 
 interface Ingredient {
@@ -25,7 +24,6 @@ interface MenuItem {
     selection_status: string[]
     canal_zone: string
     informant_name: string
-    address: string
     thumbnail: string | null
     photos: string[]
     story: string
@@ -130,7 +128,7 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
                     style={{ background: 'rgba(13,51,72,.9)', color: '#fff', boxShadow: '0 4px 14px rgba(0,0,0,.25)' }}
                     aria-label="ปิด"
                 >
-                    <Icon icon="solar:close-circle-bold" style={{ color: '#fff', fontSize: 22 }} />
+                    <span aria-hidden="true" style={{ fontSize: 24, lineHeight: 1 }}>×</span>
                 </button>
 
                 <div className="px-6 sm:px-9 pt-8" style={{ color: C.tx }}>
@@ -141,7 +139,6 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
                         fontWeight: 700,
                         padding: '6px 14px',
                     }}>
-                        {isSignature && <Icon icon="solar:star-bold" width={13} />}
                         {badgeLabel}
                     </span>
                     {/* Title */}
@@ -158,7 +155,7 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
                 {/* Media pair */}
                 <div className={`grid grid-cols-1 ${hasMediaPair ? 'md:grid-cols-2' : ''} gap-[18px] px-6 sm:px-9 pt-6 pb-2 items-start`}>
                     <div>
-                        <MediaLabel icon="solar:gallery-bold-duotone">ภาพเมนู</MediaLabel>
+                        <MediaLabel>ภาพเมนู</MediaLabel>
                         <div className="relative overflow-hidden" style={{ aspectRatio: '16/10', borderRadius: 16, background: 'linear-gradient(135deg,#1a6b8a,#0d3348)', boxShadow: '0 3px 16px rgba(13,51,72,.07)' }}>
                             <img
                                 key={allPhotos[activePhoto]}
@@ -174,10 +171,10 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
                             {hasMultiplePhotos && (
                                 <>
                                     <button onClick={prevPhoto} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all" style={{ background: 'rgba(0,0,0,.38)', backdropFilter: 'blur(4px)' }} aria-label="ก่อนหน้า">
-                                        <Icon icon="solar:alt-arrow-left-linear" style={{ color: '#fff', fontSize: 18 }} />
+                                        <span aria-hidden="true" style={{ color: '#fff', fontSize: 22, lineHeight: 1 }}>‹</span>
                                     </button>
                                     <button onClick={nextPhoto} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all" style={{ background: 'rgba(0,0,0,.38)', backdropFilter: 'blur(4px)' }} aria-label="ถัดไป">
-                                        <Icon icon="solar:alt-arrow-right-linear" style={{ color: '#fff', fontSize: 18 }} />
+                                        <span aria-hidden="true" style={{ color: '#fff', fontSize: 22, lineHeight: 1 }}>›</span>
                                     </button>
                                 </>
                             )}
@@ -206,15 +203,15 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
 
                     {hasVideo && (
                         <div>
-                            <MediaLabel icon="solar:videocamera-record-bold-duotone">
+                            <MediaLabel>
                                 วิดีโอแนะนำ <span style={{ color: C.tl, fontWeight: 400, letterSpacing: 0, textTransform: 'none' }}>(เฉพาะ Signature)</span>
                             </MediaLabel>
                             <div className="space-y-3">
                                 {menu.video_url && (
-                                    <VideoBox src={menu.video_url} label="วิธีการปรุงอาหาร" icon="solar:chef-hat-linear" />
+                                    <VideoBox src={menu.video_url} label="วิธีการปรุงอาหาร" />
                                 )}
                                 {menu.promo_video_url && (
-                                    <VideoBox src={menu.promo_video_url} label="วิดีโอแนะนำ" icon="solar:play-stream-linear" />
+                                    <VideoBox src={menu.promo_video_url} label="วิดีโอแนะนำ" />
                                 )}
                             </div>
                         </div>
@@ -226,7 +223,7 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
                     {/* Meta grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-1 p-[18px]" style={{ background: C.cr, border: `1px solid ${C.cd2}`, borderRadius: 14 }}>
                         <MetaItem label="ผู้ให้ข้อมูล" value={menu.informant_name !== 'ไม่ระบุ' ? menu.informant_name : ''} />
-                        <MetaItem label="ที่อยู่ / ชุมชน" value={menu.address || `คลอง${menu.canal_zone}`} />
+                        <MetaItem label="คลอง" value={menu.canal_zone ? `คลอง${menu.canal_zone}` : ''} />
                         <MetaItem label="ปริมาณ" value={menu.serving_size} />
                         <MetaItem label="รสชาติ" value={menu.taste_profile} />
                         <MetaItem label="วิธีปรุง" value={menu.cooking_method} />
@@ -235,28 +232,28 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
 
                     {menu.story && (
                         <section>
-                            <SectionLabel icon="solar:document-text-bold-duotone">ประวัติและที่มา</SectionLabel>
+                            <SectionLabel>ประวัติและที่มา</SectionLabel>
                             <p style={{ fontSize: 16.5, color: C.tm, lineHeight: 2, fontWeight: 300 }}>{menu.story}</p>
                         </section>
                     )}
 
                     {menu.secret_tips && (
                         <section>
-                            <SectionLabel icon="solar:lightbulb-bold-duotone">เคล็ดลับ</SectionLabel>
+                            <SectionLabel>เคล็ดลับ</SectionLabel>
                             <InfoBlock>{menu.secret_tips}</InfoBlock>
                         </section>
                     )}
 
                     {menu.ingredients.length > 0 && (
                         <section>
-                            <SectionLabel icon="solar:leaf-bold-duotone">วัตถุดิบ</SectionLabel>
+                            <SectionLabel>วัตถุดิบ</SectionLabel>
                             <IngredientTable ingredients={[...mainIngredients, ...otherIngredients]} />
                         </section>
                     )}
 
                     {menu.steps.length > 0 && (
                         <section>
-                            <SectionLabel icon="solar:list-check-minimalistic-bold-duotone">วิธีทำ</SectionLabel>
+                            <SectionLabel>วิธีทำ</SectionLabel>
                             <ol className="flex flex-col gap-3 list-none p-0 m-0" style={{ counterReset: 'step' }}>
                                 {menu.steps.map((step, idx) => (
                                     <li key={idx} className="relative pl-11" style={{ fontSize: 16, lineHeight: 1.75, color: C.tm, fontWeight: 300, minHeight: 32 }}>
@@ -272,21 +269,21 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
 
                     {menu.nutrition && (
                         <section>
-                            <SectionLabel icon="solar:heart-pulse-bold-duotone">คุณค่าทางโภชนาการ</SectionLabel>
+                            <SectionLabel>คุณค่าทางโภชนาการ</SectionLabel>
                             <InfoBlock>{menu.nutrition}</InfoBlock>
                         </section>
                     )}
 
                     {menu.social_value && (
                         <section>
-                            <SectionLabel icon="solar:users-group-rounded-bold-duotone">คุณค่าทางสังคมและวัฒนธรรม</SectionLabel>
+                            <SectionLabel>คุณค่าทางสังคมและวัฒนธรรม</SectionLabel>
                             <InfoBlock>{menu.social_value}</InfoBlock>
                         </section>
                     )}
 
                     {menu.awards_references && (
                         <section>
-                            <SectionLabel icon="solar:cup-star-bold-duotone">รางวัล / อ้างอิง</SectionLabel>
+                            <SectionLabel>รางวัล / อ้างอิง</SectionLabel>
                             <InfoBlock>{menu.awards_references}</InfoBlock>
                         </section>
                     )}
@@ -301,7 +298,7 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
                         complexity.length > 0
                     ) && (
                         <section>
-                            <SectionLabel icon="solar:tag-horizontal-bold-duotone">ข้อมูลเพิ่มเติม</SectionLabel>
+                            <SectionLabel>ข้อมูลเพิ่มเติม</SectionLabel>
                             {menu.health_benefits.filter(t => t && t !== 'อื่นๆ').length > 0 && <TagRow label="สรรพคุณ" tags={menu.health_benefits} />}
                             {menu.popularity.length > 0 && <TagRow label="ความนิยม" tags={menu.popularity} />}
                             {menu.seasonality.length > 0 && <TagRow label="ฤดูกาล" tags={menu.seasonality} />}
@@ -319,19 +316,17 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
 
 /* ── Sub-components ── */
 
-function SectionLabel({ children, icon }: { children: React.ReactNode; icon?: string }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
     return (
-        <p className="inline-flex items-center gap-2" style={{ fontSize: 12.5, color: '#c8963c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '28px 0 13px' }}>
-            {icon && <Icon icon={icon} width={16} style={{ color: '#1a6b8a' }} />}
+        <p style={{ fontSize: 12.5, color: '#c8963c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '28px 0 13px' }}>
             {children}
         </p>
     )
 }
 
-function MediaLabel({ children, icon }: { children: React.ReactNode; icon: string }) {
+function MediaLabel({ children }: { children: React.ReactNode }) {
     return (
-        <div className="inline-flex items-center gap-2 mb-2.5" style={{ fontSize: 11.5, color: '#c8963c', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase' }}>
-            <Icon icon={icon} width={15} style={{ color: '#1a6b8a' }} />
+        <div className="mb-2.5" style={{ fontSize: 11.5, color: '#c8963c', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase' }}>
             {children}
         </div>
     )
@@ -347,17 +342,24 @@ function MetaItem({ label, value }: { label: string; value?: string }) {
     )
 }
 
-function VideoBox({ src, label, icon }: { src: string; label: string; icon: string }) {
+/** YouTube link (watch / youtu.be / shorts / embed) → embed URL; anything else → null */
+export function youTubeEmbedUrl(url: string | null | undefined): string | null {
+    if (!url) return null
+    const m = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/)
+    return m ? `https://www.youtube-nocookie.com/embed/${m[1]}` : null
+}
+
+function VideoBox({ src, label }: { src: string; label: string }) {
+    const yt = youTubeEmbedUrl(src)
     return (
         <div>
-            <div className="flex items-center gap-2 mb-2">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: '#0d3348' }}>
-                    <Icon icon={icon} style={{ color: '#fff', fontSize: 14 }} />
-                </div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#0d3348' }}>{label}</p>
-            </div>
+            <p className="mb-2" style={{ fontSize: 13, fontWeight: 600, color: '#0d3348' }}>{label}</p>
             <div className="overflow-hidden" style={{ aspectRatio: '16/10', borderRadius: 16, border: '1px solid #efe9dd', background: '#0b2330', boxShadow: '0 3px 16px rgba(13,51,72,.07)' }}>
-                <video src={src} controls preload="metadata" className="w-full h-full" style={{ objectFit: 'contain' }} />
+                {yt ? (
+                    <iframe src={yt} title={label} className="w-full h-full" style={{ border: 0 }} allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowFullScreen loading="lazy" />
+                ) : (
+                    <video src={src} controls preload="metadata" className="w-full h-full" style={{ objectFit: 'contain' }} />
+                )}
             </div>
         </div>
     )

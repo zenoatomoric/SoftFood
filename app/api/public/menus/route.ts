@@ -16,7 +16,7 @@ export async function GET() {
             .from('menus')
             .select(`
                 *,
-                informants (full_name, canal_zone, address_full, gps_lat, gps_long),
+                informants (full_name, canal_zone, gps_lat, gps_long),
                 menu_photos (photo_url),
                 menu_ingredients (
                     ingredient_type,
@@ -84,7 +84,6 @@ export async function GET() {
                 selection_status: item.selection_status || [],
                 canal_zone: inf?.canal_zone || 'ไม่ระบุ',
                 informant_name: inf?.full_name || 'ไม่ระบุ',
-                address: inf?.address_full || '',
                 gps_lat: inf?.gps_lat ?? null,
                 gps_long: inf?.gps_long ?? null,
                 thumbnail,

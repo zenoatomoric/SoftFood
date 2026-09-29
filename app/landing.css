@@ -455,3 +455,25 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
 /* responsive: ภาคีเครือข่ายบนจอเล็ก 2 คอลัมน์ (มี media เดิม 2 อยู่แล้ว แต่ override ที่นี่ให้ชนะ repeat(5)) */
 @media (max-width: 640px) { .p-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 641px) and (max-width: 1024px) { .p-grid { grid-template-columns: repeat(3, 1fr); } }
+
+/* 8) วิดีโอหลักของเว็บ (YouTube) ใน Story — แทนการสุ่มคลิปจากเมนู (Athen 2026-09-29) */
+.story-video { margin: 0; border-radius: 18px; overflow: hidden; box-shadow: var(--shc); background: var(--cd); }
+.story-video .sv-frame { position: relative; aspect-ratio: 16 / 9; background: #0b2330; }
+.story-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.story-video figcaption { padding: 16px 20px 18px; }
+.story-video .sp-k { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gl); margin-bottom: 5px; }
+.story-video .sp-t { display: block; font-size: 16.5px; font-weight: 600; line-height: 1.45; color: #fff; }
+
+/* 9) E-BOOK — ฝังเล่ม "สำรับ สายน้ำ สามคลอง" (Athen 2026-09-29) */
+.ebook-sec { background: var(--ow); padding: 84px 0; border-top: 1px solid var(--cd2); }
+.ebook-hdr { text-align: center; max-width: 720px; margin: 0 auto 28px; }
+.ebook-hdr .sh { color: var(--cd); }
+.ebook-frame { position: relative; width: 100%; aspect-ratio: 16 / 10; max-height: 82vh; border-radius: 18px; overflow: hidden; box-shadow: var(--shc); border: 1px solid var(--cd2); background: var(--cd2); }
+.ebook-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.ebook-actions { display: flex; justify-content: center; margin-top: 18px; }
+.ebook-btn { display: inline-block; padding: 11px 26px; border-radius: 999px; background: var(--cd); color: #fff; font-size: 14px; font-weight: 600; text-decoration: none; transition: background .2s; }
+.ebook-btn:hover { background: var(--go); color: var(--cd); }
+@media (max-width: 640px) {
+  .ebook-sec { padding: 56px 0; }
+  .ebook-frame { aspect-ratio: 3 / 4; max-height: none; }
+}
