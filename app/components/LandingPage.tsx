@@ -60,9 +60,10 @@ interface MenuItem {
 
 // Canal zones config
 const CANALS = [
-    { id: 'บางเขน', name: 'คลองบางเขน', image: '/Bangken.png', theme: 'lt' as const, num: '01', subtitle: 'คลองสายแรก', color: '#5db8d8', icon: 'solar:rowing-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a5a7a] via-[#0d3a5a] to-[#2d7a5e]' },
-    { id: 'เปรมประชากร', name: 'คลองเปรมประชากร', image: '/pamepacha.png', theme: 'lt' as const, num: '02', subtitle: 'คลองสายที่สอง', color: '#c8963c', icon: 'solar:compass-big-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a3a5a] via-[#2d6a4a] to-[#4a8a5a]', reversed: true },
-    { id: 'ลาดพร้าว', name: 'คลองลาดพร้าว', image: '/ladpaw.png', theme: 'lt' as const, num: '03', subtitle: 'คลองสายที่สาม', color: '#c87a3c', icon: 'solar:leaf-bold-duotone', bgClass: 'bg-gradient-to-br from-[#3a5a1a] via-[#1a4a5a] to-[#0d3a4a]' },
+    // video: ลิงก์ YouTube วิดีโอแนะนำอาหารของแต่ละคลอง — ว่างไว้ = ไม่แสดงช่องวิดีโอ (Athen 2026-09-29)
+    { id: 'บางเขน', name: 'คลองบางเขน', image: '/Bangken.png', video: '', theme: 'lt' as const, num: '01', subtitle: 'คลองสายแรก', color: '#5db8d8', icon: 'solar:rowing-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a5a7a] via-[#0d3a5a] to-[#2d7a5e]' },
+    { id: 'เปรมประชากร', name: 'คลองเปรมประชากร', image: '/pamepacha.png', video: '', theme: 'lt' as const, num: '02', subtitle: 'คลองสายที่สอง', color: '#c8963c', icon: 'solar:compass-big-bold-duotone', bgClass: 'bg-gradient-to-br from-[#1a3a5a] via-[#2d6a4a] to-[#4a8a5a]', reversed: true },
+    { id: 'ลาดพร้าว', name: 'คลองลาดพร้าว', image: '/ladpaw.png', video: '', theme: 'lt' as const, num: '03', subtitle: 'คลองสายที่สาม', color: '#c87a3c', icon: 'solar:leaf-bold-duotone', bgClass: 'bg-gradient-to-br from-[#3a5a1a] via-[#1a4a5a] to-[#0d3a4a]' },
 ]
 
 const CANAL_DESCRIPTIONS: Record<string, { desc: string; chips: { icon: string; text: string }[]; identity: { icon: string; title: string; detail: string }[]; flavors: { icon: string; text: string }[] }> = {
@@ -366,7 +367,6 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
             <section className="map-sec" id="mapSec">
                 <div className="ctr">
                     <div className="map-hdr reveal">
-                        <div className="sec-label">พิกัดจริงจากการสำรวจ</div>
                         <h2 className="sh">แผนที่จุดอาหารริมคลอง</h2>
                         <p className="sub">แผนที่แสดงตำแหน่งอาหารริมคลอง จากการลงสำรวจพื้นที่จริงทั้ง 3 คลอง</p>
                     </div>
@@ -407,7 +407,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
 
                             <div className={`cblock ${canal.theme}`} id={`canal-${canal.id}`}>
                                 <div className="ctr">
-                                    <div className={`canal-top reveal ${canal.reversed ? 'rev' : ''}`}>
+                                    <div className={`canal-top reveal ${canal.reversed ? 'rev' : ''} ${youTubeEmbedUrl(canal.video) ? '' : 'no-media'}`}>
                                         <div>
                                             <span className="cnum">{canal.num}</span>
                                             <div className="ctag">{canal.subtitle}</div>
@@ -422,15 +422,20 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                                 ))}
                                             </div>
                                         </div>
-                                        <div className="cphoto">
-                                            <img src={canal.image} alt={canal.name} style={{ width: '100%', display: 'block', objectFit: 'cover' }} loading="lazy" />
-                                            <div className="cp-inner">
-                                                <Icon icon={canal.icon} width={60} style={{ opacity: .5, color: '#fff', animation: `fl ${4 + idx * 0.5}s ease-in-out infinite ${idx * 0.5}s` }} />
-                                            </div>
-                                            <div className="cplabel">
-                                                <div className="cptag" style={{ marginBottom: 0 }}>{canal.name}</div>
-                                            </div>
-                                        </div>
+                                        {youTubeEmbedUrl(canal.video) && (
+                                            <figure className="canal-video">
+                                                <div className="sv-frame">
+                                                    <iframe
+                                                        src={youTubeEmbedUrl(canal.video) ?? undefined}
+                                                        title={`วิดีโอแนะนำอาหาร${canal.name}`}
+                                                        allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+                                                        allowFullScreen
+                                                        loading="lazy"
+                                                    />
+                                                </div>
+                                                <figcaption>วิดีโอแนะนำอาหาร{canal.name}</figcaption>
+                                            </figure>
+                                        )}
                                     </div>
 
                                     {/* Food list */}
