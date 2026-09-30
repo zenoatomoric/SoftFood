@@ -100,9 +100,10 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
 }
 .csl { position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s ease; }
 .csl.act { opacity: 1; }
-.cs1 { background: linear-gradient(160deg, rgba(13,51,72,.88), rgba(13,51,72,.38) 60%, rgba(13,51,72,.72)), url('/Bangken.png') center 30%/cover no-repeat; }
-.cs2 { background: linear-gradient(160deg, rgba(13,51,72,.82), rgba(92,51,23,.3) 60%, rgba(13,51,72,.78)), url('/pamepacha.png') center 30%/cover no-repeat; }
-.cs3 { background: linear-gradient(160deg, rgba(13,51,72,.84), rgba(13,51,72,.28) 70%, rgba(92,51,23,.6)), url('/ladpaw.png') center 30%/cover no-repeat; }
+/* ภาพ hero = ภาพนิ่งจากคลิปวิดีโอของโครงการ (intro_plus_9menus.mp4 วินาที 5.5 / 182 / 38) แทนภาพ AI — Athen 2026-09-30 */
+.cs1 { background: linear-gradient(160deg, rgba(13,51,72,.88), rgba(13,51,72,.38) 60%, rgba(13,51,72,.72)), url('/hero/hero-canal-bridge.jpg') center 40%/cover no-repeat; }
+.cs2 { background: linear-gradient(160deg, rgba(13,51,72,.86), rgba(13,51,72,.58) 55%, rgba(13,51,72,.82)), url('/hero/hero-samrab.jpg') center 50%/cover no-repeat; }
+.cs3 { background: linear-gradient(160deg, rgba(13,51,72,.84), rgba(13,51,72,.28) 70%, rgba(92,51,23,.6)), url('/hero/hero-canal-walkway.jpg') center 45%/cover no-repeat; }
 /* Water ambient layer */
 .hdeco {
   position: absolute; inset: 0; pointer-events: none; z-index: 2;
