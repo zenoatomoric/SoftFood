@@ -513,3 +513,34 @@ h2.sh { font-size: clamp(28px, 4vw, 44px); font-weight: 700; line-height: 1.25; 
 .canal-video .sv-frame { position: relative; aspect-ratio: 16 / 9; background: #0b2330; }
 .canal-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .canal-video figcaption { padding: 12px 18px; font-size: 14px; font-weight: 600; color: #fff; }
+
+/* 10) อ่านง่ายขึ้นสำหรับภาษาไทย (Athen 2026-09-30: ตัวหนังสือเล็ก/จาง/ห่างแปลก)
+   - ไม่ใส่ระยะห่างตัวอักษรกับหัวข้อย่อยภาษาไทย (เดิม 2.5–4px ทำให้อ่านเป็น "ค ล อ ง")
+   - ขนาดขั้นต่ำ ~13px · เนื้อความเลิกใช้น้ำหนัก 300 · สีทองบนพื้นขาวใช้ --gd ให้ตัดกันพอ */
+.sec-label, .ctag, .filter-label, .fc-type, .fc-col h4, .heb, .sp-k, .fb-sub { letter-spacing: .02em; text-transform: none; }
+.sec-label { font-size: 14px; color: var(--gd); }
+.heb { font-size: 14px; }
+.ctag { font-size: 15px; color: var(--gd); }
+.cblock.dk .ctag { color: var(--gl); }
+.cnum { color: rgba(200,150,60,.24); }
+.filter-label { font-size: 13.5px; color: var(--gd); }
+.ff-btn { font-size: 14px; opacity: .85; }
+.ff-btn.on { opacity: 1; }
+.filter-count { font-size: 13px; }
+.fchip { font-size: 13.5px; }
+.fc-type { font-size: 13px; color: var(--gd); }
+.fc-name { font-size: 18px; }
+.fc-com, .sig-com { font-size: 14px; }
+.sig-star-badge { font-size: 12.5px; }
+.rec-badge { font-size: 12px; color: var(--cm); }
+.fcard-sig .sig-meta { font-size: 13px; }
+.fcard-sig .sig-story { font-size: 15px; }
+.hs, .sbody, .map-hdr .sub, .cdesc, .sig-story, .fb-desc { font-weight: 400; }
+.cdesc { font-size: 17px; color: var(--tm); }
+.map-hdr .sub { font-size: 17px; }
+.pcard .pn { font-size: 13.5px; }
+.pcard .pt { font-size: 12px; }
+.fc-col h4 { font-size: 15px; }
+.footer-bot { font-size: 13px; }
+.story-video figcaption { padding: 14px 24px 16px; }
+.rec-badge { background: rgba(255,255,255,.94); border-color: rgba(26,107,138,.3); z-index: 2; }

@@ -355,7 +355,6 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                                     />
                                 </div>
                                 <figcaption>
-                                    <span className="sp-k">วิดีโอแนะนำโครงการ</span>
                                     <span className="sp-t">เสน่ห์แห่งสายน้ำ รสชาติที่ยังมีลมหายใจ</span>
                                 </figcaption>
                             </figure>
@@ -618,7 +617,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                             <h4>สำรวจ</h4>
                             <ul>
                                 <li><a href="#story" onClick={e => { e.preventDefault(); scrollTo('story') }}>หน้าหลักโครงการ</a></li>
-                                <li><a href="#mapSec" onClick={e => { e.preventDefault(); scrollTo('mapSec') }}>แผนที่พิกัด 372 จุด</a></li>
+                                <li><a href="#mapSec" onClick={e => { e.preventDefault(); scrollTo('mapSec') }}>แผนที่พิกัด</a></li>
                                 <li><a href="#canal-บางเขน" onClick={e => { e.preventDefault(); scrollTo('canal-บางเขน') }}>สำรวจคลองบางเขน</a></li>
                                 <li><a href="#canal-เปรมประชากร" onClick={e => { e.preventDefault(); scrollTo('canal-เปรมประชากร') }}>สำรวจคลองเปรมประชากร</a></li>
                                 <li><a href="#canal-ลาดพร้าว" onClick={e => { e.preventDefault(); scrollTo('canal-ลาดพร้าว') }}>สำรวจคลองลาดพร้าว</a></li>
@@ -633,7 +632,7 @@ export default function LandingPage({ isLoggedIn }: { isLoggedIn: boolean }) {
                             </ul>
                         </div>
                         <div className="fc-col">
-                            <h4>ติดต่อโครงการ</h4>
+                            <h4>ติดต่อ</h4>
                             <ul>
                                 <li><span style={{ fontSize: 12, color: 'rgba(255,255,255,.5)' }}><Icon icon="solar:square-academic-cap-bold" width={13} style={{ marginRight: 4 }} />คณะมนุษยศาสตร์และสังคมศาสตร์ มหาวิทยาลัยราชภัฏจันทรเกษม (CRU)</span></li>
                                 <li><span style={{ fontSize: 12, color: 'rgba(255,255,255,.4)' }}><Icon icon="solar:letter-bold" width={13} style={{ marginRight: 4 }} />research.cru@chandra.ac.th</span></li>

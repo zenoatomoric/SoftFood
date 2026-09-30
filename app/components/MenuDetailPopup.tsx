@@ -103,7 +103,7 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
 
     return (
         <div
-            className={`fixed inset-0 flex items-start justify-center overflow-y-auto p-3 sm:p-5 ${visible ? 'pointer-events-auto' : 'pointer-events-none'}`}
+            className={`fixed inset-0 flex items-start md:items-center justify-center overflow-y-auto md:overflow-hidden p-3 sm:p-5 ${visible ? 'pointer-events-auto' : 'pointer-events-none'}`}
             style={{ zIndex: 9999, fontFamily: "'Kanit', sans-serif" }}
         >
             {/* Backdrop */}
@@ -113,11 +113,12 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
                 onClick={onCloseAction}
             />
 
+            {/* Book spread — left page: photos/video (stays put) · right page: details (scrolls) — Athen 2026-09-30 */}
             <div
-                className={`relative w-full overflow-hidden my-4 sm:my-6 transition-all duration-300 ${visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-[0.97]'}`}
+                className={`relative w-full my-4 md:my-0 md:h-[88vh] md:grid md:grid-cols-[46fr_54fr] overflow-hidden transition-all duration-300 ${visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-3 scale-[0.97]'}`}
                 style={{
-                    maxWidth: '900px',
-                    borderRadius: '24px',
+                    maxWidth: '1180px',
+                    borderRadius: '20px',
                     background: C.ow,
                     boxShadow: '0 30px 90px rgba(0,0,0,.45), 0 0 0 1px rgba(200,150,60,.08)',
                 }}
@@ -131,97 +132,91 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
                     <span aria-hidden="true" style={{ fontSize: 24, lineHeight: 1 }}>×</span>
                 </button>
 
-                <div className="px-6 sm:px-9 pt-8" style={{ color: C.tx }}>
-                    <span className="inline-flex items-center gap-1.5 mb-3 rounded-full" style={{
+                {/* ── Left page ── */}
+                <div
+                    className="md:h-full md:overflow-y-auto px-5 sm:px-8 pt-6 pb-6 md:py-9"
+                    style={{ background: '#f6f1e7', boxShadow: 'inset -22px 0 26px -22px rgba(13,51,72,.28)' }}
+                >
+                    <div className="relative overflow-hidden" style={{ aspectRatio: '4/3', borderRadius: 14, background: 'linear-gradient(135deg,#1a6b8a,#0d3348)', boxShadow: '0 6px 22px rgba(13,51,72,.14)' }}>
+                        <img
+                            key={allPhotos[activePhoto]}
+                            src={allPhotos[activePhoto]}
+                            alt={menu.menu_name}
+                            className="w-full h-full object-cover transition-opacity duration-300"
+                        />
+                        {hasMultiplePhotos && (
+                            <div className="absolute top-3 left-3 font-semibold px-2.5 py-1 rounded-full tabular-nums" style={{ background: 'rgba(0,0,0,.5)', color: '#fff', fontSize: 13 }}>
+                                {activePhoto + 1} / {allPhotos.length}
+                            </div>
+                        )}
+                        {hasMultiplePhotos && (
+                            <>
+                                <button onClick={prevPhoto} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,0,0,.42)' }} aria-label="ก่อนหน้า">
+                                    <span aria-hidden="true" style={{ color: '#fff', fontSize: 24, lineHeight: 1 }}>‹</span>
+                                </button>
+                                <button onClick={nextPhoto} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(0,0,0,.42)' }} aria-label="ถัดไป">
+                                    <span aria-hidden="true" style={{ color: '#fff', fontSize: 24, lineHeight: 1 }}>›</span>
+                                </button>
+                            </>
+                        )}
+                    </div>
+                    {hasMultiplePhotos && (
+                        <div className="grid grid-cols-5 gap-2 mt-3">
+                            {allPhotos.map((src, idx) => (
+                                <button
+                                    key={src}
+                                    onClick={() => setActivePhoto(idx)}
+                                    className="rounded-lg overflow-hidden transition-all"
+                                    style={{
+                                        aspectRatio: '4/3',
+                                        border: idx === activePhoto ? '2px solid #c8963c' : '2px solid transparent',
+                                        opacity: idx === activePhoto ? 1 : .7,
+                                    }}
+                                    aria-label={`รูปที่ ${idx + 1}`}
+                                >
+                                    <img src={src} alt="" className="w-full h-full object-cover" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {hasVideo && (
+                        <div className="mt-6 space-y-4">
+                            {menu.video_url && (
+                                <VideoBox src={menu.video_url} label="วิดีโอวิธีการปรุงอาหาร" />
+                            )}
+                            {menu.promo_video_url && (
+                                <VideoBox src={menu.promo_video_url} label="วิดีโอแนะนำเมนู" />
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* ── Right page ── */}
+                <div
+                    className="md:h-full md:overflow-y-auto px-5 sm:px-9 pt-6 md:pt-10 pb-10"
+                    style={{ color: C.tx, boxShadow: 'inset 22px 0 26px -22px rgba(13,51,72,.14)' }}
+                >
+                    <span className="inline-block mb-3 rounded-full" style={{
                         background: isSignature ? 'linear-gradient(135deg, #c8963c, #e8b84b)' : C.gp,
                         color: C.cd,
-                        fontSize: 12.5,
+                        fontSize: 14,
                         fontWeight: 700,
-                        padding: '6px 14px',
+                        padding: '5px 14px',
                     }}>
                         {badgeLabel}
                     </span>
-                    {/* Title */}
-                    <h2 className="tracking-tight leading-tight" style={{ fontSize: 'clamp(27px, 3.4vw, 34px)', fontWeight: 700, color: C.cd }}>
+                    <h2 className="tracking-tight leading-tight pr-12" style={{ fontSize: 'clamp(28px, 3vw, 36px)', fontWeight: 700, color: C.cd }}>
                         {menu.menu_name}
                     </h2>
                     {(menu.local_name || menu.other_name) && (
-                        <p className="italic mt-1.5" style={{ fontSize: 15.5, color: C.tl }}>
+                        <p className="mt-1.5" style={{ fontSize: 16, color: C.tl }}>
                             &quot;{[menu.local_name, menu.other_name].filter(Boolean).join(' / ')}&quot;
                         </p>
                     )}
-                </div>
 
-                {/* Media pair */}
-                <div className={`grid grid-cols-1 ${hasMediaPair ? 'md:grid-cols-2' : ''} gap-[18px] px-6 sm:px-9 pt-6 pb-2 items-start`}>
-                    <div>
-                        <MediaLabel>ภาพเมนู</MediaLabel>
-                        <div className="relative overflow-hidden" style={{ aspectRatio: '16/10', borderRadius: 16, background: 'linear-gradient(135deg,#1a6b8a,#0d3348)', boxShadow: '0 3px 16px rgba(13,51,72,.07)' }}>
-                            <img
-                                key={allPhotos[activePhoto]}
-                                src={allPhotos[activePhoto]}
-                                alt={menu.menu_name}
-                                className="w-full h-full object-cover transition-opacity duration-300"
-                            />
-                            {hasMultiplePhotos && (
-                                <div className="absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full tabular-nums" style={{ background: 'rgba(0,0,0,.45)', color: '#fff', backdropFilter: 'blur(4px)', fontSize: 11 }}>
-                                    {activePhoto + 1} / {allPhotos.length}
-                                </div>
-                            )}
-                            {hasMultiplePhotos && (
-                                <>
-                                    <button onClick={prevPhoto} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all" style={{ background: 'rgba(0,0,0,.38)', backdropFilter: 'blur(4px)' }} aria-label="ก่อนหน้า">
-                                        <span aria-hidden="true" style={{ color: '#fff', fontSize: 22, lineHeight: 1 }}>‹</span>
-                                    </button>
-                                    <button onClick={nextPhoto} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all" style={{ background: 'rgba(0,0,0,.38)', backdropFilter: 'blur(4px)' }} aria-label="ถัดไป">
-                                        <span aria-hidden="true" style={{ color: '#fff', fontSize: 22, lineHeight: 1 }}>›</span>
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                        {hasMultiplePhotos && (
-                            <div className="flex gap-2 mt-2 overflow-x-auto">
-                                {allPhotos.map((src, idx) => (
-                                    <button
-                                        key={src}
-                                        onClick={() => setActivePhoto(idx)}
-                                        className="shrink-0 rounded-lg overflow-hidden transition-all"
-                                        style={{
-                                            width: 72,
-                                            aspectRatio: '16/10',
-                                            border: idx === activePhoto ? '2px solid #c8963c' : '2px solid transparent',
-                                            opacity: idx === activePhoto ? 1 : .62,
-                                        }}
-                                        aria-label={`รูปที่ ${idx + 1}`}
-                                    >
-                                        <img src={src} alt="" className="w-full h-full object-cover" />
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {hasVideo && (
-                        <div>
-                            <MediaLabel>
-                                วิดีโอแนะนำ <span style={{ color: C.tl, fontWeight: 400, letterSpacing: 0, textTransform: 'none' }}>(เฉพาะ Signature)</span>
-                            </MediaLabel>
-                            <div className="space-y-3">
-                                {menu.video_url && (
-                                    <VideoBox src={menu.video_url} label="วิธีการปรุงอาหาร" />
-                                )}
-                                {menu.promo_video_url && (
-                                    <VideoBox src={menu.promo_video_url} label="วิดีโอแนะนำ" />
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Body */}
-                <div className="px-6 sm:px-9 pt-4 pb-10" style={{ color: C.tx }}>
                     {/* Meta grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-1 p-[18px]" style={{ background: C.cr, border: `1px solid ${C.cd2}`, borderRadius: 14 }}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 p-[18px]" style={{ background: C.cr, border: `1px solid ${C.cd2}`, borderRadius: 14 }}>
                         <MetaItem label="ผู้ให้ข้อมูล" value={menu.informant_name !== 'ไม่ระบุ' ? menu.informant_name : ''} />
                         <MetaItem label="คลอง" value={menu.canal_zone ? `คลอง${menu.canal_zone}` : ''} />
                         <MetaItem label="ปริมาณ" value={menu.serving_size} />
@@ -233,7 +228,7 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
                     {menu.story && (
                         <section>
                             <SectionLabel>ประวัติและที่มา</SectionLabel>
-                            <p style={{ fontSize: 16.5, color: C.tm, lineHeight: 2, fontWeight: 300 }}>{menu.story}</p>
+                            <p style={{ fontSize: 17, color: C.tm, lineHeight: 1.95 }}>{menu.story}</p>
                         </section>
                     )}
 
@@ -254,10 +249,10 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
                     {menu.steps.length > 0 && (
                         <section>
                             <SectionLabel>วิธีทำ</SectionLabel>
-                            <ol className="flex flex-col gap-3 list-none p-0 m-0" style={{ counterReset: 'step' }}>
+                            <ol className="flex flex-col gap-3 list-none p-0 m-0">
                                 {menu.steps.map((step, idx) => (
-                                    <li key={idx} className="relative pl-11" style={{ fontSize: 16, lineHeight: 1.75, color: C.tm, fontWeight: 300, minHeight: 32 }}>
-                                        <span className="absolute left-0 top-0 grid place-items-center rounded-full" style={{ width: 30, height: 30, background: 'linear-gradient(135deg,#c8963c,#e8b84b)', color: C.cd, fontSize: 13, fontWeight: 700 }}>
+                                    <li key={idx} className="relative pl-11" style={{ fontSize: 16.5, lineHeight: 1.8, color: C.tm, minHeight: 32 }}>
+                                        <span className="absolute left-0 top-0 grid place-items-center rounded-full" style={{ width: 30, height: 30, background: 'linear-gradient(135deg,#c8963c,#e8b84b)', color: C.cd, fontSize: 14, fontWeight: 700 }}>
                                             {idx + 1}
                                         </span>
                                         {step}
@@ -318,17 +313,9 @@ export function MenuDetailPopup({ menu, visible, onCloseAction }: Props) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
     return (
-        <p style={{ fontSize: 12.5, color: '#c8963c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', margin: '28px 0 13px' }}>
+        <p style={{ fontSize: 17, color: '#0d3348', fontWeight: 700, margin: '30px 0 12px', paddingBottom: 6, borderBottom: '2px solid #e8b84b', display: 'inline-block' }}>
             {children}
         </p>
-    )
-}
-
-function MediaLabel({ children }: { children: React.ReactNode }) {
-    return (
-        <div className="mb-2.5" style={{ fontSize: 11.5, color: '#c8963c', fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase' }}>
-            {children}
-        </div>
     )
 }
 
@@ -336,8 +323,8 @@ function MetaItem({ label, value }: { label: string; value?: string }) {
     if (!value) return null
     return (
         <div>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#c8963c', marginBottom: 3 }}>{label}</div>
-            <div style={{ fontSize: 15.5, fontWeight: 600, color: '#0d3348', lineHeight: 1.4 }}>{value}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#9a6f22', marginBottom: 3 }}>{label}</div>
+            <div style={{ fontSize: 16.5, fontWeight: 600, color: '#0d3348', lineHeight: 1.45 }}>{value}</div>
         </div>
     )
 }
@@ -353,7 +340,7 @@ function VideoBox({ src, label }: { src: string; label: string }) {
     const yt = youTubeEmbedUrl(src)
     return (
         <div>
-            <p className="mb-2" style={{ fontSize: 13, fontWeight: 600, color: '#0d3348' }}>{label}</p>
+            <p className="mb-2" style={{ fontSize: 15, fontWeight: 600, color: '#0d3348' }}>{label}</p>
             <div className="overflow-hidden" style={{ aspectRatio: '16/10', borderRadius: 16, border: '1px solid #efe9dd', background: '#0b2330', boxShadow: '0 3px 16px rgba(13,51,72,.07)' }}>
                 {yt ? (
                     <iframe src={yt} title={label} className="w-full h-full" style={{ border: 0 }} allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowFullScreen loading="lazy" />
@@ -367,7 +354,7 @@ function VideoBox({ src, label }: { src: string; label: string }) {
 
 function InfoBlock({ children }: { children: React.ReactNode }) {
     return (
-        <div style={{ background: '#fbf9f4', border: '1px solid #efe9dd', borderRadius: 12, padding: '16px 18px', fontSize: 16, lineHeight: 1.95, color: '#3d3d3d', fontWeight: 300 }}>
+        <div style={{ background: '#fbf9f4', border: '1px solid #efe9dd', borderRadius: 12, padding: '16px 18px', fontSize: 16.5, lineHeight: 1.9, color: '#3d3d3d' }}>
             {children}
         </div>
     )
@@ -376,7 +363,7 @@ function InfoBlock({ children }: { children: React.ReactNode }) {
 function IngredientTable({ ingredients }: { ingredients: Ingredient[] }) {
     return (
         <div className="overflow-x-auto">
-            <table className="w-full border-collapse" style={{ fontSize: 14.5 }}>
+            <table className="w-full border-collapse" style={{ fontSize: 15.5 }}>
                 <thead>
                     <tr>
                         <IngredientHeader>ชื่อ</IngredientHeader>
@@ -390,7 +377,7 @@ function IngredientTable({ ingredients }: { ingredients: Ingredient[] }) {
                         <tr key={`${ing.name}-${idx}`}>
                             <IngredientCell main={ing.is_main}>
                                 {ing.name}
-                                {ing.is_main && <span style={{ fontSize: 9, background: '#fdecec', color: '#c0392b', padding: '1px 7px', borderRadius: 10, fontWeight: 700, marginLeft: 6 }}>หลัก</span>}
+                                {ing.is_main && <span style={{ fontSize: 12, background: '#fdecec', color: '#c0392b', padding: '1px 7px', borderRadius: 10, fontWeight: 700, marginLeft: 6 }}>หลัก</span>}
                             </IngredientCell>
                             <IngredientCell center>{ing.quantity}</IngredientCell>
                             <IngredientCell center>{ing.unit}</IngredientCell>
@@ -405,7 +392,7 @@ function IngredientTable({ ingredients }: { ingredients: Ingredient[] }) {
 
 function IngredientHeader({ children, center }: { children: React.ReactNode; center?: boolean }) {
     return (
-        <th style={{ textAlign: center ? 'center' : 'left', fontSize: 10, textTransform: 'uppercase', letterSpacing: '1px', color: '#6b6b6b', borderBottom: '1.5px solid #efe9dd', padding: '8px 6px', fontWeight: 700 }}>
+        <th style={{ textAlign: center ? 'center' : 'left', fontSize: 13.5, color: '#4a4a4a', borderBottom: '1.5px solid #efe9dd', padding: '8px 6px', fontWeight: 700 }}>
             {children}
         </th>
     )
@@ -413,7 +400,7 @@ function IngredientHeader({ children, center }: { children: React.ReactNode; cen
 
 function IngredientCell({ children, center, main }: { children: React.ReactNode; center?: boolean; main?: boolean }) {
     return (
-        <td style={{ textAlign: center ? 'center' : 'left', padding: '9px 6px', borderBottom: '1px solid #f1ede5', color: main ? '#0d3348' : '#3d3d3d', fontWeight: main ? 500 : 300 }}>
+        <td style={{ textAlign: center ? 'center' : 'left', padding: '9px 6px', borderBottom: '1px solid #f1ede5', color: main ? '#0d3348' : '#3d3d3d', fontWeight: main ? 600 : 400 }}>
             {children}
         </td>
     )
@@ -424,10 +411,10 @@ function TagRow({ label, tags }: { label: string; tags: string[] }) {
     if (!filtered.length) return null
     return (
         <div className="flex gap-3 items-start mb-3">
-            <span style={{ fontSize: 10, color: '#c8963c', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.8px', width: 96, flexShrink: 0, paddingTop: 6 }}>{label}</span>
+            <span style={{ fontSize: 14, color: '#9a6f22', fontWeight: 600, width: 104, flexShrink: 0, paddingTop: 5 }}>{label}</span>
             <div className="flex flex-wrap gap-1.5">
                 {filtered.map(t => (
-                    <span key={t} className="rounded-full" style={{ fontSize: 12.5, padding: '5px 12px', background: '#fff', border: '1px solid #efe9dd', color: '#3d3d3d' }}>
+                    <span key={t} className="rounded-full" style={{ fontSize: 14, padding: '5px 12px', background: '#fff', border: '1px solid #efe9dd', color: '#3d3d3d' }}>
                         {t}
                     </span>
                 ))}
